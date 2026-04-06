@@ -157,6 +157,22 @@ func get_legal_actions(player_id: int = -1) -> Array[ActionData]:
 	return actions
 
 
+func get_state_hash() -> String:
+	return _state_hash()
+
+
+func get_ai_config_for_player(player_id: int) -> AIConfig:
+	if player_id == 1:
+		return AppState.current_match_config.player_one_ai
+	return AppState.current_match_config.player_two_ai
+
+
+func simulate_action(action: ActionData) -> GameState:
+	var duplicate: GameState = clone()
+	duplicate.apply_action(action.clone())
+	return duplicate
+
+
 func build_attack_action(actor_id: String, clicked_coord: HexCoord) -> ActionData:
 	var tank: TankData = get_tank(actor_id)
 	if tank == null:

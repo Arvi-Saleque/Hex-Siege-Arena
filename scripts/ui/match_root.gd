@@ -11,11 +11,14 @@ var _status_label: Label
 var _mode_label: Label
 var _selected_actor_label: Label
 var _map_label: Label
+var _ai_label: Label
+var _explanation_label: Label
 var _event_log: RichTextLabel
 var _move_button: Button
 var _attack_button: Button
 var _pass_button: Button
 var _reset_button: Button
+var _ai_move_button: Button
 var _action_mode: String = ""
 var _selected_actor_id: String = ""
 
@@ -45,7 +48,7 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Phase 4 Map Presets"
+	title.text = "Phase 5 Minimax AI"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
@@ -101,6 +104,10 @@ func _build_layout() -> void:
 	_map_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(_map_label)
 
+	_ai_label = Label.new()
+	_ai_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sidebar_layout.add_child(_ai_label)
+
 	_mode_label = Label.new()
 	sidebar_layout.add_child(_mode_label)
 
@@ -140,16 +147,30 @@ func _build_layout() -> void:
 	_pass_button.pressed.connect(_on_pass_pressed)
 	action_row.add_child(_pass_button)
 
+	var utility_row = HBoxContainer.new()
+	utility_row.add_theme_constant_override("separation", 8)
+	sidebar_layout.add_child(utility_row)
+
+	_ai_move_button = Button.new()
+	_ai_move_button.text = "AI Move"
+	_ai_move_button.custom_minimum_size = Vector2(120, 44)
+	_ai_move_button.pressed.connect(_on_ai_move_pressed)
+	utility_row.add_child(_ai_move_button)
+
 	_reset_button = Button.new()
 	_reset_button.text = "Reset"
 	_reset_button.custom_minimum_size = Vector2(96, 44)
 	_reset_button.pressed.connect(_on_reset_pressed)
-	action_row.add_child(_reset_button)
+	utility_row.add_child(_reset_button)
 
 	var legend = Label.new()
-	legend.text = "Testing flow:\n1. Click your tank\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use Reset to restart the current map\n\nQtank = triangle marker\nKtank = circle marker\nBlue = Player 1\nRed = Player 2"
+	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use AI Move when the current player is Minimax\n5. Use Reset to restart the current map\n\nQtank = triangle marker\nKtank = circle marker\nBlue = Player 1\nRed = Player 2"
 	legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(legend)
+
+	_explanation_label = Label.new()
+	_explanation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sidebar_layout.add_child(_explanation_label)
 
 	_event_log = RichTextLabel.new()
 	_event_log.custom_minimum_size = Vector2(0, 220)
@@ -172,6 +193,8 @@ func _refresh_view() -> void:
 		_game_state.actions_remaining_in_turn,
 	]
 	_map_label.text = "Map: %s\n%s" % [_game_state.board.map_display_name, _game_state.board.map_description]
+	_ai_label.text = _ai_status_text()
+	_explanation_label.text = _explanation_text()
 
 	if _game_state.game_over:
 		_status_label.text = "Game Over: %s" % (_winner_label())
@@ -259,6 +282,7 @@ func _update_button_state() -> void:
 	_attack_button.disabled = not can_act
 	_pass_button.disabled = _game_state.game_over
 	_reset_button.disabled = false
+	_ai_move_button.disabled = _game_state.game_over or not _current_player_supports_minimax()
 
 
 func _on_board_cell_clicked(coord_key: String) -> void:
@@ -332,10 +356,26 @@ func _on_reset_pressed() -> void:
 	_refresh_view()
 
 
+func _on_ai_move_pressed() -> void:
+	if not _current_player_supports_minimax():
+		return
+
+	var config: AIConfig = _game_state.get_ai_config_for_player(_game_state.current_player).clone()
+	var minimax: MinimaxAI = MinimaxAI.new()
+	var result: Dictionary = minimax.choose_action(_game_state, config)
+	var action: ActionData = result.get("action", ActionData.new(GameTypes.ActionType.PASS))
+	var explanation: ActionExplanation = result.get("explanation", ActionExplanation.new())
+	AppState.last_action_explanation = explanation
+	EventBus.action_explanation_updated.emit(explanation)
+	_game_state.apply_action(action)
+	_after_action()
+
+
 func _reset_match() -> void:
 	_game_state = GameState.new(AppState.current_match_config.clone())
 	_action_mode = ""
 	_selected_actor_id = ""
+	AppState.last_action_explanation = ActionExplanation.new()
 
 
 func _winner_label() -> String:
@@ -386,5 +426,44 @@ func _cell_type_label(cell_type: int) -> String:
 			return "Power Shield"
 		GameTypes.CellType.POWER_BONUS_MOVE:
 			return "Power Bonus Move"
+		_:
+			return "Unknown"
+
+
+func _current_player_supports_minimax() -> bool:
+	return _game_state.get_ai_config_for_player(_game_state.current_player).controller_type == GameTypes.ControllerType.MINIMAX
+
+
+func _ai_status_text() -> String:
+	var p1_type: String = _controller_label(AppState.current_match_config.player_one_ai.controller_type)
+	var p2_type: String = _controller_label(AppState.current_match_config.player_two_ai.controller_type)
+	var current_type: String = _controller_label(_game_state.get_ai_config_for_player(_game_state.current_player).controller_type)
+	return "Controllers: P1 %s | P2 %s\nCurrent Turn AI: %s" % [p1_type, p2_type, current_type]
+
+
+func _explanation_text() -> String:
+	if AppState.last_action_explanation.summary == "":
+		if _current_player_supports_minimax():
+			return "AI Explanation: Minimax is ready for the current player."
+		return "AI Explanation: Current player is configured for MCTS. That arrives in Phase 6, so use manual controls or Reset for more Minimax checks."
+
+	var metrics: Dictionary = AppState.last_action_explanation.metrics
+	return "AI Explanation: %s\nScore %.2f | Depth %s | Nodes %s | %.0f ms" % [
+		AppState.last_action_explanation.summary,
+		AppState.last_action_explanation.score,
+		metrics.get("depth_completed", 0),
+		metrics.get("nodes_searched", 0),
+		metrics.get("elapsed_ms", 0.0),
+	]
+
+
+func _controller_label(controller_type: int) -> String:
+	match controller_type:
+		GameTypes.ControllerType.HUMAN:
+			return "Human"
+		GameTypes.ControllerType.MINIMAX:
+			return "Minimax"
+		GameTypes.ControllerType.MCTS:
+			return "MCTS"
 		_:
 			return "Unknown"

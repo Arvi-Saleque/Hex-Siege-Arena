@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 4: Map presets and gameplay content
+- Phase 5: Minimax AI
 
 ## Completed Items
 
@@ -81,15 +81,34 @@
   - `fortress`
 - Added Reset support in the match scene so the current configured map can be reloaded quickly during testing
 - Improved hit-cell event text so revealed power tiles are visible in the log
+- Added the first AI module:
+  - `MinimaxAI`
+  - alpha-beta pruning
+  - iterative deepening
+  - move ordering
+  - heuristic evaluation
+  - explanation output
+- Added simulation-friendly helpers on `GameState`:
+  - `simulate_action`
+  - `get_state_hash`
+  - current-player AI config lookup
+- Added `AI Move` support in the match scene for Minimax-configured turns
+- Added AI explanation text in the match sidebar with:
+  - summary
+  - score
+  - depth
+  - nodes searched
+  - elapsed time
+- Updated the main menu copy so the current build phase is no longer stale
 
 ## Next Items
 
-- Verify Phase 4 preset loading and reset flow inside Godot
-- Start Phase 5:
-  - Minimax search core
-  - heuristic evaluation
-  - move ordering and pruning
-  - AI explanation output
+- Verify Phase 5 Minimax behavior inside Godot
+- Start Phase 6:
+  - MCTS search core
+  - rollout policy
+  - iteration/time controls
+  - MCTS explanation output
 
 ## User Check List
 
@@ -97,23 +116,31 @@
 - Confirm it imports without parse errors
 - Run the project
 - Confirm it opens into the menu screen
+- Confirm the menu subtitle/summary reflects the current prototype phase
 - Open the match scene from the menu
-- Confirm the sidebar now shows the map name and map description
-- Confirm the standard map still loads with the expected terrain around the center
-- Click `Reset` and confirm the whole match returns to its starting positions and starting terrain
-- Destroy the purple power block and confirm the event log shows which power tile was revealed
-- Confirm move/attack/pass behavior still works after one or more resets
+- Confirm the sidebar shows:
+  - map info
+  - controller info
+  - AI explanation text
+- On Player 1's turn, click `AI Move` and confirm:
+  - a legal action is chosen
+  - the event log updates
+  - the explanation text updates with score/depth/nodes
+- Reset the match and try `AI Move` several times to confirm Minimax behaves consistently
+- Create an obvious center-rush or obvious attack opportunity and confirm Minimax prefers the strong move
+- Confirm the `AI Move` button is disabled on Player 2's turn because P2 is still configured for MCTS
+- Confirm manual move/attack/pass still work alongside the new AI button
 - Open the settings placeholder scene from the menu and confirm the back button still returns to the menu
 
 ## Resources Needed Soon
 
 - No final art or audio needed yet
-- For Phase 5, no art is required, but a preferred AI debug wording style would be useful later for the spectator panel
+- For Phase 6, no art is required, but a preferred AI debug wording style would be useful later for the spectator panel
 - For future map polish, exact approved layouts for `standard`, `open`, and `fortress` would help replace the current implementation-ready presets
 
 ## Known Issues
 
 - Godot CLI is not available in this environment, so editor/runtime verification must be done manually inside Godot
 - The match scene is still a debug gameplay scene, not the final polished interface
-- AI is not implemented yet, so current gameplay testing is still manual
+- Only Minimax is implemented so far; Player 2 remains configured for MCTS until Phase 6
 - The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only

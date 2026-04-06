@@ -41,7 +41,7 @@ func _build_layout() -> void:
 	layout.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "Phase 1 foundation build"
+	subtitle.text = "Phase %d prototype build" % AppState.project_phase
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.modulate = Color(0.74, 0.82, 0.92, 1.0)
 	layout.add_child(subtitle)
@@ -50,10 +50,10 @@ func _build_layout() -> void:
 	summary.bbcode_enabled = true
 	summary.fit_content = true
 	summary.scroll_active = false
-	summary.text = "[center]AI-vs-AI is the flagship mode.[/center]\n[center]Phase 1 provides the Godot skeleton, data models, and scene flow.[/center]"
+	summary.text = "[center]AI-vs-AI is the flagship mode.[/center]\n[center]Current build: %s[/center]" % AppState.build_label.replace("-", " ")
 	layout.add_child(summary)
 
-	layout.add_child(_make_button("Open Match Placeholder", _on_open_match_pressed))
+	layout.add_child(_make_button("Open Match Prototype", _on_open_match_pressed))
 	layout.add_child(_make_button("Open Settings Placeholder", _on_open_settings_pressed))
 	layout.add_child(_make_button("Reset Runtime State", _on_reset_state_pressed))
 
@@ -76,4 +76,4 @@ func _on_open_settings_pressed() -> void:
 
 func _on_reset_state_pressed() -> void:
 	AppState.reset_runtime_state()
-	EventBus.publish_status("Runtime state reset for Phase 1 verification.")
+	EventBus.publish_status("Runtime state reset for the current prototype phase.")
