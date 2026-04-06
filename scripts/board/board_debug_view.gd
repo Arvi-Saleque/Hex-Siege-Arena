@@ -38,7 +38,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _draw() -> void:
 	for cell: CellData in board_state.cells.values():
 		var center := cell.coord.to_world_flat(hex_size)
-		var fill := COLOR_BY_TYPE.get(cell.cell_type, Color.DIM_GRAY)
+		var fill: Color = COLOR_BY_TYPE.get(cell.cell_type, Color.DIM_GRAY)
 		if cell.coord.key() == hovered_key:
 			fill = fill.lerp(Color.WHITE, 0.18)
 		if cell.coord.key() == selected_key:
@@ -46,7 +46,7 @@ func _draw() -> void:
 
 		var points := _hex_points(center)
 		draw_colored_polygon(points, fill)
-		var outline := points.duplicate()
+		var outline: PackedVector2Array = points.duplicate()
 		outline.append(points[0])
 		draw_polyline(outline, Color("0f131a"), 2.0, true)
 
