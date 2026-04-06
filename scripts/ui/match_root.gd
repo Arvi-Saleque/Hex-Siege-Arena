@@ -48,7 +48,7 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Phase 5 Minimax AI"
+	title.text = "Phase 6 Dual AI Prototype"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
@@ -164,7 +164,7 @@ func _build_layout() -> void:
 	utility_row.add_child(_reset_button)
 
 	var legend = Label.new()
-	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use AI Move when the current player is Minimax\n5. Use Reset to restart the current map\n\nQtank = triangle marker\nKtank = circle marker\nBlue = Player 1\nRed = Player 2"
+	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use AI Move for the current player when that side is AI-controlled\n5. Use Reset to restart the current map\n\nQtank = triangle marker\nKtank = circle marker\nBlue = Player 1\nRed = Player 2"
 	legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(legend)
 
@@ -282,7 +282,7 @@ func _update_button_state() -> void:
 	_attack_button.disabled = not can_act
 	_pass_button.disabled = _game_state.game_over
 	_reset_button.disabled = false
-	_ai_move_button.disabled = _game_state.game_over or not _current_player_supports_minimax()
+	_ai_move_button.disabled = _game_state.game_over or _current_player_controller_type() == GameTypes.ControllerType.HUMAN
 
 
 func _on_board_cell_clicked(coord_key: String) -> void:
@@ -357,12 +357,12 @@ func _on_reset_pressed() -> void:
 
 
 func _on_ai_move_pressed() -> void:
-	if not _current_player_supports_minimax():
+	var controller_type: int = _current_player_controller_type()
+	if controller_type == GameTypes.ControllerType.HUMAN:
 		return
 
 	var config: AIConfig = _game_state.get_ai_config_for_player(_game_state.current_player).clone()
-	var minimax: MinimaxAI = MinimaxAI.new()
-	var result: Dictionary = minimax.choose_action(_game_state, config)
+	var result: Dictionary = _choose_ai_action(controller_type, config)
 	var action: ActionData = result.get("action", ActionData.new(GameTypes.ActionType.PASS))
 	var explanation: ActionExplanation = result.get("explanation", ActionExplanation.new())
 	AppState.last_action_explanation = explanation
@@ -430,8 +430,23 @@ func _cell_type_label(cell_type: int) -> String:
 			return "Unknown"
 
 
-func _current_player_supports_minimax() -> bool:
-	return _game_state.get_ai_config_for_player(_game_state.current_player).controller_type == GameTypes.ControllerType.MINIMAX
+func _current_player_controller_type() -> int:
+	return _game_state.get_ai_config_for_player(_game_state.current_player).controller_type
+
+
+func _choose_ai_action(controller_type: int, config: AIConfig) -> Dictionary:
+	match controller_type:
+		GameTypes.ControllerType.MINIMAX:
+			var minimax: MinimaxAI = MinimaxAI.new()
+			return minimax.choose_action(_game_state, config)
+		GameTypes.ControllerType.MCTS:
+			var mcts: MctsAI = MctsAI.new()
+			return mcts.choose_action(_game_state, config)
+		_:
+			return {
+				"action": ActionData.new(GameTypes.ActionType.PASS),
+				"explanation": ActionExplanation.new("", "No AI controller available for this player.", 0.0),
+			}
 
 
 func _ai_status_text() -> String:
@@ -443,11 +458,24 @@ func _ai_status_text() -> String:
 
 func _explanation_text() -> String:
 	if AppState.last_action_explanation.summary == "":
-		if _current_player_supports_minimax():
-			return "AI Explanation: Minimax is ready for the current player."
-		return "AI Explanation: Current player is configured for MCTS. That arrives in Phase 6, so use manual controls or Reset for more Minimax checks."
+		match _current_player_controller_type():
+			GameTypes.ControllerType.MINIMAX:
+				return "AI Explanation: Minimax is ready for the current player."
+			GameTypes.ControllerType.MCTS:
+				return "AI Explanation: MCTS is ready for the current player."
+			_:
+				return "AI Explanation: Current player is human-controlled."
 
 	var metrics: Dictionary = AppState.last_action_explanation.metrics
+	if str(AppState.last_action_explanation.summary).begins_with("MCTS"):
+		return "AI Explanation: %s\nScore %.2f | Iterations %s | Rollouts %s | %.0f ms" % [
+			AppState.last_action_explanation.summary,
+			AppState.last_action_explanation.score,
+			metrics.get("iterations", 0),
+			metrics.get("rollouts", 0),
+			metrics.get("elapsed_ms", 0.0),
+		]
+
 	return "AI Explanation: %s\nScore %.2f | Depth %s | Nodes %s | %.0f ms" % [
 		AppState.last_action_explanation.summary,
 		AppState.last_action_explanation.score,

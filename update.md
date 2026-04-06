@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 5: Minimax AI
+- Phase 6: MCTS AI
 
 ## Completed Items
 
@@ -100,15 +100,32 @@
   - nodes searched
   - elapsed time
 - Updated the main menu copy so the current build phase is no longer stale
+- Added the second AI module:
+  - `MctsAI`
+  - selection
+  - expansion
+  - simulation
+  - backpropagation
+  - UCT scoring
+  - rollout bias toward center pressure, buffs, and tactical hits
+- Upgraded `AI Move` so it now dispatches by controller type:
+  - Minimax
+  - MCTS
+  - Human-disabled
+- Added MCTS-specific explanation output in the match sidebar with:
+  - score
+  - iterations
+  - rollouts
+  - elapsed time
 
 ## Next Items
 
-- Verify Phase 5 Minimax behavior inside Godot
-- Start Phase 6:
-  - MCTS search core
-  - rollout policy
-  - iteration/time controls
-  - MCTS explanation output
+- Verify Phase 6 MCTS behavior inside Godot
+- Start Phase 7:
+  - AI-vs-AI flow controls
+  - autoplay
+  - step/pause/speed controls
+  - richer AI turn inspection
 
 ## User Check List
 
@@ -126,21 +143,25 @@
   - a legal action is chosen
   - the event log updates
   - the explanation text updates with score/depth/nodes
-- Reset the match and try `AI Move` several times to confirm Minimax behaves consistently
-- Create an obvious center-rush or obvious attack opportunity and confirm Minimax prefers the strong move
-- Confirm the `AI Move` button is disabled on Player 2's turn because P2 is still configured for MCTS
-- Confirm manual move/attack/pass still work alongside the new AI button
+- End Player 1's turn, then on Player 2's turn click `AI Move` and confirm:
+  - a legal action is chosen
+  - the explanation text switches to MCTS metrics
+  - iterations/rollouts appear instead of depth/nodes
+- Reset the match and try both turns several times to confirm Minimax and MCTS both behave consistently
+- Create an obvious center-rush or obvious attack opportunity and confirm both AIs avoid clearly weak actions
+- Confirm `AI Move` is disabled only if the current player is set to Human
+- Confirm manual move/attack/pass still work alongside the dual-AI button
 - Open the settings placeholder scene from the menu and confirm the back button still returns to the menu
 
 ## Resources Needed Soon
 
 - No final art or audio needed yet
-- For Phase 6, no art is required, but a preferred AI debug wording style would be useful later for the spectator panel
+- For Phase 7, no art is required, but a preferred AI debug wording style would be useful later for the spectator panel
 - For future map polish, exact approved layouts for `standard`, `open`, and `fortress` would help replace the current implementation-ready presets
 
 ## Known Issues
 
 - Godot CLI is not available in this environment, so editor/runtime verification must be done manually inside Godot
 - The match scene is still a debug gameplay scene, not the final polished interface
-- Only Minimax is implemented so far; Player 2 remains configured for MCTS until Phase 6
+- AI turns are still manual-button driven; autoplay and spectator flow are Phase 7 work
 - The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only
