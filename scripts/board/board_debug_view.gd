@@ -24,11 +24,11 @@ var selected_key: String = ""
 
 func _ready() -> void:
 	board_state.create_phase2_debug_terrain()
-	set_process_unhandled_input(true)
+	set_process_input(true)
 	queue_redraw()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		_update_hover(to_local(event.position))
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
