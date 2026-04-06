@@ -41,8 +41,8 @@ func neighbors() -> Array:
 
 
 func distance_to(other: HexCoord) -> int:
-	var s := -q - r
-	var other_s := -other.q - other.r
+	var s: int = -q - r
+	var other_s: int = -other.q - other.r
 	var dq: int = abs(q - other.q)
 	var dr: int = abs(r - other.r)
 	var ds: int = abs(s - other_s)
@@ -62,14 +62,14 @@ func equals(other: HexCoord) -> bool:
 
 
 func to_world_flat(hex_size: float) -> Vector2:
-	var x := hex_size * 1.5 * float(q)
-	var y := hex_size * SQRT_3 * (float(r) + float(q) * 0.5)
+	var x: float = hex_size * 1.5 * float(q)
+	var y: float = hex_size * SQRT_3 * (float(r) + float(q) * 0.5)
 	return Vector2(x, y)
 
 
 func raycast(direction: int, max_range: int) -> Array:
 	var results: Array[HexCoord] = []
-	var current := clone()
+	var current: HexCoord = clone()
 	for _step in range(max_range):
 		current = current.neighbor(direction)
 		results.append(current)
@@ -77,13 +77,13 @@ func raycast(direction: int, max_range: int) -> Array:
 
 
 static func from_world_flat(world_position: Vector2, hex_size: float) -> HexCoord:
-	var qf := (2.0 / 3.0 * world_position.x) / hex_size
-	var rf := ((-1.0 / 3.0) * world_position.x + (SQRT_3 / 3.0) * world_position.y) / hex_size
+	var qf: float = (2.0 / 3.0 * world_position.x) / hex_size
+	var rf: float = ((-1.0 / 3.0) * world_position.x + (SQRT_3 / 3.0) * world_position.y) / hex_size
 	return HexCoord.round_axial(qf, rf)
 
 
 static func round_axial(qf: float, rf: float) -> HexCoord:
-	var sf := -qf - rf
+	var sf: float = -qf - rf
 	var rq: int = roundi(qf)
 	var rr: int = roundi(rf)
 	var rs: int = roundi(sf)
@@ -103,11 +103,18 @@ static func round_axial(qf: float, rf: float) -> HexCoord:
 static func all_within_rings(rings: int) -> Array:
 	var results: Array[HexCoord] = []
 	for axial_q in range(-rings, rings + 1):
-		var min_r := maxi(-rings, -axial_q - rings)
-		var max_r := mini(rings, -axial_q + rings)
+		var min_r: int = maxi(-rings, -axial_q - rings)
+		var max_r: int = mini(rings, -axial_q + rings)
 		for axial_r in range(min_r, max_r + 1):
 			results.append(HexCoord.new(axial_q, axial_r))
 	return results
+
+
+static func from_key(key_value: String) -> HexCoord:
+	var parts: PackedStringArray = key_value.split(",")
+	if parts.size() != 2:
+		return HexCoord.new()
+	return HexCoord.new(int(parts[0]), int(parts[1]))
 
 
 func _to_string() -> String:

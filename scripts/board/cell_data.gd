@@ -13,6 +13,27 @@ const TYPE_HP := {
 	GameTypes.CellType.POWER_BONUS_MOVE: 0,
 }
 
+const WALKABLE_TYPES := {
+	GameTypes.CellType.EMPTY: true,
+	GameTypes.CellType.CENTER: true,
+	GameTypes.CellType.POWER_ATTACK: true,
+	GameTypes.CellType.POWER_SHIELD: true,
+	GameTypes.CellType.POWER_BONUS_MOVE: true,
+}
+
+const DESTRUCTIBLE_TYPES := {
+	GameTypes.CellType.BLOCK: true,
+	GameTypes.CellType.ARMOR_BLOCK: true,
+	GameTypes.CellType.POWER_BLOCK: true,
+}
+
+const BLOCKS_ATTACK_TYPES := {
+	GameTypes.CellType.WALL: true,
+	GameTypes.CellType.BLOCK: true,
+	GameTypes.CellType.ARMOR_BLOCK: true,
+	GameTypes.CellType.POWER_BLOCK: true,
+}
+
 var coord: HexCoord
 var cell_type: int = GameTypes.CellType.EMPTY
 var hp: int = 0
@@ -35,3 +56,15 @@ func set_type(new_type: int) -> void:
 
 static func get_default_hp_for_type(query_type: int) -> int:
 	return TYPE_HP.get(query_type, 0)
+
+
+func is_walkable() -> bool:
+	return WALKABLE_TYPES.get(cell_type, false)
+
+
+func is_destructible() -> bool:
+	return DESTRUCTIBLE_TYPES.get(cell_type, false)
+
+
+func blocks_attack() -> bool:
+	return BLOCKS_ATTACK_TYPES.get(cell_type, false)

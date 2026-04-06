@@ -20,3 +20,7 @@ func _init(
 	target_coord = p_target_coord if p_target_coord != null else HexCoord.new()
 	direction = p_direction
 	metadata = p_metadata.duplicate(true)
+
+
+func clone() -> ActionData:
+	return ActionData.new(action_type, actor_id, target_coord.clone(), direction, metadata)

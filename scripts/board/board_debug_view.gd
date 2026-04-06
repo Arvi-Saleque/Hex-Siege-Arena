@@ -3,6 +3,7 @@ extends Node2D
 
 signal hovered_cell_changed(summary: String)
 signal selected_cell_changed(summary: String)
+signal cell_clicked(coord_key: String)
 
 const COLOR_BY_TYPE := {
 	GameTypes.CellType.EMPTY: Color("232a37"),
@@ -18,12 +19,16 @@ const COLOR_BY_TYPE := {
 
 var hex_size: float = 34.0
 var board_state: BoardState = BoardState.new()
+var game_state: GameState
 var hovered_key: String = ""
 var selected_key: String = ""
+var selected_actor_id: String = ""
+var highlighted_keys: Dictionary = {}
 
 
 func _ready() -> void:
-	board_state.create_phase2_debug_terrain()
+	if game_state == null:
+		board_state.create_phase2_debug_terrain()
 	set_process_input(true)
 	queue_redraw()
 
@@ -36,45 +41,54 @@ func _input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
-	for cell: CellData in board_state.cells.values():
-		var center := cell.coord.to_world_flat(hex_size)
+	var active_board: BoardState = _active_board()
+	for cell: CellData in active_board.cells.values():
+		var center: Vector2 = cell.coord.to_world_flat(hex_size)
 		var fill: Color = COLOR_BY_TYPE.get(cell.cell_type, Color.DIM_GRAY)
+		if highlighted_keys.has(cell.coord.key()):
+			fill = fill.lerp(highlighted_keys[cell.coord.key()], 0.45)
 		if cell.coord.key() == hovered_key:
 			fill = fill.lerp(Color.WHITE, 0.18)
 		if cell.coord.key() == selected_key:
 			fill = fill.lerp(Color("67f0ff"), 0.35)
 
-		var points := _hex_points(center)
+		var points: PackedVector2Array = _hex_points(center)
 		draw_colored_polygon(points, fill)
 		var outline: PackedVector2Array = points.duplicate()
 		outline.append(points[0])
 		draw_polyline(outline, Color("0f131a"), 2.0, true)
 
+	if game_state != null:
+		_draw_tanks()
+
 
 func _hex_points(center: Vector2) -> PackedVector2Array:
-	var points := PackedVector2Array()
+	var points: PackedVector2Array = PackedVector2Array()
 	for index in range(6):
-		var angle := deg_to_rad(60.0 * index)
+		var angle: float = deg_to_rad(60.0 * index)
 		points.append(center + Vector2(cos(angle), sin(angle)) * hex_size)
 	return points
 
 
 func _update_hover(local_position: Vector2) -> void:
-	var coord := HexCoord.from_world_flat(local_position, hex_size)
-	var new_key := coord.key() if board_state.has_cell(coord) else ""
+	var coord: HexCoord = HexCoord.from_world_flat(local_position, hex_size)
+	var active_board: BoardState = _active_board()
+	var new_key: String = coord.key() if active_board.has_cell(coord) else ""
 	if new_key == hovered_key:
 		return
 	hovered_key = new_key
-	hovered_cell_changed.emit(_build_summary(coord, board_state.get_cell(coord)) if new_key != "" else "Hover: outside board")
+	hovered_cell_changed.emit(_build_summary(coord, active_board.get_cell(coord)) if new_key != "" else "Hover: outside board")
 	queue_redraw()
 
 
 func _select_hex(local_position: Vector2) -> void:
-	var coord := HexCoord.from_world_flat(local_position, hex_size)
-	if not board_state.has_cell(coord):
+	var coord: HexCoord = HexCoord.from_world_flat(local_position, hex_size)
+	var active_board: BoardState = _active_board()
+	if not active_board.has_cell(coord):
 		return
 	selected_key = coord.key()
-	selected_cell_changed.emit(_build_summary(coord, board_state.get_cell(coord)))
+	selected_cell_changed.emit(_build_summary(coord, active_board.get_cell(coord)))
+	cell_clicked.emit(selected_key)
 	queue_redraw()
 
 
@@ -106,3 +120,50 @@ func _type_label(cell_type: int) -> String:
 			return "Power Bonus Move"
 		_:
 			return "Unknown"
+
+
+func set_game_state(new_game_state: GameState) -> void:
+	game_state = new_game_state
+	board_state = game_state.board
+	queue_redraw()
+
+
+func set_selected_actor(actor_id: String) -> void:
+	selected_actor_id = actor_id
+	queue_redraw()
+
+
+func set_highlighted_cells(keys: Dictionary) -> void:
+	highlighted_keys = keys.duplicate(true)
+	queue_redraw()
+
+
+func _active_board() -> BoardState:
+	return game_state.board if game_state != null else board_state
+
+
+func _draw_tanks() -> void:
+	var font: Font = ThemeDB.fallback_font
+	for tank: TankData in game_state.get_all_tanks():
+		if not tank.is_alive():
+			continue
+		var center: Vector2 = tank.position.to_world_flat(hex_size)
+		var player_color: Color = Color("72a7ff") if tank.owner_id == 1 else Color("ff6978")
+		if tank.actor_id() == selected_actor_id:
+			draw_circle(center, 18.0, player_color.lerp(Color.WHITE, 0.3))
+		else:
+			draw_circle(center, 15.0, player_color)
+
+		if tank.tank_type == GameTypes.TankType.QTANK:
+			var triangle: PackedVector2Array = PackedVector2Array([
+				center + Vector2(0, -10),
+				center + Vector2(9, 8),
+				center + Vector2(-9, 8),
+			])
+			draw_colored_polygon(triangle, Color("141821"))
+		else:
+			draw_circle(center, 8.0, Color("141821"))
+
+		if font != null:
+			var label: String = "Q" if tank.tank_type == GameTypes.TankType.QTANK else "K"
+			draw_string(font, center + Vector2(-6, 24), "%s%d" % [label, tank.owner_id], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, Color.WHITE)

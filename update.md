@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 2: Hex grid and board foundation
+- Phase 3: Rules engine and turn economy
 
 ## Completed Items
 
@@ -39,17 +39,42 @@
   - Phase 2 debug terrain
 - Added clickable board debug rendering inside the match scene
 - Added hover and selected tile summaries in the match sidebar
+- Added `GameState` as the first headless gameplay simulation layer
+- Added default unit setup:
+  - P1 Qtank
+  - P1 Ktank
+  - P2 Qtank
+  - P2 Ktank
+- Added movement and attack rules for Qtank and Ktank
+- Added buff handling:
+  - attack multiplier
+  - shield buffer
+  - bonus move
+- Added turn logic:
+  - one action per turn
+  - pass action
+  - bonus extra action
+- Added win and draw protection:
+  - instant center win
+  - Ktank destruction win
+  - turn cap
+  - repetition tracking
+- Upgraded the match scene into a manual gameplay test scene with:
+  - tank rendering
+  - current player state
+  - selected tank info
+  - Move / Attack / Pass buttons
+  - action highlights
+  - event log
 
 ## Next Items
 
-- Finish Phase 2 verification feedback from Godot editor
-- Start Phase 3:
-  - units
-  - legal actions
-  - attacks
-  - buffs
-  - one-action economy
-  - win and draw rules
+- Finish Phase 3 verification feedback from Godot editor
+- Start Phase 4:
+  - standard map preset
+  - content-driven map setup
+  - power block reveal behavior
+  - map metadata for later UI and AI use
 
 ## User Check List
 
@@ -62,17 +87,30 @@
 - Move the mouse across the board and confirm hover text changes
 - Click several tiles and confirm the selected tile summary updates
 - Confirm the different placeholder terrain colors appear
+- Click a blue tank on Player 1's turn and confirm it becomes the selected tank
+- Press `Move` and confirm legal move targets turn green
+- Move a tank and confirm:
+  - the turn changes
+  - the event log updates
+- Select a tank and press `Attack` and confirm:
+  - attack targets turn red
+  - Qtank fires in a straight line
+  - Ktank hits adjacent cells
+- Move onto a power tile and confirm the event log reports the pickup
+- Confirm `Pass` ends the turn
+- Confirm center capture by Ktank ends the match immediately
 - Open the settings placeholder scene from the menu
 - Confirm the back buttons return to the menu
 
 ## Resources Needed Soon
 
 - No final art or audio needed yet
-- For Phase 3, no external resources are required
 - For Phase 4, it will help to confirm the preferred standard map layout if you want it to match the earlier docs exactly
+- For Phase 5, no art is required, but a preferred AI debug wording style would be useful later for the spectator panel
 
 ## Known Issues
 
 - Godot CLI is not available in this environment, so editor/runtime verification must be done manually inside Godot
-- The current match scene is still a debug board, not full gameplay
-- Tactical rules and unit actions are not implemented yet
+- The match scene is still a debug gameplay scene, not the final polished interface
+- AI is not implemented yet, so Phase 3 is manual testing only
+- Power blocks currently reveal a placeholder attack power when destroyed; Phase 4 will refine this into map/content-driven behavior
