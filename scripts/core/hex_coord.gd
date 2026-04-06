@@ -2,7 +2,7 @@ class_name HexCoord
 extends RefCounted
 
 const SQRT_3 := 1.7320508075688772
-const DIRECTIONS := [
+const DIRECTIONS: Array[Vector2i] = [
 	Vector2i(1, 0),
 	Vector2i(1, -1),
 	Vector2i(0, -1),
@@ -29,12 +29,12 @@ func add(other: HexCoord) -> HexCoord:
 
 
 func neighbor(direction: int) -> HexCoord:
-	var vector := DIRECTIONS[wrapi(direction, 0, DIRECTIONS.size())]
+	var vector: Vector2i = DIRECTIONS[wrapi(direction, 0, DIRECTIONS.size())]
 	return HexCoord.new(q + vector.x, r + vector.y)
 
 
 func neighbors() -> Array:
-	var results := []
+	var results: Array[HexCoord] = []
 	for direction in range(DIRECTIONS.size()):
 		results.append(neighbor(direction))
 	return results
@@ -43,9 +43,9 @@ func neighbors() -> Array:
 func distance_to(other: HexCoord) -> int:
 	var s := -q - r
 	var other_s := -other.q - other.r
-	var dq := abs(q - other.q)
-	var dr := abs(r - other.r)
-	var ds := abs(s - other_s)
+	var dq: int = abs(q - other.q)
+	var dr: int = abs(r - other.r)
+	var ds: int = abs(s - other_s)
 	return maxi(maxi(dq, dr), ds)
 
 
@@ -68,7 +68,7 @@ func to_world_flat(hex_size: float) -> Vector2:
 
 
 func raycast(direction: int, max_range: int) -> Array:
-	var results := []
+	var results: Array[HexCoord] = []
 	var current := clone()
 	for _step in range(max_range):
 		current = current.neighbor(direction)
@@ -84,13 +84,13 @@ static func from_world_flat(world_position: Vector2, hex_size: float) -> HexCoor
 
 static func round_axial(qf: float, rf: float) -> HexCoord:
 	var sf := -qf - rf
-	var rq := roundi(qf)
-	var rr := roundi(rf)
-	var rs := roundi(sf)
+	var rq: int = roundi(qf)
+	var rr: int = roundi(rf)
+	var rs: int = roundi(sf)
 
-	var q_diff := abs(rq - qf)
-	var r_diff := abs(rr - rf)
-	var s_diff := abs(rs - sf)
+	var q_diff: float = abs(rq - qf)
+	var r_diff: float = abs(rr - rf)
+	var s_diff: float = abs(rs - sf)
 
 	if q_diff > r_diff and q_diff > s_diff:
 		rq = -rr - rs
@@ -101,7 +101,7 @@ static func round_axial(qf: float, rf: float) -> HexCoord:
 
 
 static func all_within_rings(rings: int) -> Array:
-	var results := []
+	var results: Array[HexCoord] = []
 	for axial_q in range(-rings, rings + 1):
 		var min_r := maxi(-rings, -axial_q - rings)
 		var max_r := mini(rings, -axial_q + rings)
