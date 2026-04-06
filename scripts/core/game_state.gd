@@ -11,32 +11,44 @@ var actions_remaining_in_turn: int = 1
 var max_turns: int = 80
 var last_events: Array[GameEvent] = []
 var repetition_counts: Dictionary = {}
+var map_preset: MapPreset
 
 
 func _init(config: MatchConfig = null) -> void:
 	var match_config: MatchConfig = config if config != null else MatchConfig.new()
-	board = BoardState.new(match_config.board_rings)
-	board.create_phase2_debug_terrain()
+	map_preset = MapLibrary.get_preset(match_config.map_id)
+	board = BoardState.new(map_preset.rings)
+	board.load_map_preset(map_preset)
 	max_turns = match_config.max_turns
-	_setup_default_tanks()
+	_setup_tanks_from_preset()
 	_register_state_hash()
 
 
-func _setup_default_tanks() -> void:
+func _setup_tanks_from_preset() -> void:
 	tanks.clear()
-	_add_tank(TankData.create_default_qtank(1, HexCoord.new(-5, 5)))
-	_add_tank(TankData.create_default_ktank(1, HexCoord.new(0, 5)))
-	_add_tank(TankData.create_default_qtank(2, HexCoord.new(5, -5)))
-	_add_tank(TankData.create_default_ktank(2, HexCoord.new(0, -5)))
+	_add_tank(TankData.create_default_qtank(1, _spawn_coord_for(1, GameTypes.TankType.QTANK)))
+	_add_tank(TankData.create_default_ktank(1, _spawn_coord_for(1, GameTypes.TankType.KTANK)))
+	_add_tank(TankData.create_default_qtank(2, _spawn_coord_for(2, GameTypes.TankType.QTANK)))
+	_add_tank(TankData.create_default_ktank(2, _spawn_coord_for(2, GameTypes.TankType.KTANK)))
 
 
 func _add_tank(tank: TankData) -> void:
 	tanks[tank.actor_id()] = tank
 
 
+func _spawn_coord_for(player_id: int, tank_type: int) -> HexCoord:
+	var spawn_coord: HexCoord = map_preset.get_spawn_coord(player_id, tank_type)
+	if spawn_coord != null:
+		return spawn_coord
+	if player_id == 1:
+		return HexCoord.new(-5, 5) if tank_type == GameTypes.TankType.QTANK else HexCoord.new(0, 5)
+	return HexCoord.new(5, -5) if tank_type == GameTypes.TankType.QTANK else HexCoord.new(0, -5)
+
+
 func clone() -> GameState:
 	var duplicate: GameState = GameState.new()
 	duplicate.board = board.clone()
+	duplicate.map_preset = map_preset
 	duplicate.tanks.clear()
 	for actor_id: String in tanks.keys():
 		duplicate.tanks[actor_id] = (tanks[actor_id] as TankData).clone()

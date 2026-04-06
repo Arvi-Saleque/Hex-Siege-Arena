@@ -4,8 +4,8 @@ const DEFAULT_MATCH_SCENE := "res://scenes/match/match_root.tscn"
 const DEFAULT_MENU_SCENE := "res://scenes/menu/main_menu.tscn"
 const DEFAULT_SETTINGS_SCENE := "res://scenes/settings/settings_root.tscn"
 
-var project_phase: int = 1
-var build_label: String = "phase1-foundation"
+var project_phase: int = 4
+var build_label: String = "phase4-map-content"
 var current_match_config: MatchConfig = MatchConfig.new()
 var current_replay: ReplayRecord = ReplayRecord.new()
 var last_action_explanation: ActionExplanation = ActionExplanation.new()

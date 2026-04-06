@@ -5,6 +5,10 @@ const DEFAULT_RINGS := 5
 
 var rings: int = DEFAULT_RINGS
 var cells: Dictionary = {}
+var map_id: String = "standard"
+var map_display_name: String = "Standard Arena"
+var map_description: String = ""
+var power_block_reveals: Dictionary = {}
 
 
 func _init(p_rings: int = DEFAULT_RINGS) -> void:
@@ -14,6 +18,7 @@ func _init(p_rings: int = DEFAULT_RINGS) -> void:
 
 func generate_empty_board() -> void:
 	cells.clear()
+	power_block_reveals.clear()
 	for coord: HexCoord in HexCoord.all_within_rings(rings):
 		var cell_type: int = GameTypes.CellType.CENTER if coord.q == 0 and coord.r == 0 else GameTypes.CellType.EMPTY
 		set_cell(CellData.new(coord, cell_type))
@@ -57,14 +62,19 @@ func set_cell_type(coord: HexCoord, cell_type: int) -> void:
 		cell.set_type(cell_type)
 
 
-func create_phase2_debug_terrain() -> void:
-	set_cell_type(HexCoord.new(1, 0), GameTypes.CellType.WALL)
-	set_cell_type(HexCoord.new(-1, 0), GameTypes.CellType.BLOCK)
-	set_cell_type(HexCoord.new(0, -1), GameTypes.CellType.ARMOR_BLOCK)
-	set_cell_type(HexCoord.new(0, 1), GameTypes.CellType.POWER_BLOCK)
-	set_cell_type(HexCoord.new(2, -1), GameTypes.CellType.POWER_ATTACK)
-	set_cell_type(HexCoord.new(-2, 1), GameTypes.CellType.POWER_SHIELD)
-	set_cell_type(HexCoord.new(1, -2), GameTypes.CellType.POWER_BONUS_MOVE)
+func load_map_preset(preset: MapPreset) -> void:
+	rings = preset.rings
+	map_id = preset.map_id
+	map_display_name = preset.display_name
+	map_description = preset.description
+	generate_empty_board()
+
+	for entry: Dictionary in preset.terrain_entries:
+		var coord: HexCoord = HexCoord.from_key(entry.get("coord", "0,0"))
+		var cell_type: int = entry.get("type", GameTypes.CellType.EMPTY)
+		set_cell_type(coord, cell_type)
+		if cell_type == GameTypes.CellType.POWER_BLOCK:
+			power_block_reveals[coord.key()] = entry.get("reveal_type", GameTypes.CellType.POWER_ATTACK)
 
 
 func apply_damage(coord: HexCoord, amount: int) -> Dictionary:
@@ -78,8 +88,9 @@ func apply_damage(coord: HexCoord, amount: int) -> Dictionary:
 
 	var revealed_type: int = -1
 	if cell.cell_type == GameTypes.CellType.POWER_BLOCK:
-		revealed_type = GameTypes.CellType.POWER_ATTACK
+		revealed_type = power_block_reveals.get(coord.key(), GameTypes.CellType.POWER_ATTACK)
 		cell.set_type(revealed_type)
+		power_block_reveals.erase(coord.key())
 	else:
 		cell.set_type(GameTypes.CellType.EMPTY)
 
@@ -91,4 +102,8 @@ func clone() -> BoardState:
 	duplicate.cells.clear()
 	for key: String in cells.keys():
 		duplicate.cells[key] = (cells[key] as CellData).clone()
+	duplicate.map_id = map_id
+	duplicate.map_display_name = map_display_name
+	duplicate.map_description = map_description
+	duplicate.power_block_reveals = power_block_reveals.duplicate(true)
 	return duplicate

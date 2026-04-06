@@ -10,16 +10,18 @@ var _turn_label: Label
 var _status_label: Label
 var _mode_label: Label
 var _selected_actor_label: Label
+var _map_label: Label
 var _event_log: RichTextLabel
 var _move_button: Button
 var _attack_button: Button
 var _pass_button: Button
+var _reset_button: Button
 var _action_mode: String = ""
 var _selected_actor_id: String = ""
 
 
 func _ready() -> void:
-	_game_state = GameState.new(AppState.current_match_config)
+	_reset_match()
 	_build_layout()
 	_refresh_view()
 
@@ -43,7 +45,7 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Phase 3 Rules Engine"
+	title.text = "Phase 4 Map Presets"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
@@ -95,6 +97,10 @@ func _build_layout() -> void:
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(_status_label)
 
+	_map_label = Label.new()
+	_map_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sidebar_layout.add_child(_map_label)
+
 	_mode_label = Label.new()
 	sidebar_layout.add_child(_mode_label)
 
@@ -134,8 +140,14 @@ func _build_layout() -> void:
 	_pass_button.pressed.connect(_on_pass_pressed)
 	action_row.add_child(_pass_button)
 
+	_reset_button = Button.new()
+	_reset_button.text = "Reset"
+	_reset_button.custom_minimum_size = Vector2(96, 44)
+	_reset_button.pressed.connect(_on_reset_pressed)
+	action_row.add_child(_reset_button)
+
 	var legend = Label.new()
-	legend.text = "Testing flow:\n1. Click your tank\n2. Choose Move or Attack\n3. Click a highlighted target\n\nQtank = triangle marker\nKtank = circle marker\nBlue = Player 1\nRed = Player 2"
+	legend.text = "Testing flow:\n1. Click your tank\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use Reset to restart the current map\n\nQtank = triangle marker\nKtank = circle marker\nBlue = Player 1\nRed = Player 2"
 	legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(legend)
 
@@ -159,6 +171,7 @@ func _refresh_view() -> void:
 		_game_state.current_player,
 		_game_state.actions_remaining_in_turn,
 	]
+	_map_label.text = "Map: %s\n%s" % [_game_state.board.map_display_name, _game_state.board.map_description]
 
 	if _game_state.game_over:
 		_status_label.text = "Game Over: %s" % (_winner_label())
@@ -213,7 +226,11 @@ func _format_event(event_item: GameEvent) -> String:
 		"hit_tank":
 			return "Hit Tank: %s took %s at %s" % [event_item.payload.get("target", ""), event_item.payload.get("damage", 0), event_item.payload.get("coord", "")]
 		"hit_cell":
-			return "Hit Cell: %s dmg=%s destroyed=%s" % [event_item.payload.get("coord", ""), event_item.payload.get("damage", 0), event_item.payload.get("destroyed", false)]
+			var reveal_text: String = ""
+			var revealed_type: int = event_item.payload.get("revealed_type", -1)
+			if revealed_type != -1:
+				reveal_text = " reveal=%s" % _cell_type_label(revealed_type)
+			return "Hit Cell: %s dmg=%s destroyed=%s%s" % [event_item.payload.get("coord", ""), event_item.payload.get("damage", 0), event_item.payload.get("destroyed", false), reveal_text]
 		"power_up":
 			return "Power-Up: %s gained %s" % [event_item.payload.get("actor_id", ""), event_item.payload.get("buff", "")]
 		"extra_action_granted":
@@ -241,6 +258,7 @@ func _update_button_state() -> void:
 	_move_button.disabled = not can_act
 	_attack_button.disabled = not can_act
 	_pass_button.disabled = _game_state.game_over
+	_reset_button.disabled = false
 
 
 func _on_board_cell_clicked(coord_key: String) -> void:
@@ -309,6 +327,17 @@ func _on_pass_pressed() -> void:
 	_refresh_view()
 
 
+func _on_reset_pressed() -> void:
+	_reset_match()
+	_refresh_view()
+
+
+func _reset_match() -> void:
+	_game_state = GameState.new(AppState.current_match_config.clone())
+	_action_mode = ""
+	_selected_actor_id = ""
+
+
 func _winner_label() -> String:
 	if _game_state.winner == 0:
 		return "Draw"
@@ -335,3 +364,27 @@ func _on_hover_summary_changed(summary: String) -> void:
 
 func _on_selected_summary_changed(summary: String) -> void:
 	_selected_label.text = "Selected Tile: %s" % summary
+
+
+func _cell_type_label(cell_type: int) -> String:
+	match cell_type:
+		GameTypes.CellType.EMPTY:
+			return "Empty"
+		GameTypes.CellType.CENTER:
+			return "Center"
+		GameTypes.CellType.WALL:
+			return "Wall"
+		GameTypes.CellType.BLOCK:
+			return "Block"
+		GameTypes.CellType.ARMOR_BLOCK:
+			return "Armor Block"
+		GameTypes.CellType.POWER_BLOCK:
+			return "Power Block"
+		GameTypes.CellType.POWER_ATTACK:
+			return "Power Attack"
+		GameTypes.CellType.POWER_SHIELD:
+			return "Power Shield"
+		GameTypes.CellType.POWER_BONUS_MOVE:
+			return "Power Bonus Move"
+		_:
+			return "Unknown"

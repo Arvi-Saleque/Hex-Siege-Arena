@@ -28,7 +28,7 @@ var highlighted_keys: Dictionary = {}
 
 func _ready() -> void:
 	if game_state == null:
-		board_state.create_phase2_debug_terrain()
+		board_state.load_map_preset(MapLibrary.get_preset("standard"))
 	set_process_input(true)
 	queue_redraw()
 

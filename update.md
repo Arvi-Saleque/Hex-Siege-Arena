@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 3: Rules engine and turn economy
+- Phase 4: Map presets and gameplay content
 
 ## Completed Items
 
@@ -66,15 +66,30 @@
   - Move / Attack / Pass buttons
   - action highlights
   - event log
+- Added data-driven map content support:
+  - `MapPreset`
+  - `MapLibrary`
+- Replaced the hardcoded Phase 2 terrain bootstrap with preset loading from `MatchConfig.map_id`
+- Added map metadata on `BoardState`:
+  - map id
+  - display name
+  - description
+  - hidden reveal mapping for power blocks
+- Added three preset definitions:
+  - `standard`
+  - `open`
+  - `fortress`
+- Added Reset support in the match scene so the current configured map can be reloaded quickly during testing
+- Improved hit-cell event text so revealed power tiles are visible in the log
 
 ## Next Items
 
-- Finish Phase 3 verification feedback from Godot editor
-- Start Phase 4:
-  - standard map preset
-  - content-driven map setup
-  - power block reveal behavior
-  - map metadata for later UI and AI use
+- Verify Phase 4 preset loading and reset flow inside Godot
+- Start Phase 5:
+  - Minimax search core
+  - heuristic evaluation
+  - move ordering and pruning
+  - AI explanation output
 
 ## User Check List
 
@@ -82,35 +97,23 @@
 - Confirm it imports without parse errors
 - Run the project
 - Confirm it opens into the menu screen
-- Open the match placeholder scene from the menu
-- Confirm the hex board appears in the match scene
-- Move the mouse across the board and confirm hover text changes
-- Click several tiles and confirm the selected tile summary updates
-- Confirm the different placeholder terrain colors appear
-- Click a blue tank on Player 1's turn and confirm it becomes the selected tank
-- Press `Move` and confirm legal move targets turn green
-- Move a tank and confirm:
-  - the turn changes
-  - the event log updates
-- Select a tank and press `Attack` and confirm:
-  - attack targets turn red
-  - Qtank fires in a straight line
-  - Ktank hits adjacent cells
-- Move onto a power tile and confirm the event log reports the pickup
-- Confirm `Pass` ends the turn
-- Confirm center capture by Ktank ends the match immediately
-- Open the settings placeholder scene from the menu
-- Confirm the back buttons return to the menu
+- Open the match scene from the menu
+- Confirm the sidebar now shows the map name and map description
+- Confirm the standard map still loads with the expected terrain around the center
+- Click `Reset` and confirm the whole match returns to its starting positions and starting terrain
+- Destroy the purple power block and confirm the event log shows which power tile was revealed
+- Confirm move/attack/pass behavior still works after one or more resets
+- Open the settings placeholder scene from the menu and confirm the back button still returns to the menu
 
 ## Resources Needed Soon
 
 - No final art or audio needed yet
-- For Phase 4, it will help to confirm the preferred standard map layout if you want it to match the earlier docs exactly
 - For Phase 5, no art is required, but a preferred AI debug wording style would be useful later for the spectator panel
+- For future map polish, exact approved layouts for `standard`, `open`, and `fortress` would help replace the current implementation-ready presets
 
 ## Known Issues
 
 - Godot CLI is not available in this environment, so editor/runtime verification must be done manually inside Godot
 - The match scene is still a debug gameplay scene, not the final polished interface
-- AI is not implemented yet, so Phase 3 is manual testing only
-- Power blocks currently reveal a placeholder attack power when destroyed; Phase 4 will refine this into map/content-driven behavior
+- AI is not implemented yet, so current gameplay testing is still manual
+- The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only
