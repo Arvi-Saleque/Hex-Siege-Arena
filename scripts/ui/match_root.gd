@@ -18,17 +18,9 @@ const COLOR_GREEN := Color("69dd8e")
 const COLOR_ATTACK := Color("ff9272")
 const COLOR_P1 := Color("77b8ff")
 const COLOR_P2 := Color("ff8a76")
-const MODEL_PATHS := {
-	"1_0": "res://assets/art/tanks/p1_qtank.glb",
-	"1_1": "res://assets/art/tanks/p1_ktank.glb",
-	"2_0": "res://assets/art/tanks/p2_qtank.glb",
-	"2_1": "res://assets/art/tanks/p2_ktank.glb",
-}
-
 var _game_state: GameState
 var _board_view: BoardDebugView
 var _board_holder: Control
-var _selected_model_view: TankModelView
 var _selected_model_name_label: Label
 var _selected_model_role_label: Label
 var _hover_label: Label
@@ -61,9 +53,6 @@ var _speed_button: Button
 var _history_list: ItemList
 var _history_detail_label: Label
 var _autoplay_timer: Timer
-var _roster_panels: Dictionary = {}
-var _roster_model_views: Dictionary = {}
-var _roster_status_labels: Dictionary = {}
 var _action_mode: String = ""
 var _selected_actor_id: String = ""
 var _autoplay_enabled: bool = false
@@ -197,46 +186,6 @@ func _build_layout() -> void:
 	_player_two_label = _make_body_label()
 	p2_vbox.add_child(_player_two_label)
 
-	var roster_shell := _make_panel_card(COLOR_BORDER)
-	left_column.add_child(roster_shell)
-	var roster_shell_margin := _wrap_panel_content(roster_shell, 14, 14)
-	var roster_shell_layout := VBoxContainer.new()
-	roster_shell_layout.add_theme_constant_override("separation", 10)
-	roster_shell_margin.add_child(roster_shell_layout)
-	roster_shell_layout.add_child(_make_section_title("ACTIVE ROSTER"))
-
-	var roster_row := HBoxContainer.new()
-	roster_row.add_theme_constant_override("separation", 12)
-	roster_shell_layout.add_child(roster_row)
-
-	for actor_id: String in ["1_0", "1_1", "2_0", "2_1"]:
-		var roster_card := _make_panel_card(_accent_for_actor(actor_id))
-		roster_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		roster_row.add_child(roster_card)
-		_roster_panels[actor_id] = roster_card
-
-		var roster_margin := _wrap_panel_content(roster_card, 14, 14)
-		var roster_layout := VBoxContainer.new()
-		roster_layout.add_theme_constant_override("separation", 8)
-		roster_margin.add_child(roster_layout)
-
-		var roster_title := Label.new()
-		roster_title.text = _roster_title(actor_id)
-		roster_title.add_theme_font_override("font", FONT_SEMIBOLD)
-		roster_title.add_theme_font_size_override("font_size", 14)
-		roster_layout.add_child(roster_title)
-
-		var model_view := TankModelView.new()
-		model_view.custom_minimum_size = Vector2(0, 116)
-		model_view.set_accent_color(_accent_for_actor(actor_id))
-		model_view.set_model_asset(_model_path_for_actor(actor_id))
-		roster_layout.add_child(model_view)
-		_roster_model_views[actor_id] = model_view
-
-		var roster_status := _make_body_label()
-		roster_layout.add_child(roster_status)
-		_roster_status_labels[actor_id] = roster_status
-
 	var board_panel := _make_panel_card(COLOR_BORDER)
 	board_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -269,7 +218,7 @@ func _build_layout() -> void:
 	_board_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_board_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_board_holder.clip_contents = true
-	_board_holder.custom_minimum_size = Vector2(720, 460)
+	_board_holder.custom_minimum_size = Vector2(720, 560)
 	_board_holder.resized.connect(_on_board_holder_resized)
 	board_layout.add_child(_board_holder)
 
@@ -318,10 +267,6 @@ func _build_layout() -> void:
 	selected_layout.add_theme_constant_override("separation", 10)
 	selected_margin.add_child(selected_layout)
 	selected_layout.add_child(_make_section_title("SELECTED UNIT"))
-
-	_selected_model_view = TankModelView.new()
-	_selected_model_view.custom_minimum_size = Vector2(0, 170)
-	selected_layout.add_child(_selected_model_view)
 
 	_selected_model_name_label = Label.new()
 	_selected_model_name_label.add_theme_font_override("font", FONT_SEMIBOLD)
@@ -606,28 +551,6 @@ func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 	return style
 
 
-func _accent_for_actor(actor_id: String) -> Color:
-	return COLOR_P1 if actor_id.begins_with("1_") else COLOR_P2
-
-
-func _model_path_for_actor(actor_id: String) -> String:
-	return str(MODEL_PATHS.get(actor_id, ""))
-
-
-func _roster_title(actor_id: String) -> String:
-	match actor_id:
-		"1_0":
-			return "P1 Qtank"
-		"1_1":
-			return "P1 Ktank"
-		"2_0":
-			return "P2 Qtank"
-		"2_1":
-			return "P2 Ktank"
-		_:
-			return actor_id
-
-
 func _refresh_view() -> void:
 	_turn_label.text = "Turn %d | Current Player: P%d | Actions Left: %d" % [
 		_game_state.turn_count,
@@ -668,7 +591,7 @@ func _refresh_view() -> void:
 	_board_view.set_selected_actor(_selected_actor_id)
 	_board_view.set_action_mode(_action_mode)
 	_board_view.set_highlighted_cells(_build_highlight_map())
-	_refresh_tank_showcases()
+	_refresh_selected_unit_panel()
 	_recenter_board_view()
 	_refresh_event_log()
 	_refresh_history_panel()
@@ -707,40 +630,15 @@ func _refresh_event_log() -> void:
 	_event_log.text = "\n".join(lines) if not lines.is_empty() else "Event Log: no actions taken yet."
 
 
-func _refresh_tank_showcases() -> void:
-	for actor_id: String in _roster_status_labels.keys():
-		var roster_label: Label = _roster_status_labels[actor_id]
-		var roster_panel: PanelContainer = _roster_panels.get(actor_id) as PanelContainer
-		var tank: TankData = _game_state.get_tank(actor_id)
-		if roster_label == null or roster_panel == null:
-			continue
-
-		var accent: Color = _accent_for_actor(actor_id)
-		var fill_color: Color = COLOR_SURFACE if tank != null and tank.is_alive() else COLOR_SURFACE.darkened(0.18)
-		roster_panel.add_theme_stylebox_override("panel", _panel_style(accent if actor_id != _selected_actor_id else COLOR_GOLD, fill_color))
-
-		if tank == null:
-			roster_label.text = "Destroyed"
-			continue
-
-		var alive_state: String = "Ready" if tank.is_alive() else "Destroyed"
-		roster_label.text = "%s HP | %s%s" % [
-			tank.hp,
-			alive_state,
-			" | Active" if tank.owner_id == _game_state.current_player else "",
-		]
-
+func _refresh_selected_unit_panel() -> void:
 	var focus_tank: TankData = _current_focus_tank()
 	if focus_tank == null:
 		_selected_model_name_label.text = "No active selection"
 		_selected_model_role_label.text = "Choose a unit or inspect the active player."
-		_selected_model_view.set_model_asset("")
 		return
 
 	_selected_model_name_label.text = _unit_card_name(focus_tank)
 	_selected_model_role_label.text = _unit_role_text(focus_tank)
-	_selected_model_view.set_accent_color(COLOR_P1 if focus_tank.owner_id == 1 else COLOR_P2)
-	_selected_model_view.set_model_asset(_model_path_for_actor(focus_tank.actor_id()))
 
 
 func _format_event(event_item: GameEvent) -> String:

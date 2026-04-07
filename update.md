@@ -243,6 +243,11 @@
   - reduced the board holder minimum height so the HUD has room for the roster strip
   - reduced the selected-unit showcase height so more sidebar content fits on screen
   - disabled button focus-jump behavior and reset the sidebar scroll to the top on scene load
+- Reworked the tank presentation toward the board-first reference style:
+  - copied a curated set of PNG hull, track, and gun assets into `assets/art/tanks2d`
+  - replaced the board’s code-drawn tank silhouettes with composited PNG tank sprites rendered directly on the hexes
+  - added simple on-board HP bars beneath the tanks for faster readability
+  - removed the separate roster/showcase treatment from the main game scene so the board is the primary visual focus again
 
 ## Next Items
 

@@ -6,6 +6,32 @@ signal selected_cell_changed(summary: String)
 signal cell_clicked(coord_key: String)
 
 const BOARD_FONT := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-SemiBold.ttf")
+const TANK_SPRITES := {
+	"1_0": {
+		"track": preload("res://assets/art/tanks2d/p1_qtrack.png"),
+		"hull": preload("res://assets/art/tanks2d/p1_qhull.png"),
+		"gun": preload("res://assets/art/tanks2d/p1_qgun.png"),
+		"scale": 0.34,
+	},
+	"1_1": {
+		"track": preload("res://assets/art/tanks2d/p1_ktrack.png"),
+		"hull": preload("res://assets/art/tanks2d/p1_khull.png"),
+		"gun": preload("res://assets/art/tanks2d/p1_kgun.png"),
+		"scale": 0.36,
+	},
+	"2_0": {
+		"track": preload("res://assets/art/tanks2d/p2_qtrack.png"),
+		"hull": preload("res://assets/art/tanks2d/p2_qhull.png"),
+		"gun": preload("res://assets/art/tanks2d/p2_qgun.png"),
+		"scale": 0.34,
+	},
+	"2_1": {
+		"track": preload("res://assets/art/tanks2d/p2_ktrack.png"),
+		"hull": preload("res://assets/art/tanks2d/p2_khull.png"),
+		"gun": preload("res://assets/art/tanks2d/p2_kgun.png"),
+		"scale": 0.36,
+	},
+}
 
 const COLOR_BY_TYPE := {
 	GameTypes.CellType.EMPTY: Color("232a37"),
@@ -388,25 +414,26 @@ func _draw_tanks() -> void:
 		var center: Vector2 = _tile_center(tank_cell) if tank_cell != null else tank.position.to_world_flat(hex_size)
 		var player_color: Color = _player_primary_color(tank.owner_id)
 		var accent_color: Color = _player_accent_color(tank.owner_id)
-		draw_colored_polygon(_ellipse_points(center + Vector2(0, 15), Vector2(18, 8), 20), Color(0.03, 0.05, 0.08, 0.4))
+		draw_colored_polygon(_ellipse_points(center + Vector2(0, 16), Vector2(20, 8), 20), Color(0.03, 0.05, 0.08, 0.4))
 		if tank.owner_id == game_state.current_player:
-			draw_arc(center, 20.0, 0.0, TAU, 40, player_color.lerp(Color.WHITE, 0.2), 2.5, true)
+			draw_arc(center + Vector2(0, 6), 22.0, 0.0, TAU, 40, player_color.lerp(Color.WHITE, 0.2), 2.5, true)
 		if tank.actor_id() == selected_actor_id:
-			draw_circle(center, 19.0, player_color.lerp(Color.WHITE, 0.4))
-		if tank.tank_type == GameTypes.TankType.QTANK:
-			_draw_qtank(center, player_color, accent_color)
-		else:
-			_draw_ktank(center, player_color, accent_color)
+			draw_circle(center + Vector2(0, 6), 20.0, player_color.lerp(Color.WHITE, 0.22))
+		_draw_tank_sprite(center, tank)
 
 		if font != null:
-			var label: String = "Q" if tank.tank_type == GameTypes.TankType.QTANK else "K"
-			draw_string(font, center + Vector2(-9, 26), "%s%d" % [label, tank.owner_id], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, Color.WHITE)
-			draw_string(font, center + Vector2(-10, -23), "%d" % tank.hp, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, Color("f5f7fb"))
+			draw_string(font, center + Vector2(-10, -27), "%d" % tank.hp, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, Color("f5f7fb"))
+			draw_string(font, center + Vector2(-10, 29), "P%d" % tank.owner_id, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, accent_color)
 
 		if tank.active_buff != GameTypes.BuffType.NONE:
 			var buff_color: Color = _buff_color(tank.active_buff)
 			draw_circle(center + Vector2(13, -13), 5.0, buff_color)
 			draw_circle(center + Vector2(13, -13), 2.0, Color("10141c"))
+
+		var bar_width: float = 34.0
+		var bar_origin: Vector2 = center + Vector2(-bar_width * 0.5, 24)
+		draw_rect(Rect2(bar_origin, Vector2(bar_width, 5)), Color(0.05, 0.08, 0.12, 0.85))
+		draw_rect(Rect2(bar_origin + Vector2.ONE, Vector2((bar_width - 2.0) * float(tank.hp) / maxf(float(tank.max_hp), 1.0), 3)), Color("70df6e"))
 
 
 func _draw_effects() -> void:
@@ -521,6 +548,37 @@ func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2A
 			]), Color("c6ffdb"), 2.2, true)
 		_:
 			pass
+
+
+func _draw_tank_sprite(center: Vector2, tank: TankData) -> void:
+	var sprite_set: Dictionary = TANK_SPRITES.get(tank.actor_id(), {})
+	if sprite_set.is_empty():
+		var player_color: Color = _player_primary_color(tank.owner_id)
+		var accent_color: Color = _player_accent_color(tank.owner_id)
+		if tank.tank_type == GameTypes.TankType.QTANK:
+			_draw_qtank(center, player_color, accent_color)
+		else:
+			_draw_ktank(center, player_color, accent_color)
+		return
+
+	var scale_value: float = float(sprite_set.get("scale", 0.34))
+	var track_texture: Texture2D = sprite_set.get("track", null) as Texture2D
+	var hull_texture: Texture2D = sprite_set.get("hull", null) as Texture2D
+	var gun_texture: Texture2D = sprite_set.get("gun", null) as Texture2D
+
+	if track_texture != null:
+		_draw_centered_texture(track_texture, center + Vector2(0, 4), scale_value)
+	if hull_texture != null:
+		_draw_centered_texture(hull_texture, center + Vector2(0, 1), scale_value)
+	if gun_texture != null:
+		_draw_centered_texture(gun_texture, center + Vector2(0, -2), scale_value)
+
+
+func _draw_centered_texture(texture: Texture2D, center: Vector2, scale_value: float) -> void:
+	var texture_size: Vector2 = texture.get_size()
+	var draw_size: Vector2 = texture_size * scale_value
+	var draw_rect_value := Rect2(center - draw_size * 0.5, draw_size)
+	draw_texture_rect(texture, draw_rect_value, false)
 
 
 func _draw_qtank(center: Vector2, player_color: Color, accent_color: Color) -> void:
