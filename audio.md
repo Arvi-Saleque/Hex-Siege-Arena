@@ -1,382 +1,141 @@
-# Audio Asset Specification
+# Remaining Audio To Generate
 
-This file defines the sound assets needed for `Hex Siege Arena` so they can be generated consistently with AI tools.
+These are the sounds I still need after checking:
+- `kenney_ui-audio`
+- `kenney_digital-audio`
+- `kenney_sci-fi-sounds`
 
-The goal is not just to name files, but to describe:
-- what each file is for
-- exactly when it plays
-- how it should feel
-- how long it should be
-- what to avoid
+Those folders already give us good candidates for:
+- UI click / hover / back / confirm / cancel
+- turn change
+- Qtank laser fire and laser impact
+- light/heavy hit sounds
+- shield trigger
+- power-up pickups
+- block / armor impact
+- generic small explosion support
+- light movement placeholders
 
-Use these notes when generating or sourcing audio so the whole game sounds cohesive.
+So this file now contains only the sounds that are still worth generating as custom assets for a more polished result.
 
-## Global Audio Direction
-
-The game should sound like:
-- clean sci-fi tactics
-- readable and responsive
-- not noisy or chaotic
-- polished rather than cinematic overload
-
-Overall style:
-- `Qtank` sounds should feel precise, focused, advanced, and sharp
-- `Ktank` sounds should feel heavier, mechanical, blunt, and powerful
-- `UI` sounds should be soft, short, and refined
-- `Power-up` sounds should feel rewarding and easy to distinguish
-- `Victory/defeat` sounds should be short stings, not long dramatic compositions
-
-General rules:
-- most UI sounds should be `0.05s` to `0.25s`
-- most gameplay action sounds should be `0.15s` to `0.9s`
-- music loops should be subtle and not distract from turn-based play
-- avoid heavy reverb unless the sound is meant to feel dramatic
-- avoid muddy bass that harms clarity
-- avoid harsh clipping, distortion, or long tails
-- every sound should start quickly with minimal silence
-
-Preferred format:
-- `.wav`
-- `44.1kHz` or `48kHz`
-- mono is fine for most SFX
-- stereo is fine for music and bigger weapon effects
-
-## Folder Layout
-
-```text
-assets/
-  audio/
-    ui/
-    gameplay/
-    weapons/
-    powerups/
-    music/
-```
-
-## UI Sounds
-
-### `assets/audio/ui/ui_click.wav`
-- Use: default UI button press
-- Trigger: clicking menu buttons, match buttons, toggle buttons
-- Feel: soft, crisp, modern digital click
-- Duration: `0.05s` to `0.18s`
-- Keywords: `soft UI click`, `clean tap`, `minimal digital button`
-- Avoid: loud arcade coin sounds, chunky keyboard sounds, cartoon pops
-
-### `assets/audio/ui/ui_back.wav`
-- Use: back or return actions
-- Trigger: `Back To Menu`, leaving settings, stepping back in UI flow
-- Feel: gentle reversed or downward confirmation, subtle retreat cue
-- Duration: `0.08s` to `0.22s`
-- Keywords: `soft back button`, `descending digital blip`, `subtle retreat tone`
-- Avoid: harsh buzzes, error-like sounds
-
-### `assets/audio/ui/ui_hover.wav`
-- Use: hover feedback for important buttons or interactive UI
-- Trigger: moving over main menu buttons or future important controls
-- Feel: very light tick or shimmer
-- Duration: `0.03s` to `0.12s`
-- Keywords: `tiny UI hover tick`, `light shimmer`, `subtle menu hover`
-- Avoid: anything louder than click sounds
-
-### `assets/audio/ui/ui_confirm.wav`
-- Use: positive UI confirmation
-- Trigger: accepting a setting, starting a match, successful selection
-- Feel: slightly brighter and more confident than `ui_click.wav`
-- Duration: `0.08s` to `0.22s`
-- Keywords: `short confirm chirp`, `clean positive UI tone`
-- Avoid: long fanfares
-
-### `assets/audio/ui/ui_cancel.wav`
-- Use: canceled selection or unavailable action feedback
-- Trigger: cancel button, optional future invalid selection UX
-- Feel: quiet muted downward blip
-- Duration: `0.06s` to `0.18s`
-- Keywords: `soft cancel blip`, `gentle negative UI tone`
-- Avoid: aggressive error alarms
-
-## Gameplay Sounds
-
-### `assets/audio/gameplay/turn_change.wav`
-- Use: turn handoff feedback
-- Trigger: whenever the active player changes
-- Feel: short neutral tactical pulse, not celebratory
-- Duration: `0.12s` to `0.3s`
-- Keywords: `turn start pulse`, `clean tactical transition`, `light command tone`
-- Avoid: huge sweeps, long chimes
-
-### `assets/audio/gameplay/move_light.wav`
-- Use: Qtank movement
-- Trigger: when a `Qtank` completes a move
-- Feel: light hover-skid or agile mech slide, precise and fast
-- Duration: `0.12s` to `0.35s`
-- Keywords: `light sci-fi glide`, `small mech reposition`, `clean tactical movement`
-- Avoid: heavy tank tread rumble, large explosions
-- AI generation note:
-  Generate a short clean sci-fi movement sound for a light tactical unit. It should feel quick, precise, and agile, like a hovering sniper platform repositioning on a hex board.
+## Remaining Files
 
 ### `assets/audio/gameplay/move_heavy.wav`
 - Use: Ktank movement
-- Trigger: when a `Ktank` completes a move
-- Feel: heavier armored movement, short servo-thump or metal weight shift
+- Trigger: when the heavy Ktank finishes moving
+- Why still needed:
+  The Kenney packs have movement-like sci-fi sounds, but not a really strong short heavy tactical movement cue that feels like a durable armored siege unit.
+- Feel: mechanical, weighty, compact, grounded
 - Duration: `0.18s` to `0.45s`
-- Keywords: `heavy mech step`, `armored weight shift`, `short tank reposition`
-- Avoid: long real-world tank engine loops
-- AI generation note:
-  Generate a short heavy tactical movement sound for a durable siege unit. It should feel mechanical, weighty, and grounded, but still short enough for turn-based play.
+- Keywords: `heavy mech step`, `armored weight shift`, `short siege tank movement`, `metal mass reposition`
+- Avoid: long engine loops, realistic war tank rumble, huge bass tail
+- AI prompt:
+  Generate a short heavy tactical movement sound for a durable siege unit. It should feel mechanical, weighty, and grounded, but still short enough for turn-based play. Clean sci-fi style, polished, readable, no long silence.
 
-### `assets/audio/gameplay/hit_light.wav`
-- Use: lighter hit confirmation
-- Trigger: low-intensity tank impact, especially cleaner laser contact
-- Feel: tight metallic or energy hit tick
-- Duration: `0.06s` to `0.2s`
-- Keywords: `light impact`, `energy hit`, `clean tactical damage cue`
-- Avoid: giant explosion tails
+### `assets/audio/weapons/laser_charge.wav`
+- Use: Qtank attack wind-up
+- Trigger: just before the laser fires
+- Why still needed:
+  We have plenty of laser fire sounds, but not a clean dedicated pre-fire charge that gives the Qtank a stronger identity.
+- Feel: focused energy build-up, precise, advanced, sharp
+- Duration: `0.08s` to `0.22s`
+- Keywords: `laser charge`, `energy warm-up`, `focused sci-fi weapon prep`, `short precision charge`
+- Avoid: long charge loops, giant cannon charging, noisy distortion
+- AI prompt:
+  Generate a short precision laser charge sound for a tactical sniper tank. It should feel focused, high-tech, and dangerous, with a quick energy build-up before firing. Clean sci-fi style, polished, readable, no long silence.
 
-### `assets/audio/gameplay/hit_heavy.wav`
-- Use: stronger impact confirmation
-- Trigger: big hits, especially Ktank blast impact or more dramatic damage moments
-- Feel: heavier thud with sharp attack
-- Duration: `0.12s` to `0.32s`
-- Keywords: `heavy impact`, `armored strike`, `short blast hit`
-- Avoid: long cinematic booms
-
-### `assets/audio/gameplay/tank_destroyed.wav`
-- Use: unit destruction
-- Trigger: when either tank dies
-- Feel: short but satisfying destruction burst with debris/energy collapse feel
-- Duration: `0.35s` to `0.9s`
-- Keywords: `small mech destruction`, `robot explosion`, `compact unit death`
-- Avoid: giant battlefield nuke sound
-- AI generation note:
-  Generate a short tactical unit destruction sound. It should feel impactful and final, with a compact explosion and mechanical breakup, but not as large as a building collapse.
-
-### `assets/audio/gameplay/block_destroyed.wav`
-- Use: destructible normal block destroyed
-- Trigger: when a standard block breaks
-- Feel: small debris crack, stone/metal shard break depending on art direction
-- Duration: `0.15s` to `0.35s`
-- Keywords: `small obstacle break`, `tactical cover destroyed`, `compact debris`
-- Avoid: overpowered explosion
-
-### `assets/audio/gameplay/armor_block_hit.wav`
-- Use: armored block being hit but not necessarily destroyed
-- Trigger: damage on armor blocks
-- Feel: denser metallic impact with resistance
-- Duration: `0.08s` to `0.25s`
-- Keywords: `armored impact`, `metal shielded hit`, `reinforced obstacle strike`
-- Avoid: glass-like sounds
+### `assets/audio/weapons/blast_charge.wav`
+- Use: Ktank attack wind-up
+- Trigger: just before the Ktank blast attack
+- Why still needed:
+  The Kenney packs have blast and explosion material, but not a really distinct heavy pre-detonation priming cue.
+- Feel: compact heavy arming pulse, tense, mechanical
+- Duration: `0.08s` to `0.24s`
+- Keywords: `bomb arm`, `heavy explosive priming`, `short siege charge`, `detonation prep`
+- Avoid: alarm sirens, long beeps, futuristic laser feel
+- AI prompt:
+  Generate a short heavy explosive charge sound for a siege tank attack. It should feel like a compact mechanical blast is being armed, with weight and tension, but stay short and readable for a turn-based tactics game.
 
 ### `assets/audio/gameplay/win_player.wav`
 - Use: player victory
-- Trigger: match win screen or immediate win event
-- Feel: short satisfying victory sting, confident and clean
-- Duration: `0.6s` to `1.8s`
-- Keywords: `short sci-fi victory sting`, `clean success theme`, `strategic win cue`
-- Avoid: long orchestral anthem
+- Trigger: when the match ends in victory
+- Why still needed:
+  The Kenney packs have lots of UI tones, but not a dedicated polished victory sting tailored for this game.
+- Feel: clean success, confident, tactical, rewarding
+- Duration: `0.6s` to `1.5s`
+- Keywords: `short sci-fi victory sting`, `clean strategic success`, `polished win cue`
+- Avoid: long fanfare, cartoon celebration, arcade jackpot feel
+- AI prompt:
+  Generate a short victory sting for a clean sci-fi tactics game. It should feel rewarding and confident, but compact and polished rather than dramatic or cartoonish.
 
 ### `assets/audio/gameplay/lose_player.wav`
 - Use: player defeat
-- Trigger: defeat state
-- Feel: restrained downward sting, not depressing or overly dramatic
-- Duration: `0.5s` to `1.5s`
-- Keywords: `short defeat sting`, `subtle tactical loss cue`
-- Avoid: horror tones, comedy sounds
+- Trigger: when the match ends in defeat
+- Why still needed:
+  Existing tones can fake negative UI feedback, but not a proper defeat result cue.
+- Feel: restrained downward resolution, calm failure cue
+- Duration: `0.5s` to `1.3s`
+- Keywords: `short defeat sting`, `tactical loss cue`, `subtle downward sci-fi tone`
+- Avoid: horror sounds, comedy fail buzzer, harsh alarms
+- AI prompt:
+  Generate a short defeat sting for a clean sci-fi tactics game. It should feel like a controlled loss result, with a subtle downward motion and no overly dramatic sadness.
 
 ### `assets/audio/gameplay/draw.wav`
 - Use: draw outcome
 - Trigger: repetition draw or turn-limit draw
-- Feel: neutral resolved ending tone, neither win nor loss
-- Duration: `0.4s` to `1.2s`
-- Keywords: `neutral match result`, `balanced end cue`, `tactical draw sting`
-- Avoid: strong emotional direction
-
-### `assets/audio/gameplay/extra_action.wav`
-- Use: bonus move granted
-- Trigger: player gets an extra action from `Bonus Move`
-- Feel: energetic but short reward pulse
-- Duration: `0.1s` to `0.28s`
-- Keywords: `extra turn cue`, `bonus action reward`, `quick positive pulse`
-- Avoid: sounds that resemble victory stings
-
-## Weapon Sounds
-
-### `assets/audio/weapons/laser_charge.wav`
-- Use: Qtank attack wind-up
-- Trigger: immediately before or at the start of laser fire
-- Feel: quick energy build-up, focused and high-tech
-- Duration: `0.08s` to `0.25s`
-- Keywords: `short laser charge`, `energy build`, `sci-fi weapon warm-up`
-- Avoid: long charging loops
-
-### `assets/audio/weapons/laser_fire.wav`
-- Use: Qtank main firing sound
-- Trigger: when Qtank performs its laser attack
-- Feel: sharp, precise, high-energy beam discharge
-- Duration: `0.12s` to `0.35s`
-- Keywords: `precise sci-fi laser`, `clean beam shot`, `sniper energy blast`
-- Avoid: blaster spam, cartoony pew-pew
-- AI generation note:
-  Generate a short precision laser firing sound for a tactical sniper tank. It should feel clean, advanced, and dangerous, with a fast energy discharge and no comedic tone.
-
-### `assets/audio/weapons/laser_hit_tank.wav`
-- Use: laser striking a tank
-- Trigger: Qtank beam hits a unit
-- Feel: hot energy impact with armored contact
-- Duration: `0.08s` to `0.22s`
-- Keywords: `energy armor hit`, `laser impact on mech`, `sharp tech hit`
-- Avoid: explosion-heavy sounds
-
-### `assets/audio/weapons/laser_hit_wall.wav`
-- Use: laser striking wall/block
-- Trigger: Qtank beam stops on terrain
-- Feel: sparking ricochet or energized obstacle hit
-- Duration: `0.08s` to `0.22s`
-- Keywords: `laser impact on wall`, `energy ricochet`, `heated metal strike`
-- Avoid: fleshy impact sounds
-
-### `assets/audio/weapons/blast_charge.wav`
-- Use: Ktank attack wind-up
-- Trigger: just before blast detonation
-- Feel: short heavy priming cue
-- Duration: `0.08s` to `0.25s`
-- Keywords: `bomb arm sound`, `heavy charge pulse`, `short detonation prep`
-- Avoid: long alarm beeps
-
-### `assets/audio/weapons/blast_fire.wav`
-- Use: Ktank main attack trigger
-- Trigger: when Ktank launches or triggers its blast
-- Feel: compact explosive release with weight
-- Duration: `0.15s` to `0.4s`
-- Keywords: `compact explosive blast`, `short siege cannon`, `heavy tactical explosion`
-- Avoid: giant cinematic missile launch
-- AI generation note:
-  Generate a short heavy explosive attack sound for a siege tank. It should feel weighty and forceful, like a compact tactical blast on a small arena board.
-
-### `assets/audio/weapons/blast_hit.wav`
-- Use: blast impact detail layer
-- Trigger: when Ktank blast damages tanks or blocks
-- Feel: chunky impact layer that supports `blast_fire.wav`
-- Duration: `0.12s` to `0.3s`
-- Keywords: `explosive impact`, `armored blast hit`, `close-range detonation hit`
-- Avoid: overly long booms
-
-### `assets/audio/weapons/explosion_small.wav`
-- Use: generic small explosion support
-- Trigger: block destruction, clustered blast feedback, optional destruction layering
-- Feel: compact arena-safe explosion
-- Duration: `0.18s` to `0.5s`
-- Keywords: `small tactical explosion`, `compact arena blast`
-- Avoid: massive warzone explosions
-
-## Power-Up Sounds
-
-### `assets/audio/powerups/pickup_attack.wav`
-- Use: attack buff pickup
-- Trigger: collecting red attack power tile
-- Feel: assertive upward power pulse
-- Duration: `0.1s` to `0.25s`
-- Keywords: `attack boost pickup`, `power gain`, `red buff reward`
-- Avoid: shield-like soft tones
-
-### `assets/audio/powerups/pickup_shield.wav`
-- Use: shield buff pickup
-- Trigger: collecting blue shield tile
-- Feel: glossy protective shimmer
-- Duration: `0.12s` to `0.28s`
-- Keywords: `shield pickup`, `protective energy shimmer`, `defense buff cue`
-- Avoid: explosive or aggressive tones
-
-### `assets/audio/powerups/pickup_bonus_move.wav`
-- Use: bonus move pickup
-- Trigger: collecting green extra-action tile
-- Feel: bright quick reward with motion/tempo feel
-- Duration: `0.1s` to `0.25s`
-- Keywords: `bonus move pickup`, `extra action reward`, `quick energetic buff cue`
-- Avoid: identical feel to attack buff
-
-### `assets/audio/powerups/shield_trigger.wav`
-- Use: shield actually absorbing damage
-- Trigger: when a shielded tank takes a hit and the shield buffer matters
-- Feel: defensive energy block or impact absorb
-- Duration: `0.08s` to `0.22s`
-- Keywords: `shield absorb`, `energy barrier hit`, `protective impact`
-- Avoid: raw damage sounds without the shield feel
-
-## Music
+- Why still needed:
+  This needs a neutral result cue that is clearly not win or loss.
+- Feel: balanced, resolved, neutral
+- Duration: `0.4s` to `1.1s`
+- Keywords: `neutral result cue`, `strategic draw sting`, `balanced end tone`
+- Avoid: obvious celebration or obvious defeat mood
+- AI prompt:
+  Generate a short neutral end-of-match sting for a sci-fi tactics game. It should communicate a draw result, sounding resolved and balanced, not happy and not sad.
 
 ### `assets/audio/music/menu_loop.wav`
 - Use: main menu background music
-- Trigger: main menu scene
+- Trigger: menu scene
+- Why still needed:
+  None of the checked folders include usable music loops.
 - Feel: calm tactical sci-fi atmosphere
-- Duration: `20s` to `90s` loopable
-- Keywords: `ambient sci-fi strategy menu`, `clean futuristic tactical menu`
-- Avoid: loud drums, vocals, busy melodies
+- Duration: `20s` to `90s`, loop-friendly
+- Keywords: `ambient sci-fi strategy menu`, `clean futuristic menu music`, `subtle tactical atmosphere`
+- Avoid: vocals, heavy drums, busy lead melodies
+- AI prompt:
+  Generate a calm loopable menu track for a clean sci-fi tactics game. It should feel futuristic, polished, and subtle, with low distraction and no vocals.
 
 ### `assets/audio/music/match_loop.wav`
-- Use: match background music
-- Trigger: gameplay scene
-- Feel: subtle strategic tension, low distraction
-- Duration: `30s` to `120s` loopable
-- Keywords: `turn-based tactical ambient`, `low-intensity strategy soundtrack`, `clean sci-fi board battle`
-- Avoid: overpowering combat music
+- Use: gameplay background music
+- Trigger: during matches
+- Why still needed:
+  None of the checked folders include gameplay music.
+- Feel: quiet tension, strategic focus, low distraction
+- Duration: `30s` to `120s`, loop-friendly
+- Keywords: `turn-based tactical ambient`, `subtle sci-fi strategy match music`, `low-intensity board battle atmosphere`
+- Avoid: loud action music, huge percussion, heroic bombast
+- AI prompt:
+  Generate a subtle loopable gameplay track for a clean sci-fi tactical board battle. It should create light strategic tension without distracting from decision-making.
 
 ### `assets/audio/music/victory_sting.wav`
-- Use: stronger win punctuation
-- Trigger: end-of-match victory if a separate sting is desired from `win_player.wav`
-- Feel: short clean success burst
-- Duration: `0.5s` to `1.5s`
-- Keywords: `short victory sting`, `strategic success fanfare`
-- Avoid: long anthem
+- Use: optional stronger win punctuation
+- Trigger: match result screen or win moment
+- Why still needed:
+  This is useful if you want a separate musical win accent in addition to `win_player.wav`.
+- Feel: brighter and slightly broader than the base victory sound
+- Duration: `0.5s` to `1.4s`
+- Keywords: `short victory accent`, `strategic success sting`, `clean sci-fi result flourish`
+- Avoid: long anthem, overblown orchestra
+- AI prompt:
+  Generate a short musical victory sting for a sci-fi tactics game. It should feel polished and uplifting, but brief and restrained enough for a professional strategy title.
 
 ### `assets/audio/music/defeat_sting.wav`
-- Use: stronger defeat punctuation
-- Trigger: end-of-match defeat if a separate sting is desired from `lose_player.wav`
-- Feel: short downward resolved tone
-- Duration: `0.5s` to `1.5s`
-- Keywords: `short defeat sting`, `tactical failure cue`
-- Avoid: horror mood or excessive sadness
-
-## Minimum Phase 12 Starter Set
-
-If you want to generate only the most important sounds first, start with these:
-
-- `assets/audio/ui/ui_click.wav`
-- `assets/audio/gameplay/turn_change.wav`
-- `assets/audio/gameplay/move_light.wav`
-- `assets/audio/gameplay/move_heavy.wav`
-- `assets/audio/weapons/laser_fire.wav`
-- `assets/audio/weapons/laser_hit_tank.wav`
-- `assets/audio/weapons/blast_fire.wav`
-- `assets/audio/weapons/blast_hit.wav`
-- `assets/audio/gameplay/hit_light.wav`
-- `assets/audio/gameplay/tank_destroyed.wav`
-- `assets/audio/powerups/pickup_attack.wav`
-- `assets/audio/powerups/pickup_shield.wav`
-- `assets/audio/powerups/pickup_bonus_move.wav`
-- `assets/audio/gameplay/win_player.wav`
-- `assets/audio/gameplay/draw.wav`
-
-## AI Prompt Pattern
-
-Use this simple structure when generating a sound:
-
-```text
-Generate a [duration] sound effect for [exact gameplay purpose].
-Style: clean sci-fi tactical game, polished, readable, not cartoonish.
-Emotion: [precise / heavy / rewarding / defensive / neutral].
-Sound character: [keywords].
-Avoid: [keywords].
-Must start quickly with no long silence and fit a turn-based strategy game UI/UX.
-```
-
-Example:
-
-```text
-Generate a 0.2 second sound effect for a light unit moving on a hex-grid tactics board.
-Style: clean sci-fi tactical game, polished, readable, not cartoonish.
-Emotion: precise and agile.
-Sound character: soft hover-skid, light mech reposition, futuristic movement cue.
-Avoid: heavy tank rumble, long tails, loud bass, comedy sounds.
-Must start quickly with no long silence and fit a turn-based strategy game UI/UX.
-```
+- Use: optional stronger defeat punctuation
+- Trigger: match result screen or defeat moment
+- Why still needed:
+  This is useful if you want a separate musical loss accent in addition to `lose_player.wav`.
+- Feel: short downward musical cue, restrained and polished
+- Duration: `0.5s` to `1.4s`
+- Keywords: `short defeat accent`, `clean tactical loss sting`, `restrained sci-fi result cue`
+- Avoid: horror mood, melodrama, comedy fail sound
+- AI prompt:
+  Generate a short musical defeat sting for a sci-fi tactics game. It should feel clean and restrained, with a downward emotional motion but no melodrama.
