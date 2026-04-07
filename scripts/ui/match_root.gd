@@ -63,6 +63,7 @@ var _selected_actor_id: String = ""
 var _autoplay_enabled: bool = false
 var _autoplay_speed_index: int = 1
 var _guide_visible: bool = false
+var _presentation_locked: bool = false
 
 
 func _ready() -> void:
@@ -483,10 +484,13 @@ func _refresh_view_legacy() -> void:
 	elif _autoplay_enabled:
 		_status_label.text = "Autoplay running at %s speed." % AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
 	else:
-		_status_label.text = "Selected: %s | Mode: %s" % [
-			_actor_label(_selected_actor_id) if _selected_actor_id != "" else "None",
-			_action_mode.capitalize() if _action_mode != "" else "None",
-		]
+		if _presentation_locked:
+			_status_label.text = "Resolving action..."
+		else:
+			_status_label.text = "Selected: %s | Mode: %s" % [
+				_actor_label(_selected_actor_id) if _selected_actor_id != "" else "None",
+				_action_mode.capitalize() if _action_mode != "" else "None",
+			]
 
 	_board_view.set_game_state(_game_state)
 	_board_view.set_selected_actor(_selected_actor_id)
@@ -662,16 +666,18 @@ func _format_event(event_item: GameEvent) -> String:
 
 
 func _update_button_state() -> void:
-	var can_act: bool = not _game_state.game_over and not _autoplay_enabled and _selected_actor_id != ""
+	var can_act: bool = not _game_state.game_over and not _autoplay_enabled and not _presentation_locked and _selected_actor_id != ""
 	_move_button.disabled = not can_act
 	_attack_button.disabled = not can_act
-	_pass_button.disabled = _game_state.game_over or _autoplay_enabled
-	_reset_button.disabled = false
-	_ai_move_button.disabled = _game_state.game_over or _autoplay_enabled or _current_player_controller_type() == GameTypes.ControllerType.HUMAN
-	_autoplay_button.disabled = _game_state.game_over or not _both_players_are_ai()
+	_pass_button.disabled = _game_state.game_over or _autoplay_enabled or _presentation_locked
+	_reset_button.disabled = _presentation_locked
+	_ai_move_button.disabled = _game_state.game_over or _autoplay_enabled or _presentation_locked or _current_player_controller_type() == GameTypes.ControllerType.HUMAN
+	_autoplay_button.disabled = _game_state.game_over or _presentation_locked or not _both_players_are_ai()
 
 
 func _on_board_cell_clicked(coord_key: String) -> void:
+	if _presentation_locked:
+		return
 	var coord: HexCoord = HexCoord.from_key(coord_key)
 	var clicked_tank: TankData = _game_state.get_tank_at(coord)
 
@@ -735,6 +741,8 @@ func _on_pass_pressed() -> void:
 
 
 func _on_reset_pressed() -> void:
+	if _presentation_locked:
+		return
 	_disable_autoplay()
 	_reset_match()
 	_refresh_view()
@@ -777,6 +785,8 @@ func _on_autoplay_timer_timeout() -> void:
 
 
 func _step_current_ai_turn() -> void:
+	if _presentation_locked:
+		return
 	var controller_type: int = _current_player_controller_type()
 	if controller_type == GameTypes.ControllerType.HUMAN:
 		return
@@ -792,6 +802,7 @@ func _reset_match() -> void:
 	_game_state = GameState.new(AppState.current_match_config.clone())
 	_action_mode = ""
 	_selected_actor_id = ""
+	_presentation_locked = false
 	if _board_view != null:
 		_board_view.clear_transient_effects()
 	AppState.last_action_explanation = ActionExplanation.new()
@@ -899,12 +910,16 @@ func _choose_ai_action(controller_type: int, config: AIConfig) -> Dictionary:
 
 
 func _execute_action(action: ActionData, source_label: String, explanation: ActionExplanation) -> void:
+	if _presentation_locked:
+		return
+	_presentation_locked = true
 	var acting_turn: int = _game_state.turn_count
 	var acting_player: int = _game_state.current_player
 	var previous_state: GameState = _game_state.clone()
 	_game_state.apply_action(action)
 	AudioManager.play_action_feedback(previous_state, _game_state, action, _game_state.last_events)
 	_board_view.play_action_feedback(previous_state, _game_state, action, _game_state.last_events)
+	var feedback_hold: float = _board_view.get_feedback_hold_seconds(action, previous_state)
 	if _game_state.game_over:
 		_disable_autoplay()
 		AppState.current_replay.winner_label = _winner_label()
@@ -912,6 +927,9 @@ func _execute_action(action: ActionData, source_label: String, explanation: Acti
 	AppState.last_action_explanation = explanation
 	EventBus.action_explanation_updated.emit(explanation)
 	_record_turn_snapshot(acting_turn, acting_player, source_label, action, explanation)
+	_refresh_view()
+	await get_tree().create_timer(feedback_hold).timeout
+	_presentation_locked = false
 	_after_action()
 
 
@@ -1256,8 +1274,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				_on_autoplay_pressed()
 				get_viewport().set_input_as_handled()
 		KEY_R:
-			_on_reset_pressed()
-			get_viewport().set_input_as_handled()
+			if not _presentation_locked:
+				_on_reset_pressed()
+				get_viewport().set_input_as_handled()
 		KEY_H:
 			get_tree().change_scene_to_file(AppState.HELP_SCENE)
 			get_viewport().set_input_as_handled()
