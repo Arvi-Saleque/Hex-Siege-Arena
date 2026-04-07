@@ -34,6 +34,13 @@ var selected_actor_id: String = ""
 var highlighted_keys: Dictionary = {}
 var current_action_mode: String = ""
 var _pulse_time: float = 0.0
+var _beam_effects: Array[Dictionary] = []
+var _ring_effects: Array[Dictionary] = []
+var _flash_effects: Array[Dictionary] = []
+var _floating_texts: Array[Dictionary] = []
+var _shake_timer: float = 0.0
+var _shake_strength: float = 0.0
+var _shake_offset: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -46,6 +53,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_pulse_time += delta
+	_process_effects(delta)
 	queue_redraw()
 
 
@@ -102,6 +110,7 @@ func _draw() -> void:
 
 	if game_state != null:
 		_draw_tanks()
+	_draw_effects()
 
 
 func _hex_points(center: Vector2) -> PackedVector2Array:
@@ -207,6 +216,44 @@ func set_action_mode(action_mode: String) -> void:
 	queue_redraw()
 
 
+func play_action_feedback(previous_state: GameState, current_state: GameState, action: ActionData, events: Array[GameEvent]) -> void:
+	if previous_state == null or current_state == null:
+		return
+
+	match action.action_type:
+		GameTypes.ActionType.MOVE:
+			var moved_tank: TankData = previous_state.get_tank(action.actor_id)
+			if moved_tank != null:
+				var start_center: Vector2 = moved_tank.position.to_world_flat(hex_size)
+				var end_center: Vector2 = action.target_coord.to_world_flat(hex_size)
+				_beam_effects.append({
+					"start": start_center,
+					"end": end_center,
+					"color": Color("7be0ff"),
+					"width": 4.0,
+					"time_left": 0.18,
+					"duration": 0.18,
+				})
+				_ring_effects.append({
+					"center": end_center,
+					"color": Color("7be0ff"),
+					"radius": 26.0,
+					"time_left": 0.28,
+					"duration": 0.28,
+					"filled": false,
+				})
+				_trigger_shake(0.15)
+		GameTypes.ActionType.ATTACK:
+			_play_attack_effect(previous_state, action)
+		_:
+			pass
+
+	for event_item: GameEvent in events:
+		_apply_event_feedback(current_state, event_item)
+
+	queue_redraw()
+
+
 func get_board_visual_size() -> Vector2:
 	var active_board: BoardState = _active_board()
 	if active_board.cells.is_empty():
@@ -246,7 +293,7 @@ func _tile_center(cell: CellData) -> Vector2:
 		center.y -= 4.0
 	if cell.coord.key() == selected_key:
 		center.y -= 6.0
-	return center
+	return center + _shake_offset
 
 
 func _tile_depth(cell: CellData) -> float:
@@ -293,9 +340,9 @@ func _draw_board_backdrop(active_board: BoardState) -> void:
 		used_rect = Rect2(Vector2(min_x - 120.0, min_y - 120.0), Vector2((max_x - min_x) + 240.0, (max_y - min_y) + 260.0))
 
 	draw_rect(used_rect, Color("121722"))
-	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.3, used_rect.size.y * 0.28), 180.0, Color(0.2, 0.32, 0.48, 0.08))
-	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.72, used_rect.size.y * 0.62), 210.0, Color(0.66, 0.55, 0.2, 0.05))
-	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.5, used_rect.size.y * 0.48), 290.0, Color(0.08, 0.12, 0.2, 0.25))
+	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.3, used_rect.size.y * 0.28) + _shake_offset, 180.0, Color(0.2, 0.32, 0.48, 0.08))
+	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.72, used_rect.size.y * 0.62) + _shake_offset, 210.0, Color(0.66, 0.55, 0.2, 0.05))
+	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.5, used_rect.size.y * 0.48) + _shake_offset, 290.0, Color(0.08, 0.12, 0.2, 0.25))
 
 
 func _draw_tanks() -> void:
@@ -326,6 +373,44 @@ func _draw_tanks() -> void:
 			var buff_color: Color = _buff_color(tank.active_buff)
 			draw_circle(center + Vector2(13, -13), 5.0, buff_color)
 			draw_circle(center + Vector2(13, -13), 2.0, Color("10141c"))
+
+
+func _draw_effects() -> void:
+	var font: Font = ThemeDB.fallback_font
+	for beam: Dictionary in _beam_effects:
+		var ratio: float = _effect_float(beam, "time_left", 0.0) / maxf(_effect_float(beam, "duration", 1.0), 0.001)
+		var beam_color: Color = _effect_color(beam, "color", Color.WHITE)
+		beam_color.a = 0.15 + 0.85 * ratio
+		var beam_width: float = _effect_float(beam, "width", 3.0) * (0.8 + 0.35 * ratio)
+		var beam_start: Vector2 = _effect_vec2(beam, "start", Vector2.ZERO)
+		var beam_end: Vector2 = _effect_vec2(beam, "end", Vector2.ZERO)
+		draw_line(beam_start + _shake_offset, beam_end + _shake_offset, beam_color, beam_width)
+		draw_circle(beam_end + _shake_offset, 4.0 + 6.0 * ratio, beam_color)
+
+	for ring: Dictionary in _ring_effects:
+		var ratio: float = _effect_float(ring, "time_left", 0.0) / maxf(_effect_float(ring, "duration", 1.0), 0.001)
+		var ring_color: Color = _effect_color(ring, "color", Color.WHITE)
+		ring_color.a = 0.1 + 0.7 * ratio
+		var radius: float = _effect_float(ring, "radius", 18.0) * (1.0 + (1.0 - ratio) * 0.55)
+		var ring_center: Vector2 = _effect_vec2(ring, "center", Vector2.ZERO) + _shake_offset
+		if _effect_bool(ring, "filled", false):
+			draw_circle(ring_center, radius, Color(ring_color.r, ring_color.g, ring_color.b, ring_color.a * 0.18))
+		draw_arc(ring_center, radius, 0.0, TAU, 42, ring_color, 2.4, true)
+
+	for flash: Dictionary in _flash_effects:
+		var ratio: float = _effect_float(flash, "time_left", 0.0) / maxf(_effect_float(flash, "duration", 1.0), 0.001)
+		var flash_color: Color = _effect_color(flash, "color", Color.WHITE)
+		flash_color.a = 0.08 + 0.45 * ratio
+		draw_circle(_effect_vec2(flash, "center", Vector2.ZERO) + _shake_offset, _effect_float(flash, "radius", 16.0) * (1.0 + 0.25 * (1.0 - ratio)), flash_color)
+
+	if font != null:
+		for floater: Dictionary in _floating_texts:
+			var ratio: float = _effect_float(floater, "time_left", 0.0) / maxf(_effect_float(floater, "duration", 1.0), 0.001)
+			var text_color: Color = _effect_color(floater, "color", Color.WHITE)
+			text_color.a = 0.15 + 0.85 * ratio
+			var drift: float = (1.0 - ratio) * 18.0
+			var position: Vector2 = _effect_vec2(floater, "center", Vector2.ZERO) + Vector2(-10, -18 - drift) + _shake_offset
+			draw_string(font, position, _effect_string(floater, "text", ""), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 16, text_color)
 
 
 func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2Array, fill: Color) -> void:
@@ -488,6 +573,203 @@ func _ellipse_points(center: Vector2, radii: Vector2, segments: int) -> PackedVe
 		var angle: float = TAU * float(index) / float(maxi(segments, 3))
 		points.append(center + Vector2(cos(angle) * radii.x, sin(angle) * radii.y))
 	return points
+
+
+func _process_effects(delta: float) -> void:
+	_tick_effect_array(_beam_effects, delta)
+	_tick_effect_array(_ring_effects, delta)
+	_tick_effect_array(_flash_effects, delta)
+	_tick_effect_array(_floating_texts, delta)
+	if _shake_timer > 0.0:
+		_shake_timer = maxf(0.0, _shake_timer - delta)
+		var shake_ratio: float = _shake_timer / maxf(_shake_strength, 0.001)
+		var offset_scale: float = 5.0 * shake_ratio
+		_shake_offset = Vector2(randf_range(-offset_scale, offset_scale), randf_range(-offset_scale * 0.7, offset_scale * 0.7))
+	else:
+		_shake_offset = Vector2.ZERO
+
+
+func _tick_effect_array(effect_array: Array[Dictionary], delta: float) -> void:
+	for index in range(effect_array.size() - 1, -1, -1):
+		var effect: Dictionary = effect_array[index]
+		effect["time_left"] = _effect_float(effect, "time_left", 0.0) - delta
+		if _effect_float(effect, "time_left", 0.0) <= 0.0:
+			effect_array.remove_at(index)
+		else:
+			effect_array[index] = effect
+
+
+func _apply_event_feedback(current_state: GameState, event_item: GameEvent) -> void:
+	match event_item.event_name:
+		"hit_tank":
+			var hit_coord: HexCoord = HexCoord.from_key(str(event_item.payload.get("coord", "")))
+			var hit_center: Vector2 = hit_coord.to_world_flat(hex_size)
+			var damage: int = int(event_item.payload.get("damage", 0))
+			_flash_effects.append({
+				"center": hit_center,
+				"color": Color("ffb0b8"),
+				"radius": 18.0,
+				"time_left": 0.24,
+				"duration": 0.24,
+			})
+			_floating_texts.append({
+				"center": hit_center,
+				"text": "-%d" % damage,
+				"color": Color("fff1f3"),
+				"time_left": 0.7,
+				"duration": 0.7,
+			})
+			_trigger_shake(0.18)
+		"hit_cell":
+			var cell_coord: HexCoord = HexCoord.from_key(str(event_item.payload.get("coord", "")))
+			var cell_center: Vector2 = cell_coord.to_world_flat(hex_size)
+			_flash_effects.append({
+				"center": cell_center,
+				"color": Color("ffd59e"),
+				"radius": 15.0,
+				"time_left": 0.2,
+				"duration": 0.2,
+			})
+			if bool(event_item.payload.get("destroyed", false)):
+				_ring_effects.append({
+					"center": cell_center,
+					"color": Color("ffcf7a"),
+					"radius": 24.0,
+					"time_left": 0.32,
+					"duration": 0.32,
+					"filled": true,
+				})
+			_trigger_shake(0.14)
+		"power_up":
+			var actor_id: String = str(event_item.payload.get("actor_id", ""))
+			var buff_tank: TankData = current_state.get_tank(actor_id)
+			if buff_tank != null:
+				_ring_effects.append({
+					"center": buff_tank.position.to_world_flat(hex_size),
+					"color": _buff_color(buff_tank.active_buff),
+					"radius": 22.0,
+					"time_left": 0.45,
+					"duration": 0.45,
+					"filled": true,
+				})
+		"tank_destroyed":
+			var destroyed_id: String = str(event_item.payload.get("target", ""))
+			var destroyed_tank: TankData = current_state.get_tank(destroyed_id)
+			if destroyed_tank != null:
+				_ring_effects.append({
+					"center": destroyed_tank.position.to_world_flat(hex_size),
+					"color": Color("ffd09b"),
+					"radius": 34.0,
+					"time_left": 0.48,
+					"duration": 0.48,
+					"filled": true,
+				})
+			_trigger_shake(0.3)
+		"win_center":
+			_ring_effects.append({
+				"center": HexCoord.new().to_world_flat(hex_size),
+				"color": Color("fff1a9"),
+				"radius": 38.0,
+				"time_left": 0.6,
+				"duration": 0.6,
+				"filled": true,
+			})
+
+
+func _play_attack_effect(previous_state: GameState, action: ActionData) -> void:
+	var attacker: TankData = previous_state.get_tank(action.actor_id)
+	if attacker == null:
+		return
+	var source_center: Vector2 = attacker.position.to_world_flat(hex_size)
+	if attacker.tank_type == GameTypes.TankType.QTANK:
+		var target_center: Vector2 = source_center
+		for step_coord: HexCoord in attacker.position.raycast(action.direction, previous_state.board.rings * 3):
+			if not previous_state.board.has_cell(step_coord):
+				break
+			target_center = step_coord.to_world_flat(hex_size)
+			if previous_state.get_tank_at(step_coord) != null or previous_state.board.blocks_attack(step_coord):
+				break
+		_beam_effects.append({
+			"start": source_center,
+			"end": target_center,
+			"color": Color("7ef3ff"),
+			"width": 5.0,
+			"time_left": 0.18,
+			"duration": 0.18,
+		})
+		_ring_effects.append({
+			"center": target_center,
+			"color": Color("b7ffff"),
+			"radius": 18.0,
+			"time_left": 0.22,
+			"duration": 0.22,
+			"filled": false,
+		})
+		_trigger_shake(0.16)
+	else:
+		_ring_effects.append({
+			"center": source_center,
+			"color": Color("ffb46f"),
+			"radius": 26.0,
+			"time_left": 0.32,
+			"duration": 0.32,
+			"filled": true,
+		})
+		for neighbor_coord: HexCoord in attacker.position.neighbors():
+			if previous_state.board.has_cell(neighbor_coord):
+				_flash_effects.append({
+					"center": neighbor_coord.to_world_flat(hex_size),
+					"color": Color("ff936d"),
+					"radius": 12.0,
+					"time_left": 0.22,
+					"duration": 0.22,
+				})
+		_trigger_shake(0.24)
+
+
+func _trigger_shake(duration: float) -> void:
+	_shake_timer = maxf(_shake_timer, duration)
+	_shake_strength = maxf(_shake_strength, duration)
+
+
+func clear_transient_effects() -> void:
+	_beam_effects.clear()
+	_ring_effects.clear()
+	_flash_effects.clear()
+	_floating_texts.clear()
+	_shake_timer = 0.0
+	_shake_strength = 0.0
+	_shake_offset = Vector2.ZERO
+	queue_redraw()
+
+
+func _effect_vec2(effect: Dictionary, key: String, default_value: Vector2) -> Vector2:
+	var value: Variant = effect.get(key, default_value)
+	if value is Vector2:
+		return value
+	return default_value
+
+
+func _effect_color(effect: Dictionary, key: String, default_value: Color) -> Color:
+	var value: Variant = effect.get(key, default_value)
+	if value is Color:
+		return value
+	return default_value
+
+
+func _effect_float(effect: Dictionary, key: String, default_value: float) -> float:
+	var value: Variant = effect.get(key, default_value)
+	return float(value)
+
+
+func _effect_bool(effect: Dictionary, key: String, default_value: bool) -> bool:
+	var value: Variant = effect.get(key, default_value)
+	return bool(value)
+
+
+func _effect_string(effect: Dictionary, key: String, default_value: String) -> String:
+	var value: Variant = effect.get(key, default_value)
+	return str(value)
 
 
 func _buff_color(buff_type: int) -> Color:

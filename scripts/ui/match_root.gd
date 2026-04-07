@@ -83,7 +83,7 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Phase 10 Unit Art And Material Pass"
+	title.text = "Phase 11 Combat VFX And Feedback"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
@@ -280,7 +280,7 @@ func _build_layout() -> void:
 	utility_row.add_child(_reset_button)
 
 	var legend = Label.new()
-	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use Step AI for one AI turn\n5. Use Auto to watch AI-vs-AI continuously\n6. Use Reset to restart the current map\n\nQtank = slim laser chassis\nKtank = heavy siege hull\nBlue = Player 1\nRed = Player 2"
+	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use Step AI for one AI turn\n5. Use Auto to watch AI-vs-AI continuously\n6. Use Reset to restart the current map\n\nQtank = slim laser chassis\nKtank = heavy siege hull\nBlue = Player 1\nRed = Player 2\nLaser, blast, hit flash, and damage text should now appear during actions."
 	legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(legend)
 
@@ -554,6 +554,8 @@ func _reset_match() -> void:
 	_game_state = GameState.new(AppState.current_match_config.clone())
 	_action_mode = ""
 	_selected_actor_id = ""
+	if _board_view != null:
+		_board_view.clear_transient_effects()
 	AppState.last_action_explanation = ActionExplanation.new()
 	AppState.current_replay.clear()
 	AppState.current_replay.metadata = {
@@ -644,7 +646,9 @@ func _choose_ai_action(controller_type: int, config: AIConfig) -> Dictionary:
 func _execute_action(action: ActionData, source_label: String, explanation: ActionExplanation) -> void:
 	var acting_turn: int = _game_state.turn_count
 	var acting_player: int = _game_state.current_player
+	var previous_state: GameState = _game_state.clone()
 	_game_state.apply_action(action)
+	_board_view.play_action_feedback(previous_state, _game_state, action, _game_state.last_events)
 	if _game_state.game_over:
 		_disable_autoplay()
 	AppState.last_action_explanation = explanation

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 10: Unit art and material pass
+- Phase 11: Combat VFX and feedback
 
 ## Completed Items
 
@@ -176,14 +176,20 @@
   - Ktank now renders as a heavier siege silhouette with treads and turret
   - tile tops now include material-specific overlays for walls, blocks, armor, center, and power cells
   - board icons and legend text now better match the rendered pieces
+- Completed the Phase 11 combat feedback pass:
+  - Qtank attacks now draw a short-lived laser beam and impact pulse
+  - Ktank attacks now trigger blast rings and neighbor hit flashes
+  - damage now spawns floating text over impacted cells
+  - hit and destruction events add flash pulses and subtle screen shake
+  - movement now leaves a brief travel streak and arrival ring
 
 ## Next Items
 
-- Verify Phase 10 unit art and material pass inside Godot
-- Start Phase 11:
-  - combat VFX
-  - impact feedback
-  - motion and juice tuning
+- Verify Phase 11 combat VFX and feedback inside Godot
+- Start Phase 12:
+  - audio routing
+  - action sound hooks
+  - volume controls and polish
 
 ## User Check List
 
@@ -247,6 +253,12 @@
   - Qtank and Ktank silhouettes are clearly different at a glance
   - armor, wall, block, center, and power cells feel materially distinct
   - the updated tank look still keeps HP text and buff markers readable
+- Confirm Phase 11 combat feedback feels responsive:
+  - Qtank laser shots show a beam and impact pulse
+  - Ktank attacks show blast rings and neighboring hit flashes
+  - floating damage numbers appear over hit cells or tanks
+  - brief shake happens on impactful attacks without breaking hover/click accuracy
+  - move actions show a quick travel streak and landing pulse
 - Confirm `Auto` is disabled if either side is set to Human
 - Confirm reset clears history and returns the board to the start state
 - Open the settings placeholder scene from the menu and confirm the back button still returns to the menu
@@ -254,7 +266,7 @@
 ## Resources Needed Soon
 
 - No final art or audio needed yet
-- For Phase 11, VFX references for lasers, blast telegraphs, shield hits, or impact language would help a lot if you have them
+- For Phase 12, an audio pack or reference list for movement, laser, blast, hit, shield, pickup, and win sounds would help a lot if you have them
 - For future map polish, exact approved layouts for `standard`, `open`, and `fortress` would help replace the current implementation-ready presets
 
 ## Known Issues
@@ -263,4 +275,5 @@
 - The match scene is more readable now, but it is still a prototype HUD rather than the final styled interface
 - Autoplay currently assumes both sides are AI-controlled and uses a simple timer loop rather than a full spectator shell
 - The visual pass is still code-drawn placeholder art, not final production assets
+- The new combat VFX are code-drawn and intentionally lightweight; final particles and authored animation can replace them later
 - The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only
