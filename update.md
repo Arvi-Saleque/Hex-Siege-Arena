@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 6: MCTS AI
+- Phase 7: AI-vs-AI flow controls
 
 ## Completed Items
 
@@ -117,15 +117,34 @@
   - iterations
   - rollouts
   - elapsed time
+- Upgraded the match scene into an AI arena control prototype with:
+  - `Step AI`
+  - `Auto` toggle
+  - speed cycling
+  - timer-driven autoplay
+- Added turn history inspection backed by `AppState.current_replay`:
+  - per-turn source label
+  - summary
+  - metrics
+  - event lines
+  - resulting state hash
+- Added arena stats text showing:
+  - recorded turn count
+  - latest turn source
+  - latest state hash
+- Autoplay now stops cleanly on:
+  - reset
+  - match end
+  - leaving the match scene
 
 ## Next Items
 
-- Verify Phase 6 MCTS behavior inside Godot
-- Start Phase 7:
-  - AI-vs-AI flow controls
-  - autoplay
-  - step/pause/speed controls
-  - richer AI turn inspection
+- Verify Phase 7 AI arena flow inside Godot
+- Start Phase 8:
+  - stronger HUD layout
+  - clearer player panels
+  - legend/info polish
+  - tactical preview readability
 
 ## User Check List
 
@@ -139,29 +158,33 @@
   - map info
   - controller info
   - AI explanation text
-- On Player 1's turn, click `AI Move` and confirm:
-  - a legal action is chosen
-  - the event log updates
-  - the explanation text updates with score/depth/nodes
-- End Player 1's turn, then on Player 2's turn click `AI Move` and confirm:
-  - a legal action is chosen
-  - the explanation text switches to MCTS metrics
-  - iterations/rollouts appear instead of depth/nodes
-- Reset the match and try both turns several times to confirm Minimax and MCTS both behave consistently
-- Create an obvious center-rush or obvious attack opportunity and confirm both AIs avoid clearly weak actions
-- Confirm `AI Move` is disabled only if the current player is set to Human
-- Confirm manual move/attack/pass still work alongside the dual-AI button
+- Confirm the match title now reflects the AI arena control phase
+- Confirm the new buttons appear:
+  - `Step AI`
+  - `Auto`
+  - `Speed`
+  - `Reset`
+- Click `Step AI` on Player 1 and confirm Minimax acts legally
+- Click `Step AI` on Player 2 and confirm MCTS acts legally
+- Turn on `Auto` and confirm the match keeps progressing without extra clicks
+- Press `Speed` and confirm autoplay pacing changes
+- Confirm manual controls are disabled while autoplay is running
+- Confirm the turn history list fills with entries as actions happen
+- Click older history entries and confirm the detail text changes
+- Confirm the arena stats panel updates with recorded turn count and state hash
+- Confirm `Auto` is disabled if either side is set to Human
+- Confirm reset clears history and returns the board to the start state
 - Open the settings placeholder scene from the menu and confirm the back button still returns to the menu
 
 ## Resources Needed Soon
 
 - No final art or audio needed yet
-- For Phase 7, no art is required, but a preferred AI debug wording style would be useful later for the spectator panel
+- For Phase 8, no art is required, but a preferred AI debug wording style would still be useful for the spectator panel
 - For future map polish, exact approved layouts for `standard`, `open`, and `fortress` would help replace the current implementation-ready presets
 
 ## Known Issues
 
 - Godot CLI is not available in this environment, so editor/runtime verification must be done manually inside Godot
 - The match scene is still a debug gameplay scene, not the final polished interface
-- AI turns are still manual-button driven; autoplay and spectator flow are Phase 7 work
+- Autoplay currently assumes both sides are AI-controlled and uses a simple timer loop rather than a full spectator shell
 - The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only

@@ -1,6 +1,8 @@
 extends Control
 
 const MENU_SCENE := "res://scenes/menu/main_menu.tscn"
+const AUTOPLAY_SPEED_LABELS := ["Slow", "Normal", "Fast"]
+const AUTOPLAY_SPEED_SECONDS := [0.9, 0.45, 0.15]
 
 var _game_state: GameState
 var _board_view: BoardDebugView
@@ -13,14 +15,22 @@ var _selected_actor_label: Label
 var _map_label: Label
 var _ai_label: Label
 var _explanation_label: Label
+var _stats_label: Label
 var _event_log: RichTextLabel
 var _move_button: Button
 var _attack_button: Button
 var _pass_button: Button
 var _reset_button: Button
 var _ai_move_button: Button
+var _autoplay_button: Button
+var _speed_button: Button
+var _history_list: ItemList
+var _history_detail_label: Label
+var _autoplay_timer: Timer
 var _action_mode: String = ""
 var _selected_actor_id: String = ""
+var _autoplay_enabled: bool = false
+var _autoplay_speed_index: int = 1
 
 
 func _ready() -> void:
@@ -48,7 +58,7 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Phase 6 Dual AI Prototype"
+	title.text = "Phase 7 AI Arena Controls"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
@@ -152,10 +162,22 @@ func _build_layout() -> void:
 	sidebar_layout.add_child(utility_row)
 
 	_ai_move_button = Button.new()
-	_ai_move_button.text = "AI Move"
+	_ai_move_button.text = "Step AI"
 	_ai_move_button.custom_minimum_size = Vector2(120, 44)
 	_ai_move_button.pressed.connect(_on_ai_move_pressed)
 	utility_row.add_child(_ai_move_button)
+
+	_autoplay_button = Button.new()
+	_autoplay_button.text = "Auto: Off"
+	_autoplay_button.custom_minimum_size = Vector2(108, 44)
+	_autoplay_button.pressed.connect(_on_autoplay_pressed)
+	utility_row.add_child(_autoplay_button)
+
+	_speed_button = Button.new()
+	_speed_button.text = "Speed: Normal"
+	_speed_button.custom_minimum_size = Vector2(118, 44)
+	_speed_button.pressed.connect(_on_speed_pressed)
+	utility_row.add_child(_speed_button)
 
 	_reset_button = Button.new()
 	_reset_button.text = "Reset"
@@ -164,13 +186,30 @@ func _build_layout() -> void:
 	utility_row.add_child(_reset_button)
 
 	var legend = Label.new()
-	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use AI Move for the current player when that side is AI-controlled\n5. Use Reset to restart the current map\n\nQtank = triangle marker\nKtank = circle marker\nBlue = Player 1\nRed = Player 2"
+	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use Step AI for one AI turn\n5. Use Auto to watch AI-vs-AI continuously\n6. Use Reset to restart the current map\n\nQtank = triangle marker\nKtank = circle marker\nBlue = Player 1\nRed = Player 2"
 	legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(legend)
 
 	_explanation_label = Label.new()
 	_explanation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(_explanation_label)
+
+	_stats_label = Label.new()
+	_stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sidebar_layout.add_child(_stats_label)
+
+	var history_title = Label.new()
+	history_title.text = "Turn History"
+	sidebar_layout.add_child(history_title)
+
+	_history_list = ItemList.new()
+	_history_list.custom_minimum_size = Vector2(0, 150)
+	_history_list.item_selected.connect(_on_history_item_selected)
+	sidebar_layout.add_child(_history_list)
+
+	_history_detail_label = Label.new()
+	_history_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sidebar_layout.add_child(_history_detail_label)
 
 	_event_log = RichTextLabel.new()
 	_event_log.custom_minimum_size = Vector2(0, 220)
@@ -185,6 +224,11 @@ func _build_layout() -> void:
 	back_button.pressed.connect(_on_back_pressed)
 	sidebar_layout.add_child(back_button)
 
+	_autoplay_timer = Timer.new()
+	_autoplay_timer.one_shot = true
+	_autoplay_timer.timeout.connect(_on_autoplay_timer_timeout)
+	add_child(_autoplay_timer)
+
 
 func _refresh_view() -> void:
 	_turn_label.text = "Turn %d | Current Player: P%d | Actions Left: %d" % [
@@ -195,9 +239,14 @@ func _refresh_view() -> void:
 	_map_label.text = "Map: %s\n%s" % [_game_state.board.map_display_name, _game_state.board.map_description]
 	_ai_label.text = _ai_status_text()
 	_explanation_label.text = _explanation_text()
+	_stats_label.text = _stats_text()
+	_autoplay_button.text = "Auto: %s" % ("On" if _autoplay_enabled else "Off")
+	_speed_button.text = "Speed: %s" % AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
 
 	if _game_state.game_over:
 		_status_label.text = "Game Over: %s" % (_winner_label())
+	elif _autoplay_enabled:
+		_status_label.text = "Current Status: Autoplay running at %s speed." % AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
 	else:
 		_status_label.text = "Current Status: %s" % ("Select a tank to act." if _selected_actor_id == "" else "Choose an action for %s." % _actor_label(_selected_actor_id))
 
@@ -208,6 +257,7 @@ func _refresh_view() -> void:
 	_board_view.set_selected_actor(_selected_actor_id)
 	_board_view.set_highlighted_cells(_build_highlight_map())
 	_refresh_event_log()
+	_refresh_history_panel()
 	_update_button_state()
 
 
@@ -277,12 +327,13 @@ func _format_event(event_item: GameEvent) -> String:
 
 
 func _update_button_state() -> void:
-	var can_act: bool = not _game_state.game_over and _selected_actor_id != ""
+	var can_act: bool = not _game_state.game_over and not _autoplay_enabled and _selected_actor_id != ""
 	_move_button.disabled = not can_act
 	_attack_button.disabled = not can_act
-	_pass_button.disabled = _game_state.game_over
+	_pass_button.disabled = _game_state.game_over or _autoplay_enabled
 	_reset_button.disabled = false
-	_ai_move_button.disabled = _game_state.game_over or _current_player_controller_type() == GameTypes.ControllerType.HUMAN
+	_ai_move_button.disabled = _game_state.game_over or _autoplay_enabled or _current_player_controller_type() == GameTypes.ControllerType.HUMAN
+	_autoplay_button.disabled = _game_state.game_over or not _both_players_are_ai()
 
 
 func _on_board_cell_clicked(coord_key: String) -> void:
@@ -308,8 +359,8 @@ func _on_board_cell_clicked(coord_key: String) -> void:
 func _try_execute_move(coord: HexCoord) -> void:
 	for target: HexCoord in _game_state.get_legal_move_targets(_selected_actor_id):
 		if target.equals(coord):
-			_game_state.apply_action(ActionData.new(GameTypes.ActionType.MOVE, _selected_actor_id, coord.clone()))
-			_after_action()
+			var action: ActionData = ActionData.new(GameTypes.ActionType.MOVE, _selected_actor_id, coord.clone())
+			_execute_action(action, "Human", _manual_explanation(action))
 			return
 
 
@@ -317,8 +368,7 @@ func _try_execute_attack(coord: HexCoord) -> void:
 	var action: ActionData = _game_state.build_attack_action(_selected_actor_id, coord)
 	if action == null:
 		return
-	_game_state.apply_action(action)
-	_after_action()
+	_execute_action(action, "Human", _manual_explanation(action))
 
 
 func _after_action() -> void:
@@ -345,18 +395,48 @@ func _on_attack_mode_pressed() -> void:
 
 
 func _on_pass_pressed() -> void:
-	_game_state.apply_action(ActionData.new(GameTypes.ActionType.PASS))
-	_action_mode = ""
-	_selected_actor_id = ""
-	_refresh_view()
+	var action: ActionData = ActionData.new(GameTypes.ActionType.PASS)
+	_execute_action(action, "Human", _manual_explanation(action))
 
 
 func _on_reset_pressed() -> void:
+	_disable_autoplay()
 	_reset_match()
 	_refresh_view()
 
 
 func _on_ai_move_pressed() -> void:
+	_step_current_ai_turn()
+
+
+func _on_autoplay_pressed() -> void:
+	if _autoplay_enabled:
+		_disable_autoplay()
+	else:
+		_enable_autoplay()
+	_refresh_view()
+
+
+func _on_speed_pressed() -> void:
+	_autoplay_speed_index = (_autoplay_speed_index + 1) % AUTOPLAY_SPEED_LABELS.size()
+	if _autoplay_enabled:
+		_schedule_autoplay()
+	_refresh_view()
+
+
+func _on_autoplay_timer_timeout() -> void:
+	if not _autoplay_enabled or _game_state.game_over:
+		return
+	if _current_player_controller_type() == GameTypes.ControllerType.HUMAN:
+		_disable_autoplay()
+		_refresh_view()
+		return
+	_step_current_ai_turn()
+	if _autoplay_enabled and not _game_state.game_over:
+		_schedule_autoplay()
+
+
+func _step_current_ai_turn() -> void:
 	var controller_type: int = _current_player_controller_type()
 	if controller_type == GameTypes.ControllerType.HUMAN:
 		return
@@ -365,10 +445,7 @@ func _on_ai_move_pressed() -> void:
 	var result: Dictionary = _choose_ai_action(controller_type, config)
 	var action: ActionData = result.get("action", ActionData.new(GameTypes.ActionType.PASS))
 	var explanation: ActionExplanation = result.get("explanation", ActionExplanation.new())
-	AppState.last_action_explanation = explanation
-	EventBus.action_explanation_updated.emit(explanation)
-	_game_state.apply_action(action)
-	_after_action()
+	_execute_action(action, _controller_label(controller_type), explanation)
 
 
 func _reset_match() -> void:
@@ -376,6 +453,13 @@ func _reset_match() -> void:
 	_action_mode = ""
 	_selected_actor_id = ""
 	AppState.last_action_explanation = ActionExplanation.new()
+	AppState.current_replay.clear()
+	AppState.current_replay.metadata = {
+		"map_id": _game_state.board.map_id,
+		"map_name": _game_state.board.map_display_name,
+		"player_one_controller": _controller_label(AppState.current_match_config.player_one_ai.controller_type),
+		"player_two_controller": _controller_label(AppState.current_match_config.player_two_ai.controller_type),
+	}
 
 
 func _winner_label() -> String:
@@ -395,6 +479,7 @@ func _actor_label(actor_id: String) -> String:
 
 
 func _on_back_pressed() -> void:
+	_disable_autoplay()
 	get_tree().change_scene_to_file(MENU_SCENE)
 
 
@@ -449,11 +534,131 @@ func _choose_ai_action(controller_type: int, config: AIConfig) -> Dictionary:
 			}
 
 
+func _execute_action(action: ActionData, source_label: String, explanation: ActionExplanation) -> void:
+	var acting_turn: int = _game_state.turn_count
+	var acting_player: int = _game_state.current_player
+	_game_state.apply_action(action)
+	if _game_state.game_over:
+		_disable_autoplay()
+	AppState.last_action_explanation = explanation
+	EventBus.action_explanation_updated.emit(explanation)
+	_record_turn_snapshot(acting_turn, acting_player, source_label, action, explanation)
+	_after_action()
+
+
+func _record_turn_snapshot(acting_turn: int, acting_player: int, source_label: String, action: ActionData, explanation: ActionExplanation) -> void:
+	var event_lines: Array[String] = []
+	for event_item: GameEvent in _game_state.last_events:
+		event_lines.append(_format_event(event_item))
+
+	var snapshot: Dictionary = {
+		"turn": acting_turn,
+		"player": acting_player,
+		"source": source_label,
+		"action_type": action.action_type,
+		"actor_id": action.actor_id,
+		"target": action.target_coord.key(),
+		"summary": explanation.summary if explanation.summary != "" else _manual_summary(action),
+		"score": explanation.score,
+		"metrics": explanation.metrics.duplicate(true),
+		"events": event_lines,
+		"state_hash": _game_state.get_state_hash(),
+	}
+	AppState.current_replay.add_turn(snapshot)
+
+
+func _refresh_history_panel() -> void:
+	if _history_list == null:
+		return
+
+	var selected_items: PackedInt32Array = _history_list.get_selected_items()
+	var previous_selected: int = selected_items[0] if selected_items.size() > 0 else -1
+	_history_list.clear()
+	for index in range(AppState.current_replay.turns.size()):
+		var turn_data: Dictionary = AppState.current_replay.turns[index]
+		var label: String = "T%d P%d %s" % [turn_data.get("turn", 0), turn_data.get("player", 0), turn_data.get("source", "Unknown")]
+		_history_list.add_item(label)
+
+	if AppState.current_replay.turns.is_empty():
+		_history_detail_label.text = "History Detail: no turns recorded yet."
+		return
+
+	var selected_index: int = previous_selected
+	if selected_index < 0 or selected_index >= AppState.current_replay.turns.size():
+		selected_index = AppState.current_replay.turns.size() - 1
+	_history_list.select(selected_index)
+	_history_detail_label.text = _history_detail_text(selected_index)
+
+
+func _on_history_item_selected(index: int) -> void:
+	_history_detail_label.text = _history_detail_text(index)
+
+
+func _history_detail_text(index: int) -> String:
+	if index < 0 or index >= AppState.current_replay.turns.size():
+		return "History Detail: no turn selected."
+
+	var turn_data: Dictionary = AppState.current_replay.turns[index]
+	var metrics: Dictionary = turn_data.get("metrics", {})
+	var event_lines: Array[String] = []
+	for event_line: Variant in turn_data.get("events", []):
+		event_lines.append(str(event_line))
+	var metrics_summary: String = "Score %.2f" % float(turn_data.get("score", 0.0))
+	if turn_data.get("source", "") == "Minimax":
+		metrics_summary += " | Depth %s | Nodes %s" % [metrics.get("depth_completed", 0), metrics.get("nodes_searched", 0)]
+	elif turn_data.get("source", "") == "MCTS":
+		metrics_summary += " | Iter %s | Rollouts %s" % [metrics.get("iterations", 0), metrics.get("rollouts", 0)]
+
+	var events_text: String = "\n".join(event_lines)
+	return "History Detail:\n%s\n%s\n%s" % [turn_data.get("summary", ""), metrics_summary, events_text]
+
+
+func _manual_explanation(action: ActionData) -> ActionExplanation:
+	return ActionExplanation.new(_actor_label(action.actor_id), _manual_summary(action), 0.0, {"source": "manual"})
+
+
+func _manual_summary(action: ActionData) -> String:
+	match action.action_type:
+		GameTypes.ActionType.MOVE:
+			return "Human moved %s to %s." % [_actor_label(action.actor_id), action.target_coord.key()]
+		GameTypes.ActionType.ATTACK:
+			return "Human attacked with %s." % _actor_label(action.actor_id)
+		GameTypes.ActionType.PASS:
+			return "Human passed the turn."
+		_:
+			return "Human action resolved."
+
+
+func _enable_autoplay() -> void:
+	if not _both_players_are_ai():
+		return
+	_autoplay_enabled = true
+	_schedule_autoplay()
+
+
+func _disable_autoplay() -> void:
+	_autoplay_enabled = false
+	if _autoplay_timer != null:
+		_autoplay_timer.stop()
+
+
+func _schedule_autoplay() -> void:
+	if _autoplay_timer == null:
+		return
+	_autoplay_timer.stop()
+	_autoplay_timer.wait_time = AUTOPLAY_SPEED_SECONDS[_autoplay_speed_index]
+	_autoplay_timer.start()
+
+
+func _both_players_are_ai() -> bool:
+	return AppState.current_match_config.player_one_ai.controller_type != GameTypes.ControllerType.HUMAN and AppState.current_match_config.player_two_ai.controller_type != GameTypes.ControllerType.HUMAN
+
+
 func _ai_status_text() -> String:
 	var p1_type: String = _controller_label(AppState.current_match_config.player_one_ai.controller_type)
 	var p2_type: String = _controller_label(AppState.current_match_config.player_two_ai.controller_type)
 	var current_type: String = _controller_label(_game_state.get_ai_config_for_player(_game_state.current_player).controller_type)
-	return "Controllers: P1 %s | P2 %s\nCurrent Turn AI: %s" % [p1_type, p2_type, current_type]
+	return "Controllers: P1 %s | P2 %s\nCurrent Turn AI: %s\nAutoplay: %s" % [p1_type, p2_type, current_type, "Enabled" if _autoplay_enabled else "Disabled"]
 
 
 func _explanation_text() -> String:
@@ -482,6 +687,21 @@ func _explanation_text() -> String:
 		metrics.get("depth_completed", 0),
 		metrics.get("nodes_searched", 0),
 		metrics.get("elapsed_ms", 0.0),
+	]
+
+
+func _stats_text() -> String:
+	var total_turns: int = AppState.current_replay.turns.size()
+	if total_turns == 0:
+		return "Arena Stats: no recorded turns yet.\nUse Step AI or Auto to begin."
+
+	var latest: Dictionary = AppState.current_replay.turns[total_turns - 1]
+	return "Arena Stats: %d recorded turns\nLatest: T%d P%d via %s\nState Hash: %s" % [
+		total_turns,
+		latest.get("turn", 0),
+		latest.get("player", 0),
+		latest.get("source", "Unknown"),
+		latest.get("state_hash", ""),
 	]
 
 
