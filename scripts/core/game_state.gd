@@ -271,6 +271,9 @@ func _apply_move(tank: TankData, action: ActionData) -> bool:
 		_add_event("invalid_action", {"reason": "illegal move", "actor_id": tank.actor_id()})
 		return false
 
+	var move_vector: Vector2 = action.target_coord.to_world_flat(1.0) - tank.position.to_world_flat(1.0)
+	if move_vector.length() > 0.001:
+		tank.facing_angle = move_vector.angle()
 	var from_key: String = tank.position.key()
 	tank.position = action.target_coord.clone()
 	_add_event("move", {"actor_id": tank.actor_id(), "from": from_key, "to": tank.position.key()})
@@ -317,6 +320,10 @@ func _apply_qtank_attack(tank: TankData, direction: int) -> void:
 		_add_event("invalid_action", {"reason": "missing direction", "actor_id": tank.actor_id()})
 		return
 
+	var aim_target: HexCoord = tank.position.neighbor(direction)
+	var aim_vector: Vector2 = aim_target.to_world_flat(1.0) - tank.position.to_world_flat(1.0)
+	if aim_vector.length() > 0.001:
+		tank.facing_angle = aim_vector.angle()
 	var damage: int = tank.get_attack_damage()
 	_add_event("attack", {"actor_id": tank.actor_id(), "mode": "laser", "direction": direction, "damage": damage})
 	for step_coord: HexCoord in tank.position.raycast(direction, board.rings * 3):

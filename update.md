@@ -222,6 +222,11 @@
   - attack beams, blast rings, hit flashes, and floating damage stay on screen longer
   - turn flow now waits for movement and attack feedback before allowing the next action
   - autoplay respects the slower presentation window so AI turns can be watched clearly
+- Improved movement readability:
+  - removed the laser-like move effect
+  - move feedback now uses travel and arrival cues instead of a beam
+  - tanks now store facing direction and rotate when they move
+  - Qtanks also turn to face their firing direction
   - turn snapshots now store structured event payloads in addition to formatted event lines
   - the replay viewer now shows winner, win condition, damage, pickups, kills, and average think times
   - the match scene now shows a post-match summary block when the game ends

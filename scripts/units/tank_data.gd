@@ -13,6 +13,7 @@ var position: HexCoord = HexCoord.new()
 var hp: int = 0
 var max_hp: int = 0
 var owner_id: int = 1
+var facing_angle: float = 0.0
 var active_buff: int = GameTypes.BuffType.NONE
 var shield_hits_remaining: int = 0
 
@@ -22,17 +23,19 @@ func _init(
 	p_position: HexCoord = null,
 	p_hp: int = 0,
 	p_max_hp: int = 0,
-	p_owner_id: int = 1
+	p_owner_id: int = 1,
+	p_facing_angle: float = 0.0
 ) -> void:
 	tank_type = p_tank_type
 	position = p_position if p_position != null else HexCoord.new()
 	hp = p_hp
 	max_hp = p_max_hp
 	owner_id = p_owner_id
+	facing_angle = p_facing_angle
 
 
 func clone() -> TankData:
-	var duplicate: TankData = TankData.new(tank_type, position.clone(), hp, max_hp, owner_id)
+	var duplicate: TankData = TankData.new(tank_type, position.clone(), hp, max_hp, owner_id, facing_angle)
 	duplicate.active_buff = active_buff
 	duplicate.shield_hits_remaining = shield_hits_remaining
 	return duplicate
@@ -45,6 +48,7 @@ func to_snapshot() -> Dictionary:
 		"hp": hp,
 		"max_hp": max_hp,
 		"owner_id": owner_id,
+		"facing_angle": facing_angle,
 		"active_buff": active_buff,
 		"shield_hits_remaining": shield_hits_remaining,
 	}
@@ -56,7 +60,8 @@ static func from_snapshot(snapshot: Dictionary) -> TankData:
 		HexCoord.from_key(str(snapshot.get("position", "0,0"))),
 		int(snapshot.get("hp", 0)),
 		int(snapshot.get("max_hp", 0)),
-		int(snapshot.get("owner_id", 1))
+		int(snapshot.get("owner_id", 1)),
+		float(snapshot.get("facing_angle", 0.0))
 	)
 	tank.active_buff = int(snapshot.get("active_buff", GameTypes.BuffType.NONE))
 	tank.shield_hits_remaining = int(snapshot.get("shield_hits_remaining", 0))
@@ -112,8 +117,10 @@ func take_damage(amount: int) -> int:
 
 
 static func create_default_qtank(owner_id: int, coord: HexCoord) -> TankData:
-	return TankData.new(GameTypes.TankType.QTANK, coord, QTANK_HP, QTANK_HP, owner_id)
+	var default_angle: float = -PI * 0.5 if owner_id == 1 else PI * 0.5
+	return TankData.new(GameTypes.TankType.QTANK, coord, QTANK_HP, QTANK_HP, owner_id, default_angle)
 
 
 static func create_default_ktank(owner_id: int, coord: HexCoord) -> TankData:
-	return TankData.new(GameTypes.TankType.KTANK, coord, KTANK_HP, KTANK_HP, owner_id)
+	var default_angle: float = -PI * 0.5 if owner_id == 1 else PI * 0.5
+	return TankData.new(GameTypes.TankType.KTANK, coord, KTANK_HP, KTANK_HP, owner_id, default_angle)

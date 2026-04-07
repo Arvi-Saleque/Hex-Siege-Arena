@@ -260,6 +260,7 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 	match action.action_type:
 		GameTypes.ActionType.MOVE:
 			var moved_tank: TankData = previous_state.get_tank(action.actor_id)
+			var current_tank: TankData = current_state.get_tank(action.actor_id)
 			if moved_tank != null:
 				var start_center: Vector2 = moved_tank.position.to_world_flat(hex_size)
 				var end_center: Vector2 = action.target_coord.to_world_flat(hex_size)
@@ -267,16 +268,25 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 				_tank_motion_overrides[action.actor_id] = {
 					"start": start_center,
 					"end": end_center,
+					"start_angle": moved_tank.facing_angle,
+					"end_angle": current_tank.facing_angle if current_tank != null else moved_tank.facing_angle,
 					"time_left": travel_duration,
 					"duration": travel_duration,
 				}
-				_beam_effects.append({
-					"start": start_center,
-					"end": end_center,
-					"color": Color("7be0ff"),
-					"width": 4.0,
-					"time_left": travel_duration,
-					"duration": travel_duration,
+				_ring_effects.append({
+					"center": start_center,
+					"color": Color("8ed9ff"),
+					"radius": 20.0,
+					"time_left": 0.24,
+					"duration": 0.24,
+					"filled": false,
+				})
+				_flash_effects.append({
+					"center": start_center,
+					"color": Color("9ec9ff"),
+					"radius": 12.0,
+					"time_left": 0.18,
+					"duration": 0.18,
 				})
 				_ring_effects.append({
 					"center": end_center,
@@ -453,6 +463,7 @@ func _draw_tanks() -> void:
 		var center: Vector2 = _tile_center(tank_cell) if tank_cell != null else tank.position.to_world_flat(hex_size)
 		if _tank_motion_overrides.has(tank.actor_id()):
 			center = _motion_override_center(tank.actor_id(), center)
+		var tank_rotation: float = _tank_draw_rotation(tank)
 		var player_color: Color = _player_primary_color(tank.owner_id)
 		var accent_color: Color = _player_accent_color(tank.owner_id)
 		draw_colored_polygon(_ellipse_points(center + Vector2(0, 16), Vector2(20, 8), 20), Color(0.03, 0.05, 0.08, 0.4))
@@ -460,7 +471,7 @@ func _draw_tanks() -> void:
 			draw_arc(center + Vector2(0, 6), 22.0, 0.0, TAU, 40, player_color.lerp(Color.WHITE, 0.2), 2.5, true)
 		if tank.actor_id() == selected_actor_id:
 			draw_circle(center + Vector2(0, 6), 20.0, player_color.lerp(Color.WHITE, 0.22))
-		_draw_tank_sprite(center, tank)
+		_draw_tank_sprite(center, tank, tank_rotation)
 
 		if font != null:
 			draw_string(font, center + Vector2(-10, -27), "%d" % tank.hp, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, Color("f5f7fb"))
@@ -591,7 +602,7 @@ func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2A
 			pass
 
 
-func _draw_tank_sprite(center: Vector2, tank: TankData) -> void:
+func _draw_tank_sprite(center: Vector2, tank: TankData, rotation_value: float = 0.0) -> void:
 	var sprite_set: Dictionary = TANK_SPRITES.get(tank.actor_id(), {})
 	if sprite_set.is_empty():
 		var player_color: Color = _player_primary_color(tank.owner_id)
@@ -608,18 +619,18 @@ func _draw_tank_sprite(center: Vector2, tank: TankData) -> void:
 	var gun_texture: Texture2D = sprite_set.get("gun", null) as Texture2D
 
 	if track_texture != null:
-		_draw_centered_texture(track_texture, center + Vector2(0, 4), scale_value)
+		_draw_centered_texture(track_texture, center + Vector2(0, 4), scale_value, rotation_value)
 	if hull_texture != null:
-		_draw_centered_texture(hull_texture, center + Vector2(0, 1), scale_value)
+		_draw_centered_texture(hull_texture, center + Vector2(0, 1), scale_value, rotation_value)
 	if gun_texture != null:
-		_draw_centered_texture(gun_texture, center + Vector2(0, -2), scale_value)
+		_draw_centered_texture(gun_texture, center + Vector2(0, -2), scale_value, rotation_value)
 
 
-func _draw_centered_texture(texture: Texture2D, center: Vector2, scale_value: float) -> void:
+func _draw_centered_texture(texture: Texture2D, center: Vector2, scale_value: float, rotation_value: float = 0.0) -> void:
 	var texture_size: Vector2 = texture.get_size()
-	var draw_size: Vector2 = texture_size * scale_value
-	var draw_rect_value := Rect2(center - draw_size * 0.5, draw_size)
-	draw_texture_rect(texture, draw_rect_value, false)
+	draw_set_transform(center, rotation_value, Vector2.ONE * scale_value)
+	draw_texture(texture, -texture_size * 0.5)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 func _draw_qtank(center: Vector2, player_color: Color, accent_color: Color) -> void:
@@ -757,6 +768,26 @@ func _motion_override_center(actor_id: String, fallback_center: Vector2) -> Vect
 	var progress: float = 1.0 - (time_left / duration)
 	var eased_progress: float = 1.0 - pow(1.0 - progress, 2.2)
 	return _effect_vec2(motion, "start", fallback_center).lerp(_effect_vec2(motion, "end", fallback_center), eased_progress)
+
+
+func _motion_override_angle(actor_id: String, fallback_angle: float) -> float:
+	var motion: Dictionary = _tank_motion_overrides.get(actor_id, {})
+	if motion.is_empty():
+		return fallback_angle
+	var duration: float = maxf(_effect_float(motion, "duration", 1.0), 0.001)
+	var time_left: float = clampf(_effect_float(motion, "time_left", 0.0), 0.0, duration)
+	var progress: float = 1.0 - (time_left / duration)
+	var eased_progress: float = 1.0 - pow(1.0 - progress, 2.2)
+	var start_angle: float = _effect_float(motion, "start_angle", fallback_angle)
+	var end_angle: float = _effect_float(motion, "end_angle", fallback_angle)
+	return lerp_angle(start_angle, end_angle, eased_progress)
+
+
+func _tank_draw_rotation(tank: TankData) -> float:
+	var base_angle: float = tank.facing_angle + PI * 0.5
+	if _tank_motion_overrides.has(tank.actor_id()):
+		return _motion_override_angle(tank.actor_id(), base_angle)
+	return base_angle
 
 
 func _apply_event_feedback(current_state: GameState, event_item: GameEvent) -> void:
