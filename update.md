@@ -267,6 +267,7 @@
 
 - No final art or audio needed yet
 - For Phase 12, an audio pack or reference list for movement, laser, blast, hit, shield, pickup, and win sounds would help a lot if you have them
+- Added `audio.md` as a detailed generation brief for AI-created sound assets
 - For future map polish, exact approved layouts for `standard`, `open`, and `fortress` would help replace the current implementation-ready presets
 
 ## Known Issues
