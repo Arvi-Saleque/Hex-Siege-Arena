@@ -49,6 +49,26 @@ func _build_layout() -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
+	var glow_left = ColorRect.new()
+	glow_left.color = Color(0.16, 0.26, 0.36, 0.17)
+	glow_left.position = Vector2(-120, 120)
+	glow_left.size = Vector2(340, 640)
+	add_child(glow_left)
+
+	var glow_right = ColorRect.new()
+	glow_right.color = Color(0.42, 0.22, 0.16, 0.12)
+	glow_right.position = Vector2(1240, 80)
+	glow_right.size = Vector2(360, 700)
+	add_child(glow_right)
+
+	var horizon_band = ColorRect.new()
+	horizon_band.color = Color(0.22, 0.28, 0.36, 0.08)
+	horizon_band.position = Vector2(0, 210)
+	horizon_band.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	horizon_band.custom_minimum_size = Vector2(0, 220)
+	horizon_band.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	add_child(horizon_band)
+
 	var root_margin = MarginContainer.new()
 	root_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root_margin.add_theme_constant_override("margin_left", 24)
@@ -62,7 +82,7 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Phase 8 Tactical Interface"
+	title.text = "Phase 9 Battlefield Depth Pass"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
@@ -85,6 +105,7 @@ func _build_layout() -> void:
 
 	var p1_panel = PanelContainer.new()
 	p1_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	p1_panel.self_modulate = Color(0.9, 0.96, 1.0, 1.0)
 	player_row.add_child(p1_panel)
 
 	var p1_margin = MarginContainer.new()
@@ -100,6 +121,7 @@ func _build_layout() -> void:
 
 	var p2_panel = PanelContainer.new()
 	p2_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	p2_panel.self_modulate = Color(1.0, 0.94, 0.92, 1.0)
 	player_row.add_child(p2_panel)
 
 	var p2_margin = MarginContainer.new()
@@ -122,6 +144,7 @@ func _build_layout() -> void:
 	var board_panel = PanelContainer.new()
 	board_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	board_panel.self_modulate = Color(0.94, 0.98, 1.0, 1.0)
 	content.add_child(board_panel)
 
 	var board_margin = MarginContainer.new()
@@ -141,6 +164,7 @@ func _build_layout() -> void:
 
 	var sidebar = PanelContainer.new()
 	sidebar.custom_minimum_size = Vector2(360, 0)
+	sidebar.self_modulate = Color(0.98, 0.96, 0.93, 1.0)
 	content.add_child(sidebar)
 
 	var sidebar_margin = MarginContainer.new()

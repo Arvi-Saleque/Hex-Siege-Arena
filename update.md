@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 8: Core interface and tactical readability
+- Phase 9: Visual pass with 2D + fake 3D depth
 
 ## Completed Items
 
@@ -152,15 +152,30 @@
   - total team HP
   - selected-unit preview text
   - buff labels
+- Added battlefield depth treatment to the board renderer:
+  - raised tile shadows
+  - darker side faces
+  - top-edge highlights
+  - ambient board backdrop shapes
+- Added animated objective and power presentation:
+  - pulsing center glow
+  - power-tile glows
+  - hover lift
+  - selected tile lift
+- Improved unit presentation for a fake-3D feel:
+  - tank drop shadows
+  - active-unit rings
+  - stronger battlefield layering
+- Added a more atmospheric match backdrop with soft color bands behind the board and HUD
 
 ## Next Items
 
-- Verify Phase 8 tactical interface inside Godot
-- Start Phase 9:
-  - board depth treatment
-  - hover/selection polish
-  - fake-3D visual pass
-  - camera feel improvements
+- Verify Phase 9 battlefield depth pass inside Godot
+- Start Phase 10:
+  - stronger tank art identity
+  - tile material pass
+  - icon/material cleanup
+  - visual differentiation polish
 
 ## User Check List
 
@@ -174,7 +189,7 @@
   - map info
   - controller info
   - AI explanation text
-- Confirm the match title now reflects the tactical interface phase
+- Confirm the match title now reflects the battlefield depth phase
 - Confirm the new top section shows:
   - turn info
   - objective text
@@ -207,6 +222,15 @@
   - center objective
   - highlighted move vs attack tiles
   - unit HP and buff markers
+- Confirm the battlefield now feels more dimensional:
+  - tiles have visible depth/shadow
+  - hovered and selected tiles lift visually
+  - center tile pulses
+  - power tiles glow subtly
+  - tanks cast shadows
+- Confirm the backdrop feels less flat:
+  - soft color bands behind the arena
+  - more atmospheric board framing
 - Confirm `Auto` is disabled if either side is set to Human
 - Confirm reset clears history and returns the board to the start state
 - Open the settings placeholder scene from the menu and confirm the back button still returns to the menu
@@ -214,7 +238,7 @@
 ## Resources Needed Soon
 
 - No final art or audio needed yet
-- For Phase 9, no art is required yet, but a visual direction reference would help when I start the fake-3D board treatment
+- For Phase 10, reference art for tank silhouettes, material style, or icon direction would help a lot if you have it
 - For future map polish, exact approved layouts for `standard`, `open`, and `fortress` would help replace the current implementation-ready presets
 
 ## Known Issues
@@ -222,4 +246,5 @@
 - Godot CLI is not available in this environment, so editor/runtime verification must be done manually inside Godot
 - The match scene is more readable now, but it is still a prototype HUD rather than the final styled interface
 - Autoplay currently assumes both sides are AI-controlled and uses a simple timer loop rather than a full spectator shell
+- The visual depth pass is still code-drawn placeholder art, not the final material/art pass
 - The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only

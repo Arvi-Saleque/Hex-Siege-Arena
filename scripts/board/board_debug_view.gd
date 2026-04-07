@@ -25,12 +25,19 @@ var selected_key: String = ""
 var selected_actor_id: String = ""
 var highlighted_keys: Dictionary = {}
 var current_action_mode: String = ""
+var _pulse_time: float = 0.0
 
 
 func _ready() -> void:
 	if game_state == null:
 		board_state.load_map_preset(MapLibrary.get_preset("standard"))
 	set_process_input(true)
+	set_process(true)
+	queue_redraw()
+
+
+func _process(delta: float) -> void:
+	_pulse_time += delta
 	queue_redraw()
 
 
@@ -43,8 +50,9 @@ func _input(event: InputEvent) -> void:
 
 func _draw() -> void:
 	var active_board: BoardState = _active_board()
-	for cell: CellData in active_board.cells.values():
-		var center: Vector2 = cell.coord.to_world_flat(hex_size)
+	_draw_board_backdrop(active_board)
+	for cell: CellData in _sorted_cells(active_board):
+		var center: Vector2 = _tile_center(cell)
 		var fill: Color = COLOR_BY_TYPE.get(cell.cell_type, Color.DIM_GRAY)
 		if highlighted_keys.has(cell.coord.key()):
 			fill = fill.lerp(highlighted_keys[cell.coord.key()], 0.45)
@@ -54,17 +62,34 @@ func _draw() -> void:
 			fill = fill.lerp(Color("67f0ff"), 0.35)
 
 		var points: PackedVector2Array = _hex_points(center)
+		var shadow_points: PackedVector2Array = _offset_points(points, Vector2(0, 11 + _tile_depth(cell)))
+		draw_colored_polygon(shadow_points, Color(0.03, 0.05, 0.08, 0.55))
+
+		var side_points: PackedVector2Array = _side_face_points(points, 8 + _tile_depth(cell))
+		if not side_points.is_empty():
+			draw_colored_polygon(side_points, fill.darkened(0.38))
+
+		var glow_color: Color = _tile_glow_color(cell)
+		if glow_color.a > 0.0:
+			draw_circle(center + Vector2(0, 8), hex_size * 0.82, glow_color)
+
 		draw_colored_polygon(points, fill)
 		var outline: PackedVector2Array = points.duplicate()
 		outline.append(points[0])
 		draw_polyline(outline, Color("0f131a"), 2.0, true)
+		var top_highlight: PackedVector2Array = PackedVector2Array([points[4], points[5], points[0], points[1]])
+		draw_polyline(top_highlight, Color.WHITE.lerp(fill, 0.65), 1.5, true)
 		if cell.cell_type == GameTypes.CellType.CENTER:
-			draw_arc(center, hex_size * 0.52, 0.0, TAU, 48, Color("fff2a8"), 2.0, true)
+			var pulse_radius: float = hex_size * (0.52 + 0.08 * sin(_pulse_time * 2.2))
+			draw_circle(center, pulse_radius + 6.0, Color(1.0, 0.92, 0.47, 0.08))
+			draw_arc(center, pulse_radius, 0.0, TAU, 48, Color("fff2a8"), 2.0, true)
 		if highlighted_keys.has(cell.coord.key()) and current_action_mode != "":
 			var preview_outline: PackedVector2Array = points.duplicate()
 			preview_outline.append(points[0])
 			var preview_color: Color = Color("63e38f") if current_action_mode == "move" else Color("ff7a86")
 			draw_polyline(preview_outline, preview_color, 3.0, true)
+		if cell.coord.key() == hovered_key:
+			draw_circle(center + Vector2(0, 2), hex_size * 0.33, Color(1.0, 1.0, 1.0, 0.06))
 
 	if game_state != null:
 		_draw_tanks()
@@ -76,6 +101,28 @@ func _hex_points(center: Vector2) -> PackedVector2Array:
 		var angle: float = deg_to_rad(60.0 * index)
 		points.append(center + Vector2(cos(angle), sin(angle)) * hex_size)
 	return points
+
+
+func _offset_points(points: PackedVector2Array, offset: Vector2) -> PackedVector2Array:
+	var offset_points: PackedVector2Array = PackedVector2Array()
+	for point: Vector2 in points:
+		offset_points.append(point + offset)
+	return offset_points
+
+
+func _side_face_points(points: PackedVector2Array, depth: float) -> PackedVector2Array:
+	if points.size() < 6:
+		return PackedVector2Array()
+	return PackedVector2Array([
+		points[1],
+		points[2],
+		points[2] + Vector2(0, depth),
+		points[1] + Vector2(0, depth),
+		points[0] + Vector2(0, depth),
+		points[5] + Vector2(0, depth),
+		points[5],
+		points[0],
+	])
 
 
 func _update_hover(local_position: Vector2) -> void:
@@ -155,13 +202,83 @@ func _active_board() -> BoardState:
 	return game_state.board if game_state != null else board_state
 
 
+func _sorted_cells(active_board: BoardState) -> Array[CellData]:
+	var cells: Array[CellData] = active_board.all_cells()
+	cells.sort_custom(func(a: CellData, b: CellData) -> bool:
+		var a_center: Vector2 = a.coord.to_world_flat(hex_size)
+		var b_center: Vector2 = b.coord.to_world_flat(hex_size)
+		return a_center.y < b_center.y
+	)
+	return cells
+
+
+func _tile_center(cell: CellData) -> Vector2:
+	var center: Vector2 = cell.coord.to_world_flat(hex_size)
+	if cell.coord.key() == hovered_key:
+		center.y -= 4.0
+	if cell.coord.key() == selected_key:
+		center.y -= 6.0
+	return center
+
+
+func _tile_depth(cell: CellData) -> float:
+	if cell.cell_type == GameTypes.CellType.CENTER:
+		return 8.0
+	if cell.cell_type == GameTypes.CellType.WALL or cell.cell_type == GameTypes.CellType.ARMOR_BLOCK:
+		return 6.0
+	if cell.cell_type == GameTypes.CellType.BLOCK or cell.cell_type == GameTypes.CellType.POWER_BLOCK:
+		return 5.0
+	if cell.coord.key() == hovered_key or cell.coord.key() == selected_key:
+		return 5.0
+	return 2.0
+
+
+func _tile_glow_color(cell: CellData) -> Color:
+	match cell.cell_type:
+		GameTypes.CellType.CENTER:
+			return Color(1.0, 0.9, 0.35, 0.08 + 0.03 * sin(_pulse_time * 2.0))
+		GameTypes.CellType.POWER_ATTACK:
+			return Color(0.93, 0.42, 0.45, 0.09)
+		GameTypes.CellType.POWER_SHIELD:
+			return Color(0.39, 0.7, 1.0, 0.09)
+		GameTypes.CellType.POWER_BONUS_MOVE:
+			return Color(0.42, 0.89, 0.63, 0.09)
+		GameTypes.CellType.POWER_BLOCK:
+			return Color(0.66, 0.42, 0.95, 0.07)
+		_:
+			return Color(0.0, 0.0, 0.0, 0.0)
+
+
+func _draw_board_backdrop(active_board: BoardState) -> void:
+	var used_rect: Rect2 = Rect2(Vector2(-420, -320), Vector2(840, 700))
+	if not active_board.cells.is_empty():
+		var min_x: float = INF
+		var min_y: float = INF
+		var max_x: float = -INF
+		var max_y: float = -INF
+		for cell: CellData in active_board.cells.values():
+			var center: Vector2 = cell.coord.to_world_flat(hex_size)
+			min_x = minf(min_x, center.x)
+			min_y = minf(min_y, center.y)
+			max_x = maxf(max_x, center.x)
+			max_y = maxf(max_y, center.y)
+		used_rect = Rect2(Vector2(min_x - 120.0, min_y - 120.0), Vector2((max_x - min_x) + 240.0, (max_y - min_y) + 260.0))
+
+	draw_rect(used_rect, Color("121722"))
+	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.3, used_rect.size.y * 0.28), 180.0, Color(0.2, 0.32, 0.48, 0.08))
+	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.72, used_rect.size.y * 0.62), 210.0, Color(0.66, 0.55, 0.2, 0.05))
+	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.5, used_rect.size.y * 0.48), 290.0, Color(0.08, 0.12, 0.2, 0.25))
+
+
 func _draw_tanks() -> void:
 	var font: Font = ThemeDB.fallback_font
 	for tank: TankData in game_state.get_all_tanks():
 		if not tank.is_alive():
 			continue
-		var center: Vector2 = tank.position.to_world_flat(hex_size)
+		var tank_cell: CellData = game_state.board.get_cell(tank.position)
+		var center: Vector2 = _tile_center(tank_cell) if tank_cell != null else tank.position.to_world_flat(hex_size)
 		var player_color: Color = Color("72a7ff") if tank.owner_id == 1 else Color("ff6978")
+		draw_circle(center + Vector2(2, 10), 14.0, Color(0.03, 0.05, 0.08, 0.45))
 		if tank.owner_id == game_state.current_player:
 			draw_arc(center, 20.0, 0.0, TAU, 40, player_color.lerp(Color.WHITE, 0.2), 2.5, true)
 		if tank.actor_id() == selected_actor_id:
