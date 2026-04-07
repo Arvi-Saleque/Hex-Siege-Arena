@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 16: Visual polish and 3D tank showcase pass
+- Phase 16: Match scene professional HUD pass
 
 ## Completed Items
 
@@ -198,6 +198,25 @@
   - replay metadata now records the winner label on game end
 - Completed the Phase 14 replay/analytics pass:
   - added `ReplayAnalytics` to compute replay summaries from recorded event data
+- Replaced the heavyweight match dashboard direction with a board-first tactical HUD inspired by the gameplay reference
+- Moved tank presentation fully onto the board using the new PNG tank asset set
+- Rebuilt the live match scene around:
+  - compact top status bar
+  - centered battlefield
+  - narrow combat log
+  - compact selected-unit intel
+  - bottom-right minimap
+  - thin command strip with keyboard hints
+- Added compact pressure score and HP summary text to the top bar
+- Switched the combat log to recent turn-history output instead of only the last action
+- Added keyboard shortcuts in match:
+  - `M` move
+  - `A` attack
+  - `P` pass
+  - `Space` step AI
+  - `Z` autoplay
+  - `R` reset
+  - `H` help
   - turn snapshots now store structured event payloads in addition to formatted event lines
   - the replay viewer now shows winner, win condition, damage, pickups, kills, and average think times
   - the match scene now shows a post-match summary block when the game ends

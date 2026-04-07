@@ -27,6 +27,9 @@ var _hover_label: Label
 var _selected_label: Label
 var _turn_label: Label
 var _objective_label: Label
+var _score_label: Label
+var _hp_summary_label: Label
+var _control_strip_label: Label
 var _status_label: Label
 var _mode_label: Label
 var _selected_actor_label: Label
@@ -53,6 +56,8 @@ var _speed_button: Button
 var _history_list: ItemList
 var _history_detail_label: Label
 var _autoplay_timer: Timer
+var _mini_board_holder: Control
+var _mini_board_view: BoardDebugView
 var _action_mode: String = ""
 var _selected_actor_id: String = ""
 var _autoplay_enabled: bool = false
@@ -75,152 +80,80 @@ func _build_layout() -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
-	var top_glow := ColorRect.new()
-	top_glow.color = Color(0.18, 0.28, 0.42, 0.12)
-	top_glow.position = Vector2(0.0, -30.0)
-	top_glow.custom_minimum_size = Vector2(0.0, 260.0)
-	top_glow.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	add_child(top_glow)
-
-	var left_glow := ColorRect.new()
-	left_glow.color = Color(0.12, 0.3, 0.42, 0.12)
-	left_glow.position = Vector2(-120.0, 160.0)
-	left_glow.size = Vector2(420.0, 720.0)
-	add_child(left_glow)
-
-	var right_glow := ColorRect.new()
-	right_glow.color = Color(0.42, 0.2, 0.14, 0.09)
-	right_glow.position = Vector2(1220.0, 120.0)
-	right_glow.size = Vector2(420.0, 720.0)
-	add_child(right_glow)
-
 	var root_margin := MarginContainer.new()
 	root_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root_margin.add_theme_constant_override("margin_left", 24)
-	root_margin.add_theme_constant_override("margin_top", 24)
-	root_margin.add_theme_constant_override("margin_right", 24)
-	root_margin.add_theme_constant_override("margin_bottom", 24)
+	root_margin.add_theme_constant_override("margin_left", 14)
+	root_margin.add_theme_constant_override("margin_top", 10)
+	root_margin.add_theme_constant_override("margin_right", 14)
+	root_margin.add_theme_constant_override("margin_bottom", 10)
 	add_child(root_margin)
 
 	var root_layout := VBoxContainer.new()
 	root_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root_layout.add_theme_constant_override("separation", 18)
+	root_layout.add_theme_constant_override("separation", 8)
 	root_margin.add_child(root_layout)
 
-	var hero_panel := _make_panel_card(COLOR_GOLD)
-	root_layout.add_child(hero_panel)
-	var hero_margin := _wrap_panel_content(hero_panel, 22, 18)
-	var hero_row := HBoxContainer.new()
-	hero_row.add_theme_constant_override("separation", 18)
-	hero_margin.add_child(hero_row)
+	var top_bar := HBoxContainer.new()
+	top_bar.add_theme_constant_override("separation", 14)
+	root_layout.add_child(top_bar)
 
-	var hero_left := VBoxContainer.new()
-	hero_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hero_left.add_theme_constant_override("separation", 6)
-	hero_row.add_child(hero_left)
-
-	var title := Label.new()
-	title.text = "HEX SIEGE ARENA"
-	title.add_theme_font_override("font", FONT_BOLD)
-	title.add_theme_font_size_override("font_size", 34)
-	hero_left.add_child(title)
-
-	var subtitle := Label.new()
-	subtitle.text = "Tactical AI Arena"
-	subtitle.add_theme_font_override("font", FONT_MEDIUM)
-	subtitle.add_theme_font_size_override("font_size", 16)
-	subtitle.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	hero_left.add_child(subtitle)
-
-	var hero_right := VBoxContainer.new()
-	hero_right.custom_minimum_size = Vector2(430, 0)
-	hero_right.add_theme_constant_override("separation", 8)
-	hero_row.add_child(hero_right)
+	var top_left := VBoxContainer.new()
+	top_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_left.add_theme_constant_override("separation", 0)
+	top_bar.add_child(top_left)
 
 	_turn_label = Label.new()
-	_turn_label.add_theme_font_override("font", FONT_SEMIBOLD)
-	_turn_label.add_theme_font_size_override("font_size", 18)
-	hero_right.add_child(_turn_label)
+	_turn_label.add_theme_font_override("font", FONT_BOLD)
+	_turn_label.add_theme_font_size_override("font_size", 26)
+	top_left.add_child(_turn_label)
 
 	_objective_label = Label.new()
-	_objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_objective_label.add_theme_font_override("font", FONT_MEDIUM)
+	_objective_label.add_theme_font_size_override("font_size", 13)
 	_objective_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	hero_right.add_child(_objective_label)
+	top_left.add_child(_objective_label)
+
+	_score_label = Label.new()
+	_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_score_label.custom_minimum_size = Vector2(170, 0)
+	_score_label.add_theme_font_override("font", FONT_SEMIBOLD)
+	_score_label.add_theme_font_size_override("font_size", 16)
+	_score_label.add_theme_color_override("font_color", Color("c9c7c1"))
+	top_bar.add_child(_score_label)
+
+	_hp_summary_label = Label.new()
+	_hp_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_hp_summary_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_hp_summary_label.add_theme_font_override("font", FONT_SEMIBOLD)
+	_hp_summary_label.add_theme_font_size_override("font_size", 15)
+	top_bar.add_child(_hp_summary_label)
+
+	var divider := ColorRect.new()
+	divider.color = Color(0.18, 0.22, 0.3, 0.75)
+	divider.custom_minimum_size = Vector2(0, 1)
+	root_layout.add_child(divider)
 
 	var content := HBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 18)
+	content.add_theme_constant_override("separation", 16)
 	root_layout.add_child(content)
 
-	var left_column := VBoxContainer.new()
-	left_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	left_column.add_theme_constant_override("separation", 16)
-	content.add_child(left_column)
+	var board_zone := Control.new()
+	board_zone.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	board_zone.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(board_zone)
 
-	var player_row := HBoxContainer.new()
-	player_row.add_theme_constant_override("separation", 14)
-	left_column.add_child(player_row)
-
-	var p1_panel := _make_panel_card(COLOR_P1)
-	p1_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	player_row.add_child(p1_panel)
-	var p1_margin := _wrap_panel_content(p1_panel, 18, 16)
-	var p1_vbox := VBoxContainer.new()
-	p1_vbox.add_theme_constant_override("separation", 8)
-	p1_margin.add_child(p1_vbox)
-	p1_vbox.add_child(_make_section_title("BLUE COMMAND"))
-	_player_one_label = _make_body_label()
-	p1_vbox.add_child(_player_one_label)
-
-	var p2_panel := _make_panel_card(COLOR_P2)
-	p2_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	player_row.add_child(p2_panel)
-	var p2_margin := _wrap_panel_content(p2_panel, 18, 16)
-	var p2_vbox := VBoxContainer.new()
-	p2_vbox.add_theme_constant_override("separation", 8)
-	p2_margin.add_child(p2_vbox)
-	p2_vbox.add_child(_make_section_title("RED COMMAND"))
-	_player_two_label = _make_body_label()
-	p2_vbox.add_child(_player_two_label)
-
-	var board_panel := _make_panel_card(COLOR_BORDER)
-	board_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	board_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	board_panel.clip_contents = true
-	left_column.add_child(board_panel)
-
-	var board_margin := _wrap_panel_content(board_panel, 18, 18)
-	var board_layout := VBoxContainer.new()
-	board_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	board_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	board_layout.add_theme_constant_override("separation", 14)
-	board_margin.add_child(board_layout)
-
-	var board_header := HBoxContainer.new()
-	board_header.add_theme_constant_override("separation", 12)
-	board_layout.add_child(board_header)
-
-	_board_meta_label = Label.new()
-	_board_meta_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_board_meta_label.add_theme_font_override("font", FONT_SEMIBOLD)
-	_board_meta_label.add_theme_font_size_override("font_size", 15)
-	board_header.add_child(_board_meta_label)
-
-	_board_hint_label = Label.new()
-	_board_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_board_hint_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	board_header.add_child(_board_hint_label)
+	var board_center := CenterContainer.new()
+	board_center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	board_zone.add_child(board_center)
 
 	_board_holder = Control.new()
-	_board_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_board_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_board_holder.clip_contents = true
-	_board_holder.custom_minimum_size = Vector2(720, 560)
+	_board_holder.custom_minimum_size = Vector2(900, 760)
+	_board_holder.clip_contents = false
 	_board_holder.resized.connect(_on_board_holder_resized)
-	board_layout.add_child(_board_holder)
+	board_center.add_child(_board_holder)
 
 	_board_view = BoardDebugView.new()
 	_board_view.set_game_state(_game_state)
@@ -229,180 +162,153 @@ func _build_layout() -> void:
 	_board_view.cell_clicked.connect(_on_board_cell_clicked)
 	_board_holder.add_child(_board_view)
 
-	var sidebar := _make_panel_card(COLOR_BORDER)
-	sidebar.custom_minimum_size = Vector2(390, 0)
-	sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(sidebar)
+	var side_rail := VBoxContainer.new()
+	side_rail.custom_minimum_size = Vector2(260, 0)
+	side_rail.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	side_rail.add_theme_constant_override("separation", 12)
+	content.add_child(side_rail)
 
-	var sidebar_margin := _wrap_panel_content(sidebar, 18, 18)
-	_sidebar_scroll = ScrollContainer.new()
-	_sidebar_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_sidebar_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	sidebar_margin.add_child(_sidebar_scroll)
+	var log_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
+	log_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	side_rail.add_child(log_panel)
+	var log_margin := _wrap_panel_content(log_panel, 14, 12)
+	var log_layout := VBoxContainer.new()
+	log_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	log_layout.add_theme_constant_override("separation", 8)
+	log_margin.add_child(log_layout)
 
-	var sidebar_layout := VBoxContainer.new()
-	sidebar_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sidebar_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	sidebar_layout.add_theme_constant_override("separation", 14)
-	_sidebar_scroll.add_child(sidebar_layout)
+	var log_title := Label.new()
+	log_title.text = "Combat Log"
+	log_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	log_title.add_theme_font_override("font", FONT_BOLD)
+	log_title.add_theme_font_size_override("font_size", 15)
+	log_title.add_theme_color_override("font_color", COLOR_GOLD)
+	log_layout.add_child(log_title)
 
-	var status_card := _make_panel_card(COLOR_BORDER.darkened(0.2), COLOR_SURFACE_ALT)
-	sidebar_layout.add_child(status_card)
-	var status_margin := _wrap_panel_content(status_card, 16, 16)
-	var status_layout := VBoxContainer.new()
-	status_layout.add_theme_constant_override("separation", 8)
-	status_margin.add_child(status_layout)
-	status_layout.add_child(_make_section_title("MATCH STATUS"))
-	_status_label = _make_body_label()
-	status_layout.add_child(_status_label)
-	_map_label = _make_body_label()
-	status_layout.add_child(_map_label)
-	_ai_label = _make_body_label()
-	status_layout.add_child(_ai_label)
+	_event_log = RichTextLabel.new()
+	_event_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_event_log.fit_content = false
+	_event_log.scroll_following = true
+	_event_log.bbcode_enabled = true
+	_event_log.add_theme_font_override("normal_font", FONT_REGULAR)
+	_event_log.add_theme_font_size_override("normal_font_size", 14)
+	log_layout.add_child(_event_log)
 
-	var selected_card := _make_panel_card(COLOR_GOLD, COLOR_SURFACE_ALT)
-	sidebar_layout.add_child(selected_card)
-	var selected_margin := _wrap_panel_content(selected_card, 16, 16)
-	var selected_layout := VBoxContainer.new()
-	selected_layout.add_theme_constant_override("separation", 10)
-	selected_margin.add_child(selected_layout)
-	selected_layout.add_child(_make_section_title("SELECTED UNIT"))
+	var info_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
+	side_rail.add_child(info_panel)
+	var info_margin := _wrap_panel_content(info_panel, 14, 12)
+	var info_layout := VBoxContainer.new()
+	info_layout.add_theme_constant_override("separation", 6)
+	info_margin.add_child(info_layout)
 
 	_selected_model_name_label = Label.new()
 	_selected_model_name_label.add_theme_font_override("font", FONT_SEMIBOLD)
-	_selected_model_name_label.add_theme_font_size_override("font_size", 18)
-	selected_layout.add_child(_selected_model_name_label)
+	_selected_model_name_label.add_theme_font_size_override("font_size", 15)
+	info_layout.add_child(_selected_model_name_label)
 
 	_selected_model_role_label = Label.new()
+	_selected_model_role_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_selected_model_role_label.add_theme_font_override("font", FONT_MEDIUM)
+	_selected_model_role_label.add_theme_font_size_override("font_size", 13)
 	_selected_model_role_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	selected_layout.add_child(_selected_model_role_label)
+	info_layout.add_child(_selected_model_role_label)
 
-	_preview_label = _make_body_label()
-	selected_layout.add_child(_preview_label)
-	_mode_label = _make_body_label()
-	selected_layout.add_child(_mode_label)
-	_selected_actor_label = _make_body_label()
-	selected_layout.add_child(_selected_actor_label)
+	_status_label = _make_body_label()
+	info_layout.add_child(_status_label)
 	_hover_label = _make_body_label()
-	_hover_label.text = "Hover: move the mouse over the board"
-	selected_layout.add_child(_hover_label)
+	info_layout.add_child(_hover_label)
 	_selected_label = _make_body_label()
-	_selected_label.text = "Selected Tile: click a tile to inspect it"
-	selected_layout.add_child(_selected_label)
+	info_layout.add_child(_selected_label)
 
-	var command_card := _make_panel_card(COLOR_GREEN, COLOR_SURFACE_ALT)
-	sidebar_layout.add_child(command_card)
-	var command_margin := _wrap_panel_content(command_card, 16, 16)
-	var command_layout := VBoxContainer.new()
-	command_layout.add_theme_constant_override("separation", 10)
-	command_margin.add_child(command_layout)
-	command_layout.add_child(_make_section_title("COMMAND DECK"))
+	var mini_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
+	side_rail.add_child(mini_panel)
+	var mini_margin := _wrap_panel_content(mini_panel, 10, 10)
+	var mini_layout := VBoxContainer.new()
+	mini_layout.add_theme_constant_override("separation", 6)
+	mini_margin.add_child(mini_layout)
 
-	var button_grid := GridContainer.new()
-	button_grid.columns = 2
-	button_grid.add_theme_constant_override("h_separation", 10)
-	button_grid.add_theme_constant_override("v_separation", 10)
-	command_layout.add_child(button_grid)
+	_map_label = Label.new()
+	_map_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_map_label.add_theme_font_override("font", FONT_MEDIUM)
+	_map_label.add_theme_font_size_override("font_size", 12)
+	_map_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	mini_layout.add_child(_map_label)
 
-	_move_button = _make_action_button("Move", COLOR_GREEN)
+	_mini_board_holder = Control.new()
+	_mini_board_holder.custom_minimum_size = Vector2(116, 116)
+	_mini_board_holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_mini_board_holder.resized.connect(_recenter_mini_board)
+	mini_layout.add_child(_mini_board_holder)
+
+	_mini_board_view = BoardDebugView.new()
+	_mini_board_view.hex_size = 8.0
+	_mini_board_view.interaction_enabled = false
+	_mini_board_view.set_game_state(_game_state)
+	_mini_board_holder.add_child(_mini_board_view)
+
+	var bottom_bar := HBoxContainer.new()
+	bottom_bar.add_theme_constant_override("separation", 10)
+	root_layout.add_child(bottom_bar)
+
+	var controls_row := HBoxContainer.new()
+	controls_row.add_theme_constant_override("separation", 8)
+	bottom_bar.add_child(controls_row)
+
+	_move_button = _make_action_button("M Move", COLOR_GREEN)
+	_move_button.custom_minimum_size = Vector2(82, 32)
 	_move_button.pressed.connect(_on_move_mode_pressed)
 	_wire_button_audio(_move_button)
-	button_grid.add_child(_move_button)
+	controls_row.add_child(_move_button)
 
-	_attack_button = _make_action_button("Attack", COLOR_ATTACK)
+	_attack_button = _make_action_button("A Attack", COLOR_ATTACK)
+	_attack_button.custom_minimum_size = Vector2(86, 32)
 	_attack_button.pressed.connect(_on_attack_mode_pressed)
 	_wire_button_audio(_attack_button)
-	button_grid.add_child(_attack_button)
+	controls_row.add_child(_attack_button)
 
-	_pass_button = _make_action_button("Pass", COLOR_BORDER.lightened(0.22))
+	_pass_button = _make_action_button("P Pass", COLOR_BORDER.lightened(0.22))
+	_pass_button.custom_minimum_size = Vector2(70, 32)
 	_pass_button.pressed.connect(_on_pass_pressed)
 	_wire_button_audio(_pass_button)
-	button_grid.add_child(_pass_button)
+	controls_row.add_child(_pass_button)
 
-	_ai_move_button = _make_action_button("Step AI", COLOR_GOLD)
+	_ai_move_button = _make_action_button("Step", COLOR_GOLD)
+	_ai_move_button.custom_minimum_size = Vector2(60, 32)
 	_ai_move_button.pressed.connect(_on_ai_move_pressed)
 	_wire_button_audio(_ai_move_button)
-	button_grid.add_child(_ai_move_button)
+	controls_row.add_child(_ai_move_button)
 
-	_autoplay_button = _make_action_button("Auto: Off", COLOR_P1)
+	_autoplay_button = _make_action_button("Auto", COLOR_P1)
+	_autoplay_button.custom_minimum_size = Vector2(62, 32)
 	_autoplay_button.pressed.connect(_on_autoplay_pressed)
 	_wire_button_audio(_autoplay_button)
-	button_grid.add_child(_autoplay_button)
+	controls_row.add_child(_autoplay_button)
 
-	_speed_button = _make_action_button("Speed: Normal", COLOR_P2)
+	_speed_button = _make_action_button("Speed", COLOR_P2)
+	_speed_button.custom_minimum_size = Vector2(68, 32)
 	_speed_button.pressed.connect(_on_speed_pressed)
 	_wire_button_audio(_speed_button)
-	button_grid.add_child(_speed_button)
+	controls_row.add_child(_speed_button)
 
 	_reset_button = _make_action_button("Reset", COLOR_BORDER.lightened(0.18))
+	_reset_button.custom_minimum_size = Vector2(68, 32)
 	_reset_button.pressed.connect(_on_reset_pressed)
 	_wire_button_audio(_reset_button)
-	button_grid.add_child(_reset_button)
+	controls_row.add_child(_reset_button)
 
-	var guide_button := _make_action_button("Guide", COLOR_BORDER.lightened(0.18))
-	guide_button.pressed.connect(_on_guide_pressed)
-	_wire_button_audio(guide_button)
-	button_grid.add_child(guide_button)
-
-	var intel_card := _make_panel_card(COLOR_P1, COLOR_SURFACE_ALT)
-	sidebar_layout.add_child(intel_card)
-	var intel_margin := _wrap_panel_content(intel_card, 16, 16)
-	var intel_layout := VBoxContainer.new()
-	intel_layout.add_theme_constant_override("separation", 10)
-	intel_margin.add_child(intel_layout)
-	intel_layout.add_child(_make_section_title("AI INTEL"))
-	_explanation_label = _make_body_label()
-	intel_layout.add_child(_explanation_label)
-	_stats_label = _make_body_label()
-	intel_layout.add_child(_stats_label)
-
-	var guide_card := _make_panel_card(COLOR_GOLD.darkened(0.14), COLOR_SURFACE_ALT)
-	sidebar_layout.add_child(guide_card)
-	var guide_margin := _wrap_panel_content(guide_card, 16, 16)
-	var guide_layout := VBoxContainer.new()
-	guide_layout.add_theme_constant_override("separation", 10)
-	guide_margin.add_child(guide_layout)
-	guide_layout.add_child(_make_section_title("TACTICAL GUIDE"))
-	_guide_label = _make_body_label()
-	guide_layout.add_child(_guide_label)
-
-	var history_card := _make_panel_card(COLOR_P2, COLOR_SURFACE_ALT)
-	sidebar_layout.add_child(history_card)
-	var history_margin := _wrap_panel_content(history_card, 16, 16)
-	var history_layout := VBoxContainer.new()
-	history_layout.add_theme_constant_override("separation", 10)
-	history_margin.add_child(history_layout)
-	history_layout.add_child(_make_section_title("REPLAY AND SUMMARY"))
-	_post_match_label = _make_body_label()
-	history_layout.add_child(_post_match_label)
-	_history_list = ItemList.new()
-	_history_list.custom_minimum_size = Vector2(0, 160)
-	_history_list.item_selected.connect(_on_history_item_selected)
-	history_layout.add_child(_history_list)
-	_history_detail_label = _make_body_label()
-	history_layout.add_child(_history_detail_label)
-
-	var feed_card := _make_panel_card(COLOR_BORDER.lightened(0.06), COLOR_SURFACE_ALT)
-	sidebar_layout.add_child(feed_card)
-	var feed_margin := _wrap_panel_content(feed_card, 16, 16)
-	var feed_layout := VBoxContainer.new()
-	feed_layout.add_theme_constant_override("separation", 10)
-	feed_margin.add_child(feed_layout)
-	feed_layout.add_child(_make_section_title("COMBAT FEED"))
-	_event_log = RichTextLabel.new()
-	_event_log.custom_minimum_size = Vector2(0, 210)
-	_event_log.fit_content = false
-	_event_log.scroll_following = true
-	_event_log.bbcode_enabled = false
-	_event_log.add_theme_font_override("normal_font", FONT_REGULAR)
-	_event_log.add_theme_font_size_override("normal_font_size", 15)
-	feed_layout.add_child(_event_log)
-
-	var back_button := _make_action_button("Back To Menu", COLOR_BORDER.lightened(0.12))
-	back_button.custom_minimum_size = Vector2(0, 50)
+	var back_button := _make_action_button("Back", COLOR_BORDER.lightened(0.12))
+	back_button.custom_minimum_size = Vector2(64, 32)
 	back_button.pressed.connect(_on_back_pressed)
 	_wire_button_audio(back_button, true)
-	sidebar_layout.add_child(back_button)
+	controls_row.add_child(back_button)
+
+	_control_strip_label = Label.new()
+	_control_strip_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_control_strip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_control_strip_label.add_theme_font_override("font", FONT_MEDIUM)
+	_control_strip_label.add_theme_font_size_override("font_size", 13)
+	_control_strip_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	bottom_bar.add_child(_control_strip_label)
 
 	_autoplay_timer = Timer.new()
 	_autoplay_timer.one_shot = true
@@ -410,7 +316,7 @@ func _build_layout() -> void:
 	add_child(_autoplay_timer)
 
 	call_deferred("_recenter_board_view")
-	call_deferred("_reset_sidebar_scroll")
+	call_deferred("_recenter_mini_board")
 
 
 func _build_match_theme() -> Theme:
@@ -477,17 +383,17 @@ func _wrap_panel_content(panel: PanelContainer, horizontal_margin: int, vertical
 func _panel_style(accent_color: Color, fill_color: Color = COLOR_SURFACE) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill_color
-	style.corner_radius_top_left = 18
-	style.corner_radius_top_right = 18
-	style.corner_radius_bottom_left = 18
-	style.corner_radius_bottom_right = 18
+	style.corner_radius_top_left = 10
+	style.corner_radius_top_right = 10
+	style.corner_radius_bottom_left = 10
+	style.corner_radius_bottom_right = 10
 	style.border_width_left = 1
 	style.border_width_top = 1
 	style.border_width_right = 1
 	style.border_width_bottom = 1
-	style.border_color = accent_color.lerp(COLOR_BORDER, 0.45)
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.28)
-	style.shadow_size = 10
+	style.border_color = accent_color.lerp(COLOR_BORDER, 0.68)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.14)
+	style.shadow_size = 3
 	style.content_margin_left = 2.0
 	style.content_margin_top = 2.0
 	style.content_margin_right = 2.0
@@ -516,7 +422,7 @@ func _make_body_label() -> Label:
 func _make_action_button(text_value: String, accent_color: Color) -> Button:
 	var button := Button.new()
 	button.text = text_value
-	button.custom_minimum_size = Vector2(0, 46)
+	button.custom_minimum_size = Vector2(0, 34)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_stylebox_override("normal", _button_style(accent_color, 0.10))
@@ -524,7 +430,7 @@ func _make_action_button(text_value: String, accent_color: Color) -> Button:
 	button.add_theme_stylebox_override("pressed", _button_style(accent_color, 0.24))
 	button.add_theme_stylebox_override("disabled", _button_style(COLOR_BORDER, 0.04))
 	button.add_theme_font_override("font", FONT_SEMIBOLD)
-	button.add_theme_font_size_override("font_size", 15)
+	button.add_theme_font_size_override("font_size", 13)
 	button.add_theme_color_override("font_color", Color.WHITE)
 	button.add_theme_color_override("font_disabled_color", COLOR_TEXT_MUTED)
 	return button
@@ -533,69 +439,135 @@ func _make_action_button(text_value: String, accent_color: Color) -> Button:
 func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(accent_color.r, accent_color.g, accent_color.b, fill_alpha)
-	style.corner_radius_top_left = 14
-	style.corner_radius_top_right = 14
-	style.corner_radius_bottom_left = 14
-	style.corner_radius_bottom_right = 14
+	style.corner_radius_top_left = 9
+	style.corner_radius_top_right = 9
+	style.corner_radius_bottom_left = 9
+	style.corner_radius_bottom_right = 9
 	style.border_width_left = 1
 	style.border_width_top = 1
 	style.border_width_right = 1
 	style.border_width_bottom = 1
 	style.border_color = accent_color
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.22)
-	style.shadow_size = 6
-	style.content_margin_left = 14.0
-	style.content_margin_top = 10.0
-	style.content_margin_right = 14.0
-	style.content_margin_bottom = 10.0
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.12)
+	style.shadow_size = 2
+	style.content_margin_left = 12.0
+	style.content_margin_top = 7.0
+	style.content_margin_right = 12.0
+	style.content_margin_bottom = 7.0
 	return style
 
 
-func _refresh_view() -> void:
-	_turn_label.text = "Turn %d | Current Player: P%d | Actions Left: %d" % [
-		_game_state.turn_count,
-		_game_state.current_player,
-		_game_state.actions_remaining_in_turn,
-	]
-	_objective_label.text = _objective_text()
-	_board_meta_label.text = "%s | %s | %d flat-top hexes" % [
-		_game_state.board.map_display_name,
-		_controller_label(_current_player_controller_type()),
-		_game_state.board.cells.size(),
-	]
-	_board_hint_label.text = "Select, pressure, capture."
-	_map_label.text = "Map: %s\n%s" % [_game_state.board.map_display_name, _game_state.board.map_description]
-	_player_one_label.text = _player_summary_text(1)
-	_player_two_label.text = _player_summary_text(2)
-	_ai_label.text = _ai_status_text()
-	_explanation_label.text = _explanation_text()
-	_preview_label.text = _preview_text()
-	_stats_label.text = _stats_text()
-	_post_match_label.text = _post_match_text()
-	_guide_label.text = _guide_text()
-	_guide_label.visible = _guide_visible
-	_autoplay_button.text = "Auto: %s" % ("On" if _autoplay_enabled else "Off")
-	_speed_button.text = "Speed: %s" % AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
+func _refresh_view_legacy() -> void:
+	_turn_label.text = "%s Player %d's Turn" % ["◆" if _game_state.current_player == 1 else "◆", _game_state.current_player]
+	_turn_label.add_theme_color_override("font_color", COLOR_P1 if _game_state.current_player == 1 else COLOR_P2)
+	_objective_label.text = "Turn %d" % _game_state.turn_count
+	_score_label.text = "★ P1=%d  P2=%d" % [_control_score_for_player(1), _control_score_for_player(2)]
+	_hp_summary_label.text = _hp_summary_text()
+	_control_strip_label.text = "M=Move  A=Attack  P=Pass  Space=Step AI  Z=Auto  R=Reset  H=Guide"
+	_map_label.text = _game_state.board.map_display_name
+	_board_meta_label = null
+	_board_hint_label = null
+	_player_one_label = null
+	_player_two_label = null
+	_ai_label = null
+	_explanation_label = null
+	_preview_label = null
+	_stats_label = null
+	_post_match_label = null
+	_guide_label = null
+	_history_list = null
+	_history_detail_label = null
 
 	if _game_state.game_over:
-		_status_label.text = "Game Over: %s" % (_winner_label())
+		_status_label.text = "Game Over: %s" % _winner_label()
 	elif _autoplay_enabled:
-		_status_label.text = "Current Status: Autoplay running at %s speed." % AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
+		_status_label.text = "Autoplay running at %s speed." % AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
 	else:
-		_status_label.text = "Current Status: %s" % ("Select a tank to act." if _selected_actor_id == "" else "Choose an action for %s." % _actor_label(_selected_actor_id))
-
-	_mode_label.text = "Action Mode: %s" % (_action_mode.capitalize() if _action_mode != "" else "None")
-	_selected_actor_label.text = "Selected Tank: %s" % (_actor_label(_selected_actor_id) if _selected_actor_id != "" else "None")
+		_status_label.text = "Selected: %s | Mode: %s" % [
+			_actor_label(_selected_actor_id) if _selected_actor_id != "" else "None",
+			_action_mode.capitalize() if _action_mode != "" else "None",
+		]
 
 	_board_view.set_game_state(_game_state)
 	_board_view.set_selected_actor(_selected_actor_id)
 	_board_view.set_action_mode(_action_mode)
 	_board_view.set_highlighted_cells(_build_highlight_map())
+	_mini_board_view.set_game_state(_game_state)
+	_mini_board_view.set_selected_actor(_selected_actor_id)
+	_mini_board_view.set_action_mode("")
+	_mini_board_view.set_highlighted_cells({})
 	_refresh_selected_unit_panel()
 	_recenter_board_view()
+	_recenter_mini_board()
 	_refresh_event_log()
-	_refresh_history_panel()
 	_update_button_state()
+	_autoplay_button.text = "Auto %s" % ("On" if _autoplay_enabled else "Off")
+	_speed_button.text = AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
+
+
+func _refresh_view() -> void:
+	_turn_label.text = "Player %d's Turn" % _game_state.current_player
+	_turn_label.add_theme_color_override("font_color", COLOR_P1 if _game_state.current_player == 1 else COLOR_P2)
+	_objective_label.text = "Turn %d" % _game_state.turn_count
+	_score_label.text = "* P1=%d  P2=%d" % [_control_score_for_player(1), _control_score_for_player(2)]
+	_hp_summary_label.text = _hp_summary_text()
+	_control_strip_label.text = "M Move   A Attack   P Pass   Space Step   Z Auto   R Reset   H Help"
+	_map_label.text = _game_state.board.map_display_name
+
+	if _game_state.game_over:
+		_status_label.text = "Game Over: %s" % _winner_label()
+	elif _autoplay_enabled:
+		_status_label.text = "Autoplay running at %s speed." % AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
+	else:
+		_status_label.text = "Selected: %s | Mode: %s" % [
+			_actor_label(_selected_actor_id) if _selected_actor_id != "" else "None",
+			_action_mode.capitalize() if _action_mode != "" else "None",
+		]
+
+	_board_view.set_game_state(_game_state)
+	_board_view.set_selected_actor(_selected_actor_id)
+	_board_view.set_action_mode(_action_mode)
+	_board_view.set_highlighted_cells(_build_highlight_map())
+	_mini_board_view.set_game_state(_game_state)
+	_mini_board_view.set_selected_actor(_selected_actor_id)
+	_mini_board_view.set_action_mode("")
+	_mini_board_view.set_highlighted_cells({})
+	_refresh_selected_unit_panel()
+	_recenter_board_view()
+	_recenter_mini_board()
+	_refresh_event_log()
+	_update_button_state()
+	_autoplay_button.text = "Auto %s" % ("On" if _autoplay_enabled else "Off")
+	_speed_button.text = AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
+
+
+func _control_score_for_player(player_id: int) -> int:
+	var center := HexCoord.new()
+	var score: int = 0
+	for tank: TankData in _game_state.get_player_tanks(player_id):
+		if not tank.is_alive():
+			continue
+		score += maxi(0, 6 - tank.position.distance_to(center))
+		if tank.tank_type == GameTypes.TankType.KTANK:
+			score += 1
+	return score
+
+
+func _hp_summary_text() -> String:
+	var p1k: TankData = _find_tank(1, GameTypes.TankType.KTANK)
+	var p1q: TankData = _find_tank(1, GameTypes.TankType.QTANK)
+	var p2k: TankData = _find_tank(2, GameTypes.TankType.KTANK)
+	var p2q: TankData = _find_tank(2, GameTypes.TankType.QTANK)
+	return "P1K %s/%s   P1Q %s/%s      P2K %s/%s   P2Q %s/%s" % [
+		p1k.hp if p1k != null else 0,
+		p1k.max_hp if p1k != null else 0,
+		p1q.hp if p1q != null else 0,
+		p1q.max_hp if p1q != null else 0,
+		p2k.hp if p2k != null else 0,
+		p2k.max_hp if p2k != null else 0,
+		p2q.hp if p2q != null else 0,
+		p2q.max_hp if p2q != null else 0,
+	]
 
 
 func _build_highlight_map() -> Dictionary:
@@ -625,16 +597,28 @@ func _build_highlight_map() -> Dictionary:
 
 func _refresh_event_log() -> void:
 	var lines: Array[String] = []
-	for event_item: GameEvent in _game_state.last_events:
-		lines.append(_format_event(event_item))
-	_event_log.text = "\n".join(lines) if not lines.is_empty() else "Event Log: no actions taken yet."
+	var turns: Array = AppState.current_replay.turns
+	if turns.is_empty():
+		_event_log.text = "[color=#8ea3bf]No actions taken yet.[/color]"
+		return
+
+	var start_index: int = maxi(0, turns.size() - 8)
+	for turn_index in range(turns.size() - 1, start_index - 1, -1):
+		var turn_data: Dictionary = turns[turn_index]
+		var player_id: int = int(turn_data.get("player", 0))
+		var player_color: String = "77b8ff" if player_id == 1 else "ff8a76"
+		lines.append("[color=#5d6f88]- Turn %d P%d[/color]" % [turn_data.get("turn", 0), player_id])
+		for event_line: Variant in turn_data.get("events", []):
+			lines.append("[color=#%s]%s[/color]" % [player_color, str(event_line)])
+
+	_event_log.text = "\n".join(lines)
 
 
 func _refresh_selected_unit_panel() -> void:
 	var focus_tank: TankData = _current_focus_tank()
 	if focus_tank == null:
 		_selected_model_name_label.text = "No active selection"
-		_selected_model_role_label.text = "Choose a unit or inspect the active player."
+		_selected_model_role_label.text = "Select a unit to inspect move lanes and threats."
 		return
 
 	_selected_model_name_label.text = _unit_card_name(focus_tank)
@@ -845,6 +829,22 @@ func _on_back_pressed() -> void:
 
 func _on_board_holder_resized() -> void:
 	_recenter_board_view()
+
+
+func _recenter_mini_board() -> void:
+	if _mini_board_view == null or _mini_board_holder == null:
+		return
+
+	var holder_size: Vector2 = _mini_board_holder.size
+	if holder_size.x <= 0.0 or holder_size.y <= 0.0:
+		return
+
+	var visual_size: Vector2 = _mini_board_view.get_board_visual_size()
+	var width_scale: float = holder_size.x / maxf(visual_size.x, 1.0)
+	var height_scale: float = holder_size.y / maxf(visual_size.y, 1.0)
+	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.12, 0.24)
+	_mini_board_view.scale = Vector2.ONE * scale_factor
+	_mini_board_view.position = holder_size * 0.5
 
 
 func _on_hover_summary_changed(summary: String) -> void:
@@ -1174,8 +1174,8 @@ func _unit_card_name(tank: TankData) -> String:
 
 func _unit_role_text(tank: TankData) -> String:
 	if tank.tank_type == GameTypes.TankType.QTANK:
-		return "Long-range control chassis. Best when it owns clean lanes and punishes overextension."
-	return "Heavy breakthrough chassis. Forces trades, threatens the objective, and converts short-range pressure."
+		return "Long-range control tank. Strongest on clean lanes."
+	return "Heavy objective tank. Breaks space and threatens center wins."
 
 
 func _find_tank(player_id: int, tank_type: int) -> TankData:
@@ -1228,6 +1228,39 @@ func _recenter_board_view() -> void:
 func _reset_sidebar_scroll() -> void:
 	if _sidebar_scroll != null:
 		_sidebar_scroll.scroll_vertical = 0
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is not InputEventKey or not event.pressed or event.echo:
+		return
+
+	match event.keycode:
+		KEY_M:
+			if not _move_button.disabled:
+				_on_move_mode_pressed()
+				get_viewport().set_input_as_handled()
+		KEY_A:
+			if not _attack_button.disabled:
+				_on_attack_mode_pressed()
+				get_viewport().set_input_as_handled()
+		KEY_P:
+			if not _pass_button.disabled:
+				_on_pass_pressed()
+				get_viewport().set_input_as_handled()
+		KEY_SPACE:
+			if not _ai_move_button.disabled:
+				_on_ai_move_pressed()
+				get_viewport().set_input_as_handled()
+		KEY_Z:
+			if not _autoplay_button.disabled:
+				_on_autoplay_pressed()
+				get_viewport().set_input_as_handled()
+		KEY_R:
+			_on_reset_pressed()
+			get_viewport().set_input_as_handled()
+		KEY_H:
+			get_tree().change_scene_to_file(AppState.HELP_SCENE)
+			get_viewport().set_input_as_handled()
 
 
 func _wire_button_audio(button: Button, use_back_sound: bool = false) -> void:
