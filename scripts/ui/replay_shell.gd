@@ -7,6 +7,7 @@ var _step_button: Button
 var _restart_button: Button
 var _turn_list: ItemList
 var _summary_label: Label
+var _analytics_label: Label
 var _detail_label: Label
 var _timer: Timer
 var _current_index: int = -1
@@ -38,13 +39,17 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title := Label.new()
-	title.text = "Replay Viewer"
+	title.text = "Replay Viewer And Analytics"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
 	_summary_label = Label.new()
 	_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(_summary_label)
+
+	_analytics_label = Label.new()
+	_analytics_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(_analytics_label)
 
 	var controls := HBoxContainer.new()
 	controls.add_theme_constant_override("separation", 10)
@@ -130,7 +135,8 @@ func _refresh_replay() -> void:
 	var map_name: String = str(replay.metadata.get("map_name", "Unknown Map"))
 	var p1_label: String = str(replay.metadata.get("player_one_controller", "Unknown"))
 	var p2_label: String = str(replay.metadata.get("player_two_controller", "Unknown"))
-	_summary_label.text = "Replay shell for the current recorded match.\nMap: %s | P1: %s | P2: %s | Turns: %d" % [map_name, p1_label, p2_label, replay.turns.size()]
+	_summary_label.text = "Replay shell for the current recorded match.\nMap: %s | P1: %s | P2: %s | Turns: %d | Winner: %s" % [map_name, p1_label, p2_label, replay.turns.size(), replay.winner_label if replay.winner_label != "" else "Pending"]
+	_analytics_label.text = ReplayAnalytics.format_summary_text(ReplayAnalytics.build_summary(replay))
 
 	_turn_list.clear()
 	for index in range(replay.turns.size()):
@@ -139,6 +145,7 @@ func _refresh_replay() -> void:
 
 	if replay.turns.is_empty():
 		_detail_label.text = "No replay data yet. Play a match first, then come back here to browse the recorded turns."
+		_analytics_label.text = ""
 		_play_button.disabled = true
 		_step_button.disabled = true
 		_restart_button.disabled = true
@@ -158,6 +165,7 @@ func _select_index(index: int) -> void:
 	_turn_list.select(_current_index)
 	var turn_data: Dictionary = replay.turns[_current_index]
 	var metrics: Dictionary = turn_data.get("metrics", {})
+	var timeline_position: String = "Replay Position: %d / %d" % [_current_index + 1, replay.turns.size()]
 	_detail_label.text = "Turn %d | Player %d\nSource: %s\nSummary: %s\nScore: %.2f\nMetrics: %s\nState Hash: %s\n\nEvents:\n%s" % [
 		int(turn_data.get("turn", 0)),
 		int(turn_data.get("player", 0)),
@@ -168,6 +176,7 @@ func _select_index(index: int) -> void:
 		str(turn_data.get("state_hash", "")),
 		"\n".join(_string_array(turn_data.get("events", []))),
 	]
+	_detail_label.text = "%s\n\n%s" % [timeline_position, _detail_label.text]
 
 
 func _string_array(values: Array) -> Array[String]:

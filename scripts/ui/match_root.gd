@@ -19,6 +19,7 @@ var _ai_label: Label
 var _explanation_label: Label
 var _preview_label: Label
 var _stats_label: Label
+var _post_match_label: Label
 var _player_one_label: Label
 var _player_two_label: Label
 var _event_log: RichTextLabel
@@ -84,7 +85,7 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Phase 13 Arena With Menu And Replay Shell"
+	title.text = "Phase 14 Replay Analytics And Match Summary"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
@@ -300,6 +301,10 @@ func _build_layout() -> void:
 	_stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(_stats_label)
 
+	_post_match_label = Label.new()
+	_post_match_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sidebar_layout.add_child(_post_match_label)
+
 	var history_title = Label.new()
 	history_title.text = "Turn History"
 	sidebar_layout.add_child(history_title)
@@ -349,6 +354,7 @@ func _refresh_view() -> void:
 	_explanation_label.text = _explanation_text()
 	_preview_label.text = _preview_text()
 	_stats_label.text = _stats_text()
+	_post_match_label.text = _post_match_text()
 	_autoplay_button.text = "Auto: %s" % ("On" if _autoplay_enabled else "Off")
 	_speed_button.text = "Speed: %s" % AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
 
@@ -662,6 +668,7 @@ func _execute_action(action: ActionData, source_label: String, explanation: Acti
 	if _game_state.game_over:
 		_disable_autoplay()
 		AppState.current_replay.winner_label = _winner_label()
+		AppState.current_replay.metadata["winner_label"] = AppState.current_replay.winner_label
 	AppState.last_action_explanation = explanation
 	EventBus.action_explanation_updated.emit(explanation)
 	_record_turn_snapshot(acting_turn, acting_player, source_label, action, explanation)
@@ -670,8 +677,13 @@ func _execute_action(action: ActionData, source_label: String, explanation: Acti
 
 func _record_turn_snapshot(acting_turn: int, acting_player: int, source_label: String, action: ActionData, explanation: ActionExplanation) -> void:
 	var event_lines: Array[String] = []
+	var event_data: Array[Dictionary] = []
 	for event_item: GameEvent in _game_state.last_events:
 		event_lines.append(_format_event(event_item))
+		event_data.append({
+			"event_name": event_item.event_name,
+			"payload": event_item.payload.duplicate(true),
+		})
 
 	var snapshot: Dictionary = {
 		"turn": acting_turn,
@@ -684,6 +696,7 @@ func _record_turn_snapshot(acting_turn: int, acting_player: int, source_label: S
 		"score": explanation.score,
 		"metrics": explanation.metrics.duplicate(true),
 		"events": event_lines,
+		"event_data": event_data,
 		"state_hash": _game_state.get_state_hash(),
 	}
 	AppState.current_replay.add_turn(snapshot)
@@ -818,13 +831,23 @@ func _stats_text() -> String:
 		return "Arena Stats: no recorded turns yet.\nUse Step AI or Auto to begin."
 
 	var latest: Dictionary = AppState.current_replay.turns[total_turns - 1]
-	return "Arena Stats: %d recorded turns\nLatest: T%d P%d via %s\nState Hash: %s" % [
+	var analytics: Dictionary = ReplayAnalytics.build_summary(AppState.current_replay)
+	var damage_bucket: Dictionary = analytics.get("player_damage", {})
+	return "Arena Stats: %d recorded turns\nLatest: T%d P%d via %s\nState Hash: %s\nDamage P1/P2: %d / %d" % [
 		total_turns,
 		latest.get("turn", 0),
 		latest.get("player", 0),
 		latest.get("source", "Unknown"),
 		latest.get("state_hash", ""),
+		int(damage_bucket.get(1, 0)),
+		int(damage_bucket.get(2, 0)),
 	]
+
+
+func _post_match_text() -> String:
+	if not _game_state.game_over:
+		return ""
+	return "Post-Match Summary:\n%s" % ReplayAnalytics.format_summary_text(ReplayAnalytics.build_summary(AppState.current_replay))
 
 
 func _objective_text() -> String:

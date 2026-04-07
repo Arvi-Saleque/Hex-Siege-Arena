@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 13: Menu, settings, and replay shell
+- Phase 14: Replay analytics and post-match presentation
 
 ## Completed Items
 
@@ -196,14 +196,20 @@
   - added a replay shell scene that browses recorded turns from `AppState.current_replay`
   - the menu can now launch the replay shell when recorded turns exist
   - replay metadata now records the winner label on game end
+- Completed the Phase 14 replay/analytics pass:
+  - added `ReplayAnalytics` to compute replay summaries from recorded event data
+  - turn snapshots now store structured event payloads in addition to formatted event lines
+  - the replay viewer now shows winner, win condition, damage, pickups, kills, and average think times
+  - the match scene now shows a post-match summary block when the game ends
+  - replay metadata now stores the winner label for later review
 
 ## Next Items
 
-- Verify Phase 13 menu, settings, and replay shell inside Godot
-- Start Phase 14:
-  - replay refinement
-  - analytics summary
-  - post-match presentation
+- Verify Phase 14 replay analytics and post-match presentation inside Godot
+- Start Phase 15:
+  - onboarding/help
+  - balancing and polish
+  - release-style cleanup
 
 ## User Check List
 
@@ -288,6 +294,10 @@
   - settings sliders update audio levels live
   - after a match with recorded turns, the replay viewer opens from the menu
   - replay play/pause/step/restart controls browse the recorded turn list correctly
+- Confirm Phase 14 analytics are useful:
+  - the replay viewer shows winner, map, win condition, damage, pickups, kills, and average think times
+  - the match scene shows a post-match summary after game over
+  - replay details still open correctly for individual turns
 - Confirm `Auto` is disabled if either side is set to Human
 - Confirm reset clears history and returns the board to the start state
 - Open the settings scene from the menu and confirm the back button still returns to the menu
@@ -297,6 +307,7 @@
 - No immediate audio blocker remains for Phase 12
 - `audio.md` now documents the selected runtime audio set copied into `assets/audio`
 - No immediate asset blocker for Phase 13
+- No immediate asset blocker for Phase 14
 - For future polish, better custom heavy movement or bespoke match-result stings could still improve the feel
 - For future map polish, exact approved layouts for `standard`, `open`, and `fortress` would help replace the current implementation-ready presets
 
@@ -308,5 +319,5 @@
 - The visual pass is still code-drawn placeholder art, not final production assets
 - The new combat VFX are code-drawn and intentionally lightweight; final particles and authored animation can replace them later
 - The current audio selection is a curated first-pass mix of Kenney and custom files, so some sounds may still be swapped later for stronger cohesion
-- The replay shell currently browses recorded turn summaries rather than reconstructing the full board state frame-by-frame
+- The replay shell now includes analytics, but it still browses recorded turn summaries rather than reconstructing the full board state frame-by-frame
 - The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only

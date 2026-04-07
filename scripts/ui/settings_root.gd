@@ -47,7 +47,7 @@ func _build_layout() -> void:
 	layout.add_child(title)
 
 	var description := Label.new()
-	description.text = "Phase 13 adds live audio controls and a cleaner shell around the arena. These sliders update the current session immediately."
+	description.text = "This shell now includes live audio controls around the arena experience. These sliders update the current session immediately."
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(description)
 
