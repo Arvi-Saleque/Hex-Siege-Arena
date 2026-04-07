@@ -198,6 +198,25 @@ func set_action_mode(action_mode: String) -> void:
 	queue_redraw()
 
 
+func get_board_visual_size() -> Vector2:
+	var active_board: BoardState = _active_board()
+	if active_board.cells.is_empty():
+		return Vector2(820, 760)
+
+	var min_x: float = INF
+	var min_y: float = INF
+	var max_x: float = -INF
+	var max_y: float = -INF
+	for cell: CellData in active_board.cells.values():
+		var center: Vector2 = cell.coord.to_world_flat(hex_size)
+		min_x = minf(min_x, center.x)
+		min_y = minf(min_y, center.y)
+		max_x = maxf(max_x, center.x)
+		max_y = maxf(max_y, center.y)
+
+	return Vector2((max_x - min_x) + hex_size * 6.0, (max_y - min_y) + hex_size * 7.0)
+
+
 func _active_board() -> BoardState:
 	return game_state.board if game_state != null else board_state
 

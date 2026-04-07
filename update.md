@@ -167,6 +167,10 @@
   - active-unit rings
   - stronger battlefield layering
 - Added a more atmospheric match backdrop with soft color bands behind the board and HUD
+- Applied a post-Phase 9 layout fix for usability:
+  - board viewport now clips correctly
+  - board recenters and scales to available panel space
+  - sidebar content now scrolls instead of being cut off
 
 ## Next Items
 
@@ -228,6 +232,10 @@
   - center tile pulses
   - power tiles glow subtly
   - tanks cast shadows
+- Confirm the layout bug is fixed:
+  - the board no longer covers the top player cards
+  - the board stays inside its panel
+  - the right sidebar can scroll so all content is reachable
 - Confirm the backdrop feels less flat:
   - soft color bands behind the arena
   - more atmospheric board framing

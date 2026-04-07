@@ -6,6 +6,7 @@ const AUTOPLAY_SPEED_SECONDS := [0.9, 0.45, 0.15]
 
 var _game_state: GameState
 var _board_view: BoardDebugView
+var _board_holder: Control
 var _hover_label: Label
 var _selected_label: Label
 var _turn_label: Label
@@ -145,6 +146,7 @@ func _build_layout() -> void:
 	board_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	board_panel.self_modulate = Color(0.94, 0.98, 1.0, 1.0)
+	board_panel.clip_contents = true
 	content.add_child(board_panel)
 
 	var board_margin = MarginContainer.new()
@@ -154,29 +156,45 @@ func _build_layout() -> void:
 	board_margin.add_theme_constant_override("margin_bottom", 18)
 	board_panel.add_child(board_margin)
 
+	_board_holder = Control.new()
+	_board_holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_board_holder.clip_contents = true
+	_board_holder.custom_minimum_size = Vector2(700, 560)
+	_board_holder.resized.connect(_on_board_holder_resized)
+	board_margin.add_child(_board_holder)
+
 	_board_view = BoardDebugView.new()
-	_board_view.position = Vector2(460, 320)
 	_board_view.set_game_state(_game_state)
 	_board_view.hovered_cell_changed.connect(_on_hover_summary_changed)
 	_board_view.selected_cell_changed.connect(_on_selected_summary_changed)
 	_board_view.cell_clicked.connect(_on_board_cell_clicked)
-	board_margin.add_child(_board_view)
+	_board_holder.add_child(_board_view)
 
 	var sidebar = PanelContainer.new()
 	sidebar.custom_minimum_size = Vector2(360, 0)
 	sidebar.self_modulate = Color(0.98, 0.96, 0.93, 1.0)
+	sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(sidebar)
 
 	var sidebar_margin = MarginContainer.new()
+	sidebar_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	sidebar_margin.add_theme_constant_override("margin_left", 20)
 	sidebar_margin.add_theme_constant_override("margin_top", 20)
 	sidebar_margin.add_theme_constant_override("margin_right", 20)
 	sidebar_margin.add_theme_constant_override("margin_bottom", 20)
 	sidebar.add_child(sidebar_margin)
 
+	var sidebar_scroll = ScrollContainer.new()
+	sidebar_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	sidebar_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sidebar_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sidebar_margin.add_child(sidebar_scroll)
+
 	var sidebar_layout = VBoxContainer.new()
+	sidebar_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sidebar_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	sidebar_layout.add_theme_constant_override("separation", 12)
-	sidebar_margin.add_child(sidebar_layout)
+	sidebar_scroll.add_child(sidebar_layout)
 
 	_status_label = Label.new()
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -305,6 +323,8 @@ func _build_layout() -> void:
 	_autoplay_timer.timeout.connect(_on_autoplay_timer_timeout)
 	add_child(_autoplay_timer)
 
+	call_deferred("_recenter_board_view")
+
 
 func _refresh_view() -> void:
 	_turn_label.text = "Turn %d | Current Player: P%d | Actions Left: %d" % [
@@ -337,6 +357,7 @@ func _refresh_view() -> void:
 	_board_view.set_selected_actor(_selected_actor_id)
 	_board_view.set_action_mode(_action_mode)
 	_board_view.set_highlighted_cells(_build_highlight_map())
+	_recenter_board_view()
 	_refresh_event_log()
 	_refresh_history_panel()
 	_update_button_state()
@@ -541,6 +562,7 @@ func _reset_match() -> void:
 		"player_one_controller": _controller_label(AppState.current_match_config.player_one_ai.controller_type),
 		"player_two_controller": _controller_label(AppState.current_match_config.player_two_ai.controller_type),
 	}
+	call_deferred("_recenter_board_view")
 
 
 func _winner_label() -> String:
@@ -562,6 +584,10 @@ func _actor_label(actor_id: String) -> String:
 func _on_back_pressed() -> void:
 	_disable_autoplay()
 	get_tree().change_scene_to_file(MENU_SCENE)
+
+
+func _on_board_holder_resized() -> void:
+	_recenter_board_view()
 
 
 func _on_hover_summary_changed(summary: String) -> void:
@@ -868,3 +894,19 @@ func _controller_label(controller_type: int) -> String:
 			return "MCTS"
 		_:
 			return "Unknown"
+
+
+func _recenter_board_view() -> void:
+	if _board_view == null or _board_holder == null:
+		return
+
+	var holder_size: Vector2 = _board_holder.size
+	if holder_size.x <= 0.0 or holder_size.y <= 0.0:
+		return
+
+	var visual_size: Vector2 = _board_view.get_board_visual_size()
+	var width_scale: float = holder_size.x / maxf(visual_size.x, 1.0)
+	var height_scale: float = holder_size.y / maxf(visual_size.y, 1.0)
+	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.72, 1.0)
+	_board_view.scale = Vector2.ONE * scale_factor
+	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.53)
