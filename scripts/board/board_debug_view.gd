@@ -5,6 +5,8 @@ signal hovered_cell_changed(summary: String)
 signal selected_cell_changed(summary: String)
 signal cell_clicked(coord_key: String)
 
+const BOARD_FONT := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-SemiBold.ttf")
+
 const COLOR_BY_TYPE := {
 	GameTypes.CellType.EMPTY: Color("232a37"),
 	GameTypes.CellType.CENTER: Color("e7be37"),
@@ -378,7 +380,7 @@ func _draw_board_backdrop(active_board: BoardState) -> void:
 
 
 func _draw_tanks() -> void:
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = BOARD_FONT if BOARD_FONT != null else ThemeDB.fallback_font
 	for tank: TankData in game_state.get_all_tanks():
 		if not tank.is_alive():
 			continue
@@ -398,8 +400,8 @@ func _draw_tanks() -> void:
 
 		if font != null:
 			var label: String = "Q" if tank.tank_type == GameTypes.TankType.QTANK else "K"
-			draw_string(font, center + Vector2(-7, 25), "%s%d" % [label, tank.owner_id], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, Color.WHITE)
-			draw_string(font, center + Vector2(-10, -22), "%d" % tank.hp, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, Color("f5f7fb"))
+			draw_string(font, center + Vector2(-9, 26), "%s%d" % [label, tank.owner_id], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, Color.WHITE)
+			draw_string(font, center + Vector2(-10, -23), "%d" % tank.hp, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, Color("f5f7fb"))
 
 		if tank.active_buff != GameTypes.BuffType.NONE:
 			var buff_color: Color = _buff_color(tank.active_buff)
@@ -408,7 +410,7 @@ func _draw_tanks() -> void:
 
 
 func _draw_effects() -> void:
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = BOARD_FONT if BOARD_FONT != null else ThemeDB.fallback_font
 	for beam: Dictionary in _beam_effects:
 		var ratio: float = _effect_float(beam, "time_left", 0.0) / maxf(_effect_float(beam, "duration", 1.0), 0.001)
 		var beam_color: Color = _effect_color(beam, "color", Color.WHITE)

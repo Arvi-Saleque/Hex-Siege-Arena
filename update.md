@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 15: Onboarding, accessibility, and finish pass
+- Phase 16: Visual polish and 3D tank showcase pass
 
 ## Completed Items
 
@@ -225,10 +225,19 @@
   - accessibility settings now persist across sessions
   - audio volume settings now persist across sessions
   - reset runtime state now clears match/replay runtime data while preserving the saved preferences model
+- Added a Phase 16 visual polish pass focused on the live match scene:
+  - copied the four custom `.glb` tank assets into `assets/art/tanks` with stable runtime names
+  - copied `Space Grotesk` into `assets/fonts/space_grotesk` and wired it into the match scene
+  - added `TankModelView`, a live 3D showcase control for tank models
+  - redesigned the match HUD into a more product-style tactics layout with a hero header, cleaner card hierarchy, and a dedicated command deck
+  - added a four-unit roster strip beneath the board so all four distinct tanks are visible in the main game scene
+  - added a larger selected-unit showcase card that tracks the currently selected or active tank
+  - upgraded on-board labels to use the same font family for a more cohesive look
+  - removed the phase/debug feel from the match title in favor of a proper game identity
 
 ## Next Items
 
-- Verify the persistence upgrade inside Godot
+- Verify the new 3D tank showcase imports and fit inside Godot
 - Do a final bug-fix and styling sweep based on runtime feedback
 
 ## User Check List
@@ -341,6 +350,14 @@
   - change map/controller/depth/rollout values in menu, close the project, reopen it, and confirm they persist
   - change audio/accessibility settings, close the project, reopen it, and confirm they persist
   - `Reset Runtime State` restores default match config/replay runtime data cleanly
+- Confirm the new Phase 16 match polish works:
+  - the match scene now opens with `HEX SIEGE ARENA` instead of a phase/debug title
+  - the hero header, player cards, board frame, and sidebar feel cleaner and more intentional
+  - the four tank cards under the board each render a distinct 3D model
+  - the selected-unit card renders a larger 3D model and updates when you click different tanks
+  - the board still fits cleanly with the new roster strip visible
+  - the new Space Grotesk font is visible in the match scene HUD and on-board labels
+  - move, attack, pass, AI step, autoplay, reset, history, and replay still work normally
 - Confirm `Auto` is disabled if either side is set to Human
 - Confirm reset clears history and returns the board to the start state
 - Open the settings scene from the menu and confirm the back button still returns to the menu
@@ -353,14 +370,13 @@
 - No immediate asset blocker for Phase 14
 - For future polish, better custom heavy movement or bespoke match-result stings could still improve the feel
 - For future map polish, exact approved layouts for `standard`, `open`, and `fortress` would help replace the current implementation-ready presets
+- For future premium polish, final tile textures and a branded title/logo would add more finish than more HUD text ever will
 
 ## Known Issues
 
 - Godot CLI is not available in this environment, so editor/runtime verification must be done manually inside Godot
-- The match scene is more readable now, but it is still a prototype HUD rather than the final styled interface
 - Autoplay currently assumes both sides are AI-controlled and uses a simple timer loop rather than a full spectator shell
-- The visual pass is still code-drawn placeholder art, not final production assets
+- The board gameplay pieces are still stylized 2D battlefield markers; the new 3D tank models currently live in the HUD showcase rather than on-hex rendering
 - The new combat VFX are code-drawn and intentionally lightweight; final particles and authored animation can replace them later
 - The current audio selection is a curated first-pass mix of Kenney and custom files, so some sounds may still be swapped later for stronger cohesion
-- The replay shell now includes analytics, but it still browses recorded turn summaries rather than reconstructing the full board state frame-by-frame
 - The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only

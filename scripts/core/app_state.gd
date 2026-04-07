@@ -7,8 +7,8 @@ const DEFAULT_SETTINGS_SCENE := "res://scenes/settings/settings_root.tscn"
 const DEFAULT_HELP_SCENE := "res://scenes/help/help_root.tscn"
 const PREFERENCES_PATH := "user://hex_siege_prefs.cfg"
 
-var project_phase: int = 15
-var build_label: String = "phase15-onboarding-accessibility-and-finish-pass"
+var project_phase: int = 16
+var build_label: String = "phase16-visual-polish-and-3d-tank-showcase"
 var current_match_config: MatchConfig = MatchConfig.new()
 var current_replay: ReplayRecord = ReplayRecord.new()
 var last_action_explanation: ActionExplanation = ActionExplanation.new()

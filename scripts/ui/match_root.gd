@@ -3,10 +3,34 @@ extends Control
 const MENU_SCENE := "res://scenes/menu/main_menu.tscn"
 const AUTOPLAY_SPEED_LABELS := ["Slow", "Normal", "Fast"]
 const AUTOPLAY_SPEED_SECONDS := [0.9, 0.45, 0.15]
+const FONT_REGULAR := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Regular.ttf")
+const FONT_MEDIUM := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Medium.ttf")
+const FONT_SEMIBOLD := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-SemiBold.ttf")
+const FONT_BOLD := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Bold.ttf")
+const COLOR_BG := Color("09111c")
+const COLOR_SURFACE := Color("111c2b")
+const COLOR_SURFACE_ALT := Color("162335")
+const COLOR_BORDER := Color("2c3f59")
+const COLOR_TEXT := Color("edf4ff")
+const COLOR_TEXT_MUTED := Color("98adc7")
+const COLOR_GOLD := Color("f0c05e")
+const COLOR_GREEN := Color("69dd8e")
+const COLOR_ATTACK := Color("ff9272")
+const COLOR_P1 := Color("77b8ff")
+const COLOR_P2 := Color("ff8a76")
+const MODEL_PATHS := {
+	"1_0": "res://assets/art/tanks/p1_qtank.glb",
+	"1_1": "res://assets/art/tanks/p1_ktank.glb",
+	"2_0": "res://assets/art/tanks/p2_qtank.glb",
+	"2_1": "res://assets/art/tanks/p2_ktank.glb",
+}
 
 var _game_state: GameState
 var _board_view: BoardDebugView
 var _board_holder: Control
+var _selected_model_view: TankModelView
+var _selected_model_name_label: Label
+var _selected_model_role_label: Label
 var _hover_label: Label
 var _selected_label: Label
 var _turn_label: Label
@@ -24,6 +48,8 @@ var _player_one_label: Label
 var _player_two_label: Label
 var _event_log: RichTextLabel
 var _guide_label: Label
+var _board_meta_label: Label
+var _board_hint_label: Label
 var _move_button: Button
 var _attack_button: Button
 var _pass_button: Button
@@ -34,48 +60,51 @@ var _speed_button: Button
 var _history_list: ItemList
 var _history_detail_label: Label
 var _autoplay_timer: Timer
+var _roster_panels: Dictionary = {}
+var _roster_model_views: Dictionary = {}
+var _roster_status_labels: Dictionary = {}
 var _action_mode: String = ""
 var _selected_actor_id: String = ""
 var _autoplay_enabled: bool = false
 var _autoplay_speed_index: int = 1
-var _guide_visible: bool = true
+var _guide_visible: bool = false
 
 
 func _ready() -> void:
 	AppState.apply_window_preferences(self)
 	_reset_match()
 	AudioManager.play_match_music()
+	theme = _build_match_theme()
 	_build_layout()
 	_refresh_view()
 
 
 func _build_layout() -> void:
-	var background = ColorRect.new()
-	background.color = Color("0b0f16")
+	var background := ColorRect.new()
+	background.color = COLOR_BG
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
-	var glow_left = ColorRect.new()
-	glow_left.color = Color(0.16, 0.26, 0.36, 0.17)
-	glow_left.position = Vector2(-120, 120)
-	glow_left.size = Vector2(340, 640)
-	add_child(glow_left)
+	var top_glow := ColorRect.new()
+	top_glow.color = Color(0.18, 0.28, 0.42, 0.12)
+	top_glow.position = Vector2(0.0, -30.0)
+	top_glow.custom_minimum_size = Vector2(0.0, 260.0)
+	top_glow.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	add_child(top_glow)
 
-	var glow_right = ColorRect.new()
-	glow_right.color = Color(0.42, 0.22, 0.16, 0.12)
-	glow_right.position = Vector2(1240, 80)
-	glow_right.size = Vector2(360, 700)
-	add_child(glow_right)
+	var left_glow := ColorRect.new()
+	left_glow.color = Color(0.12, 0.3, 0.42, 0.12)
+	left_glow.position = Vector2(-120.0, 160.0)
+	left_glow.size = Vector2(420.0, 720.0)
+	add_child(left_glow)
 
-	var horizon_band = ColorRect.new()
-	horizon_band.color = Color(0.22, 0.28, 0.36, 0.08)
-	horizon_band.position = Vector2(0, 210)
-	horizon_band.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	horizon_band.custom_minimum_size = Vector2(0, 220)
-	horizon_band.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	add_child(horizon_band)
+	var right_glow := ColorRect.new()
+	right_glow.color = Color(0.42, 0.2, 0.14, 0.09)
+	right_glow.position = Vector2(1220.0, 120.0)
+	right_glow.size = Vector2(420.0, 720.0)
+	add_child(right_glow)
 
-	var root_margin = MarginContainer.new()
+	var root_margin := MarginContainer.new()
 	root_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root_margin.add_theme_constant_override("margin_left", 24)
 	root_margin.add_theme_constant_override("margin_top", 24)
@@ -83,90 +112,125 @@ func _build_layout() -> void:
 	root_margin.add_theme_constant_override("margin_bottom", 24)
 	add_child(root_margin)
 
-	var layout = VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 18)
-	root_margin.add_child(layout)
+	var root_layout := VBoxContainer.new()
+	root_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root_layout.add_theme_constant_override("separation", 18)
+	root_margin.add_child(root_layout)
 
-	var title = Label.new()
-	title.text = "Phase 15 Finish Pass And Accessibility"
-	title.add_theme_font_size_override("font_size", 32)
-	layout.add_child(title)
+	var hero_panel := _make_panel_card(COLOR_GOLD)
+	root_layout.add_child(hero_panel)
+	var hero_margin := _wrap_panel_content(hero_panel, 22, 18)
+	var hero_row := HBoxContainer.new()
+	hero_row.add_theme_constant_override("separation", 18)
+	hero_margin.add_child(hero_row)
 
-	var header_row = HBoxContainer.new()
-	header_row.add_theme_constant_override("separation", 16)
-	layout.add_child(header_row)
+	var hero_left := VBoxContainer.new()
+	hero_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hero_left.add_theme_constant_override("separation", 6)
+	hero_row.add_child(hero_left)
+
+	var title := Label.new()
+	title.text = "HEX SIEGE ARENA"
+	title.add_theme_font_override("font", FONT_BOLD)
+	title.add_theme_font_size_override("font_size", 34)
+	hero_left.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = "Tactical AI Arena"
+	subtitle.add_theme_font_override("font", FONT_MEDIUM)
+	subtitle.add_theme_font_size_override("font_size", 16)
+	subtitle.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	hero_left.add_child(subtitle)
+
+	var hero_right := VBoxContainer.new()
+	hero_right.custom_minimum_size = Vector2(430, 0)
+	hero_right.add_theme_constant_override("separation", 8)
+	hero_row.add_child(hero_right)
 
 	_turn_label = Label.new()
-	_turn_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_row.add_child(_turn_label)
+	_turn_label.add_theme_font_override("font", FONT_SEMIBOLD)
+	_turn_label.add_theme_font_size_override("font_size", 18)
+	hero_right.add_child(_turn_label)
 
 	_objective_label = Label.new()
-	_objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_objective_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_row.add_child(_objective_label)
+	_objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_objective_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	hero_right.add_child(_objective_label)
 
-	var player_row = HBoxContainer.new()
-	player_row.add_theme_constant_override("separation", 14)
-	layout.add_child(player_row)
-
-	var p1_panel = PanelContainer.new()
-	p1_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	p1_panel.self_modulate = Color(0.9, 0.96, 1.0, 1.0)
-	player_row.add_child(p1_panel)
-
-	var p1_margin = MarginContainer.new()
-	p1_margin.add_theme_constant_override("margin_left", 14)
-	p1_margin.add_theme_constant_override("margin_top", 10)
-	p1_margin.add_theme_constant_override("margin_right", 14)
-	p1_margin.add_theme_constant_override("margin_bottom", 10)
-	p1_panel.add_child(p1_margin)
-
-	_player_one_label = Label.new()
-	_player_one_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	p1_margin.add_child(_player_one_label)
-
-	var p2_panel = PanelContainer.new()
-	p2_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	p2_panel.self_modulate = Color(1.0, 0.94, 0.92, 1.0)
-	player_row.add_child(p2_panel)
-
-	var p2_margin = MarginContainer.new()
-	p2_margin.add_theme_constant_override("margin_left", 14)
-	p2_margin.add_theme_constant_override("margin_top", 10)
-	p2_margin.add_theme_constant_override("margin_right", 14)
-	p2_margin.add_theme_constant_override("margin_bottom", 10)
-	p2_panel.add_child(p2_margin)
-
-	_player_two_label = Label.new()
-	_player_two_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	p2_margin.add_child(_player_two_label)
-
-	var content = HBoxContainer.new()
-	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var content := HBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_theme_constant_override("separation", 18)
-	layout.add_child(content)
+	root_layout.add_child(content)
 
-	var board_panel = PanelContainer.new()
+	var left_column := VBoxContainer.new()
+	left_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left_column.add_theme_constant_override("separation", 16)
+	content.add_child(left_column)
+
+	var player_row := HBoxContainer.new()
+	player_row.add_theme_constant_override("separation", 14)
+	left_column.add_child(player_row)
+
+	var p1_panel := _make_panel_card(COLOR_P1)
+	p1_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	player_row.add_child(p1_panel)
+	var p1_margin := _wrap_panel_content(p1_panel, 18, 16)
+	var p1_vbox := VBoxContainer.new()
+	p1_vbox.add_theme_constant_override("separation", 8)
+	p1_margin.add_child(p1_vbox)
+	p1_vbox.add_child(_make_section_title("BLUE COMMAND"))
+	_player_one_label = _make_body_label()
+	p1_vbox.add_child(_player_one_label)
+
+	var p2_panel := _make_panel_card(COLOR_P2)
+	p2_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	player_row.add_child(p2_panel)
+	var p2_margin := _wrap_panel_content(p2_panel, 18, 16)
+	var p2_vbox := VBoxContainer.new()
+	p2_vbox.add_theme_constant_override("separation", 8)
+	p2_margin.add_child(p2_vbox)
+	p2_vbox.add_child(_make_section_title("RED COMMAND"))
+	_player_two_label = _make_body_label()
+	p2_vbox.add_child(_player_two_label)
+
+	var board_panel := _make_panel_card(COLOR_BORDER)
 	board_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	board_panel.self_modulate = Color(0.94, 0.98, 1.0, 1.0)
 	board_panel.clip_contents = true
-	content.add_child(board_panel)
+	left_column.add_child(board_panel)
 
-	var board_margin = MarginContainer.new()
-	board_margin.add_theme_constant_override("margin_left", 18)
-	board_margin.add_theme_constant_override("margin_top", 18)
-	board_margin.add_theme_constant_override("margin_right", 18)
-	board_margin.add_theme_constant_override("margin_bottom", 18)
-	board_panel.add_child(board_margin)
+	var board_margin := _wrap_panel_content(board_panel, 18, 18)
+	var board_layout := VBoxContainer.new()
+	board_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	board_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	board_layout.add_theme_constant_override("separation", 14)
+	board_margin.add_child(board_layout)
+
+	var board_header := HBoxContainer.new()
+	board_header.add_theme_constant_override("separation", 12)
+	board_layout.add_child(board_header)
+
+	_board_meta_label = Label.new()
+	_board_meta_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_board_meta_label.add_theme_font_override("font", FONT_SEMIBOLD)
+	_board_meta_label.add_theme_font_size_override("font_size", 15)
+	board_header.add_child(_board_meta_label)
+
+	_board_hint_label = Label.new()
+	_board_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_board_hint_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	board_header.add_child(_board_hint_label)
 
 	_board_holder = Control.new()
-	_board_holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_board_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_board_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_board_holder.clip_contents = true
-	_board_holder.custom_minimum_size = Vector2(700, 560)
+	_board_holder.custom_minimum_size = Vector2(720, 560)
 	_board_holder.resized.connect(_on_board_holder_resized)
-	board_margin.add_child(_board_holder)
+	board_layout.add_child(_board_holder)
 
 	_board_view = BoardDebugView.new()
 	_board_view.set_game_state(_game_state)
@@ -175,173 +239,213 @@ func _build_layout() -> void:
 	_board_view.cell_clicked.connect(_on_board_cell_clicked)
 	_board_holder.add_child(_board_view)
 
-	var sidebar = PanelContainer.new()
-	sidebar.custom_minimum_size = Vector2(360, 0)
-	sidebar.self_modulate = Color(0.98, 0.96, 0.93, 1.0)
+	var roster_row := HBoxContainer.new()
+	roster_row.add_theme_constant_override("separation", 12)
+	board_layout.add_child(roster_row)
+
+	for actor_id: String in ["1_0", "1_1", "2_0", "2_1"]:
+		var roster_card := _make_panel_card(_accent_for_actor(actor_id))
+		roster_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		roster_row.add_child(roster_card)
+		_roster_panels[actor_id] = roster_card
+
+		var roster_margin := _wrap_panel_content(roster_card, 14, 14)
+		var roster_layout := VBoxContainer.new()
+		roster_layout.add_theme_constant_override("separation", 8)
+		roster_margin.add_child(roster_layout)
+
+		var roster_title := Label.new()
+		roster_title.text = _roster_title(actor_id)
+		roster_title.add_theme_font_override("font", FONT_SEMIBOLD)
+		roster_title.add_theme_font_size_override("font_size", 14)
+		roster_layout.add_child(roster_title)
+
+		var model_view := TankModelView.new()
+		model_view.custom_minimum_size = Vector2(0, 120)
+		model_view.set_accent_color(_accent_for_actor(actor_id))
+		model_view.set_model_asset(_model_path_for_actor(actor_id))
+		roster_layout.add_child(model_view)
+		_roster_model_views[actor_id] = model_view
+
+		var roster_status := _make_body_label()
+		roster_layout.add_child(roster_status)
+		_roster_status_labels[actor_id] = roster_status
+
+	var sidebar := _make_panel_card(COLOR_BORDER)
+	sidebar.custom_minimum_size = Vector2(390, 0)
 	sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(sidebar)
 
-	var sidebar_margin = MarginContainer.new()
-	sidebar_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	sidebar_margin.add_theme_constant_override("margin_left", 20)
-	sidebar_margin.add_theme_constant_override("margin_top", 20)
-	sidebar_margin.add_theme_constant_override("margin_right", 20)
-	sidebar_margin.add_theme_constant_override("margin_bottom", 20)
-	sidebar.add_child(sidebar_margin)
-
-	var sidebar_scroll = ScrollContainer.new()
-	sidebar_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var sidebar_margin := _wrap_panel_content(sidebar, 18, 18)
+	var sidebar_scroll := ScrollContainer.new()
 	sidebar_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sidebar_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	sidebar_margin.add_child(sidebar_scroll)
 
-	var sidebar_layout = VBoxContainer.new()
+	var sidebar_layout := VBoxContainer.new()
 	sidebar_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sidebar_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	sidebar_layout.add_theme_constant_override("separation", 12)
+	sidebar_layout.add_theme_constant_override("separation", 14)
 	sidebar_scroll.add_child(sidebar_layout)
 
-	_status_label = Label.new()
-	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(_status_label)
+	var status_card := _make_panel_card(COLOR_BORDER.darkened(0.2), COLOR_SURFACE_ALT)
+	sidebar_layout.add_child(status_card)
+	var status_margin := _wrap_panel_content(status_card, 16, 16)
+	var status_layout := VBoxContainer.new()
+	status_layout.add_theme_constant_override("separation", 8)
+	status_margin.add_child(status_layout)
+	status_layout.add_child(_make_section_title("MATCH STATUS"))
+	_status_label = _make_body_label()
+	status_layout.add_child(_status_label)
+	_map_label = _make_body_label()
+	status_layout.add_child(_map_label)
+	_ai_label = _make_body_label()
+	status_layout.add_child(_ai_label)
 
-	_map_label = Label.new()
-	_map_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(_map_label)
+	var selected_card := _make_panel_card(COLOR_GOLD, COLOR_SURFACE_ALT)
+	sidebar_layout.add_child(selected_card)
+	var selected_margin := _wrap_panel_content(selected_card, 16, 16)
+	var selected_layout := VBoxContainer.new()
+	selected_layout.add_theme_constant_override("separation", 10)
+	selected_margin.add_child(selected_layout)
+	selected_layout.add_child(_make_section_title("SELECTED UNIT"))
 
-	_ai_label = Label.new()
-	_ai_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(_ai_label)
+	_selected_model_view = TankModelView.new()
+	_selected_model_view.custom_minimum_size = Vector2(0, 220)
+	selected_layout.add_child(_selected_model_view)
 
-	_preview_label = Label.new()
-	_preview_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(_preview_label)
+	_selected_model_name_label = Label.new()
+	_selected_model_name_label.add_theme_font_override("font", FONT_SEMIBOLD)
+	_selected_model_name_label.add_theme_font_size_override("font_size", 18)
+	selected_layout.add_child(_selected_model_name_label)
 
-	_mode_label = Label.new()
-	sidebar_layout.add_child(_mode_label)
+	_selected_model_role_label = Label.new()
+	_selected_model_role_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	selected_layout.add_child(_selected_model_role_label)
 
-	_selected_actor_label = Label.new()
-	_selected_actor_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(_selected_actor_label)
-
-	_hover_label = Label.new()
+	_preview_label = _make_body_label()
+	selected_layout.add_child(_preview_label)
+	_mode_label = _make_body_label()
+	selected_layout.add_child(_mode_label)
+	_selected_actor_label = _make_body_label()
+	selected_layout.add_child(_selected_actor_label)
+	_hover_label = _make_body_label()
 	_hover_label.text = "Hover: move the mouse over the board"
-	_hover_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(_hover_label)
-
-	_selected_label = Label.new()
+	selected_layout.add_child(_hover_label)
+	_selected_label = _make_body_label()
 	_selected_label.text = "Selected Tile: click a tile to inspect it"
-	_selected_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(_selected_label)
+	selected_layout.add_child(_selected_label)
 
-	var action_row = HBoxContainer.new()
-	action_row.add_theme_constant_override("separation", 8)
-	sidebar_layout.add_child(action_row)
+	var command_card := _make_panel_card(COLOR_GREEN, COLOR_SURFACE_ALT)
+	sidebar_layout.add_child(command_card)
+	var command_margin := _wrap_panel_content(command_card, 16, 16)
+	var command_layout := VBoxContainer.new()
+	command_layout.add_theme_constant_override("separation", 10)
+	command_margin.add_child(command_layout)
+	command_layout.add_child(_make_section_title("COMMAND DECK"))
 
-	_move_button = Button.new()
-	_move_button.text = "Move"
-	_move_button.custom_minimum_size = Vector2(96, 44)
+	var button_grid := GridContainer.new()
+	button_grid.columns = 2
+	button_grid.add_theme_constant_override("h_separation", 10)
+	button_grid.add_theme_constant_override("v_separation", 10)
+	command_layout.add_child(button_grid)
+
+	_move_button = _make_action_button("Move", COLOR_GREEN)
 	_move_button.pressed.connect(_on_move_mode_pressed)
 	_wire_button_audio(_move_button)
-	action_row.add_child(_move_button)
+	button_grid.add_child(_move_button)
 
-	_attack_button = Button.new()
-	_attack_button.text = "Attack"
-	_attack_button.custom_minimum_size = Vector2(96, 44)
+	_attack_button = _make_action_button("Attack", COLOR_ATTACK)
 	_attack_button.pressed.connect(_on_attack_mode_pressed)
 	_wire_button_audio(_attack_button)
-	action_row.add_child(_attack_button)
+	button_grid.add_child(_attack_button)
 
-	_pass_button = Button.new()
-	_pass_button.text = "Pass"
-	_pass_button.custom_minimum_size = Vector2(96, 44)
+	_pass_button = _make_action_button("Pass", COLOR_BORDER.lightened(0.22))
 	_pass_button.pressed.connect(_on_pass_pressed)
 	_wire_button_audio(_pass_button)
-	action_row.add_child(_pass_button)
+	button_grid.add_child(_pass_button)
 
-	var utility_row = HBoxContainer.new()
-	utility_row.add_theme_constant_override("separation", 8)
-	sidebar_layout.add_child(utility_row)
-
-	_ai_move_button = Button.new()
-	_ai_move_button.text = "Step AI"
-	_ai_move_button.custom_minimum_size = Vector2(120, 44)
+	_ai_move_button = _make_action_button("Step AI", COLOR_GOLD)
 	_ai_move_button.pressed.connect(_on_ai_move_pressed)
 	_wire_button_audio(_ai_move_button)
-	utility_row.add_child(_ai_move_button)
+	button_grid.add_child(_ai_move_button)
 
-	_autoplay_button = Button.new()
-	_autoplay_button.text = "Auto: Off"
-	_autoplay_button.custom_minimum_size = Vector2(108, 44)
+	_autoplay_button = _make_action_button("Auto: Off", COLOR_P1)
 	_autoplay_button.pressed.connect(_on_autoplay_pressed)
 	_wire_button_audio(_autoplay_button)
-	utility_row.add_child(_autoplay_button)
+	button_grid.add_child(_autoplay_button)
 
-	_speed_button = Button.new()
-	_speed_button.text = "Speed: Normal"
-	_speed_button.custom_minimum_size = Vector2(118, 44)
+	_speed_button = _make_action_button("Speed: Normal", COLOR_P2)
 	_speed_button.pressed.connect(_on_speed_pressed)
 	_wire_button_audio(_speed_button)
-	utility_row.add_child(_speed_button)
+	button_grid.add_child(_speed_button)
 
-	_reset_button = Button.new()
-	_reset_button.text = "Reset"
-	_reset_button.custom_minimum_size = Vector2(96, 44)
+	_reset_button = _make_action_button("Reset", COLOR_BORDER.lightened(0.18))
 	_reset_button.pressed.connect(_on_reset_pressed)
 	_wire_button_audio(_reset_button)
-	utility_row.add_child(_reset_button)
+	button_grid.add_child(_reset_button)
 
-	var guide_button := Button.new()
-	guide_button.text = "Guide"
-	guide_button.custom_minimum_size = Vector2(96, 44)
+	var guide_button := _make_action_button("Guide", COLOR_BORDER.lightened(0.18))
 	guide_button.pressed.connect(_on_guide_pressed)
 	_wire_button_audio(guide_button)
-	utility_row.add_child(guide_button)
+	button_grid.add_child(guide_button)
 
-	var legend = Label.new()
-	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use Step AI for one AI turn\n5. Use Auto to watch AI-vs-AI continuously\n6. Use Reset to restart the current map\n\nQtank = slim laser chassis\nKtank = heavy siege hull\nBlue = Player 1\nRed = Player 2\nUse Settings for UI scale, reduced motion, and higher-contrast highlights."
-	legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(legend)
+	var intel_card := _make_panel_card(COLOR_P1, COLOR_SURFACE_ALT)
+	sidebar_layout.add_child(intel_card)
+	var intel_margin := _wrap_panel_content(intel_card, 16, 16)
+	var intel_layout := VBoxContainer.new()
+	intel_layout.add_theme_constant_override("separation", 10)
+	intel_margin.add_child(intel_layout)
+	intel_layout.add_child(_make_section_title("AI INTEL"))
+	_explanation_label = _make_body_label()
+	intel_layout.add_child(_explanation_label)
+	_stats_label = _make_body_label()
+	intel_layout.add_child(_stats_label)
 
-	_guide_label = Label.new()
-	_guide_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(_guide_label)
+	var guide_card := _make_panel_card(COLOR_GOLD.darkened(0.14), COLOR_SURFACE_ALT)
+	sidebar_layout.add_child(guide_card)
+	var guide_margin := _wrap_panel_content(guide_card, 16, 16)
+	var guide_layout := VBoxContainer.new()
+	guide_layout.add_theme_constant_override("separation", 10)
+	guide_margin.add_child(guide_layout)
+	guide_layout.add_child(_make_section_title("TACTICAL GUIDE"))
+	_guide_label = _make_body_label()
+	guide_layout.add_child(_guide_label)
 
-	_explanation_label = Label.new()
-	_explanation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(_explanation_label)
-
-	_stats_label = Label.new()
-	_stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(_stats_label)
-
-	_post_match_label = Label.new()
-	_post_match_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(_post_match_label)
-
-	var history_title = Label.new()
-	history_title.text = "Turn History"
-	sidebar_layout.add_child(history_title)
-
+	var history_card := _make_panel_card(COLOR_P2, COLOR_SURFACE_ALT)
+	sidebar_layout.add_child(history_card)
+	var history_margin := _wrap_panel_content(history_card, 16, 16)
+	var history_layout := VBoxContainer.new()
+	history_layout.add_theme_constant_override("separation", 10)
+	history_margin.add_child(history_layout)
+	history_layout.add_child(_make_section_title("REPLAY AND SUMMARY"))
+	_post_match_label = _make_body_label()
+	history_layout.add_child(_post_match_label)
 	_history_list = ItemList.new()
-	_history_list.custom_minimum_size = Vector2(0, 150)
+	_history_list.custom_minimum_size = Vector2(0, 160)
 	_history_list.item_selected.connect(_on_history_item_selected)
-	sidebar_layout.add_child(_history_list)
+	history_layout.add_child(_history_list)
+	_history_detail_label = _make_body_label()
+	history_layout.add_child(_history_detail_label)
 
-	_history_detail_label = Label.new()
-	_history_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sidebar_layout.add_child(_history_detail_label)
-
+	var feed_card := _make_panel_card(COLOR_BORDER.lightened(0.06), COLOR_SURFACE_ALT)
+	sidebar_layout.add_child(feed_card)
+	var feed_margin := _wrap_panel_content(feed_card, 16, 16)
+	var feed_layout := VBoxContainer.new()
+	feed_layout.add_theme_constant_override("separation", 10)
+	feed_margin.add_child(feed_layout)
+	feed_layout.add_child(_make_section_title("COMBAT FEED"))
 	_event_log = RichTextLabel.new()
-	_event_log.custom_minimum_size = Vector2(0, 220)
+	_event_log.custom_minimum_size = Vector2(0, 210)
 	_event_log.fit_content = false
 	_event_log.scroll_following = true
 	_event_log.bbcode_enabled = false
-	sidebar_layout.add_child(_event_log)
+	_event_log.add_theme_font_override("normal_font", FONT_REGULAR)
+	_event_log.add_theme_font_size_override("normal_font_size", 15)
+	feed_layout.add_child(_event_log)
 
-	var back_button = Button.new()
-	back_button.text = "Back To Menu"
-	back_button.custom_minimum_size = Vector2(220, 48)
+	var back_button := _make_action_button("Back To Menu", COLOR_BORDER.lightened(0.12))
+	back_button.custom_minimum_size = Vector2(0, 50)
 	back_button.pressed.connect(_on_back_pressed)
 	_wire_button_audio(back_button, true)
 	sidebar_layout.add_child(back_button)
@@ -354,6 +458,165 @@ func _build_layout() -> void:
 	call_deferred("_recenter_board_view")
 
 
+func _build_match_theme() -> Theme:
+	var match_theme := Theme.new()
+	match_theme.default_font = FONT_REGULAR
+	match_theme.default_font_size = 16
+	match_theme.set_font("font", "Label", FONT_REGULAR)
+	match_theme.set_font("font", "Button", FONT_SEMIBOLD)
+	match_theme.set_font("font", "ItemList", FONT_MEDIUM)
+	match_theme.set_font("font", "RichTextLabel", FONT_REGULAR)
+	match_theme.set_color("font_color", "Label", COLOR_TEXT)
+	match_theme.set_color("font_color", "Button", COLOR_TEXT)
+	match_theme.set_color("font_hover_color", "Button", Color.WHITE)
+	match_theme.set_color("font_pressed_color", "Button", Color.WHITE)
+	match_theme.set_color("font_disabled_color", "Button", COLOR_TEXT_MUTED)
+	match_theme.set_color("font_placeholder_color", "Label", COLOR_TEXT_MUTED)
+	match_theme.set_color("font_color", "ItemList", COLOR_TEXT)
+	match_theme.set_color("font_selected_color", "ItemList", Color.WHITE)
+	match_theme.set_color("font_hovered_color", "ItemList", Color.WHITE)
+	match_theme.set_color("guide_color", "RichTextLabel", COLOR_TEXT_MUTED)
+	match_theme.set_color("default_color", "RichTextLabel", COLOR_TEXT)
+	match_theme.set_color("font_color", "RichTextLabel", COLOR_TEXT)
+
+	var item_list_style := StyleBoxFlat.new()
+	item_list_style.bg_color = COLOR_SURFACE
+	item_list_style.corner_radius_top_left = 12
+	item_list_style.corner_radius_top_right = 12
+	item_list_style.corner_radius_bottom_left = 12
+	item_list_style.corner_radius_bottom_right = 12
+	item_list_style.border_width_left = 1
+	item_list_style.border_width_top = 1
+	item_list_style.border_width_right = 1
+	item_list_style.border_width_bottom = 1
+	item_list_style.border_color = COLOR_BORDER
+	item_list_style.content_margin_left = 10.0
+	item_list_style.content_margin_top = 8.0
+	item_list_style.content_margin_right = 10.0
+	item_list_style.content_margin_bottom = 8.0
+	match_theme.set_stylebox("panel", "ItemList", item_list_style)
+
+	var item_focus: StyleBoxFlat = item_list_style.duplicate() as StyleBoxFlat
+	item_focus.border_color = COLOR_GOLD
+	match_theme.set_stylebox("focus", "ItemList", item_focus)
+
+	return match_theme
+
+
+func _make_panel_card(accent_color: Color, fill_color: Color = COLOR_SURFACE) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style(accent_color, fill_color))
+	return panel
+
+
+func _wrap_panel_content(panel: PanelContainer, horizontal_margin: int, vertical_margin: int) -> MarginContainer:
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", horizontal_margin)
+	margin.add_theme_constant_override("margin_top", vertical_margin)
+	margin.add_theme_constant_override("margin_right", horizontal_margin)
+	margin.add_theme_constant_override("margin_bottom", vertical_margin)
+	panel.add_child(margin)
+	return margin
+
+
+func _panel_style(accent_color: Color, fill_color: Color = COLOR_SURFACE) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill_color
+	style.corner_radius_top_left = 18
+	style.corner_radius_top_right = 18
+	style.corner_radius_bottom_left = 18
+	style.corner_radius_bottom_right = 18
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = accent_color.lerp(COLOR_BORDER, 0.45)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.28)
+	style.shadow_size = 10
+	style.content_margin_left = 2.0
+	style.content_margin_top = 2.0
+	style.content_margin_right = 2.0
+	style.content_margin_bottom = 2.0
+	return style
+
+
+func _make_section_title(title_text: String) -> Label:
+	var label := Label.new()
+	label.text = title_text
+	label.add_theme_font_override("font", FONT_SEMIBOLD)
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	return label
+
+
+func _make_body_label() -> Label:
+	var label := Label.new()
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_override("font", FONT_REGULAR)
+	label.add_theme_font_size_override("font_size", 15)
+	label.add_theme_color_override("font_color", COLOR_TEXT)
+	return label
+
+
+func _make_action_button(text_value: String, accent_color: Color) -> Button:
+	var button := Button.new()
+	button.text = text_value
+	button.custom_minimum_size = Vector2(0, 46)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.add_theme_stylebox_override("normal", _button_style(accent_color, 0.10))
+	button.add_theme_stylebox_override("hover", _button_style(accent_color, 0.18))
+	button.add_theme_stylebox_override("pressed", _button_style(accent_color, 0.24))
+	button.add_theme_stylebox_override("disabled", _button_style(COLOR_BORDER, 0.04))
+	button.add_theme_font_override("font", FONT_SEMIBOLD)
+	button.add_theme_font_size_override("font_size", 15)
+	button.add_theme_color_override("font_color", Color.WHITE)
+	button.add_theme_color_override("font_disabled_color", COLOR_TEXT_MUTED)
+	return button
+
+
+func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(accent_color.r, accent_color.g, accent_color.b, fill_alpha)
+	style.corner_radius_top_left = 14
+	style.corner_radius_top_right = 14
+	style.corner_radius_bottom_left = 14
+	style.corner_radius_bottom_right = 14
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = accent_color
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.22)
+	style.shadow_size = 6
+	style.content_margin_left = 14.0
+	style.content_margin_top = 10.0
+	style.content_margin_right = 14.0
+	style.content_margin_bottom = 10.0
+	return style
+
+
+func _accent_for_actor(actor_id: String) -> Color:
+	return COLOR_P1 if actor_id.begins_with("1_") else COLOR_P2
+
+
+func _model_path_for_actor(actor_id: String) -> String:
+	return str(MODEL_PATHS.get(actor_id, ""))
+
+
+func _roster_title(actor_id: String) -> String:
+	match actor_id:
+		"1_0":
+			return "P1 Qtank"
+		"1_1":
+			return "P1 Ktank"
+		"2_0":
+			return "P2 Qtank"
+		"2_1":
+			return "P2 Ktank"
+		_:
+			return actor_id
+
+
 func _refresh_view() -> void:
 	_turn_label.text = "Turn %d | Current Player: P%d | Actions Left: %d" % [
 		_game_state.turn_count,
@@ -361,6 +624,12 @@ func _refresh_view() -> void:
 		_game_state.actions_remaining_in_turn,
 	]
 	_objective_label.text = _objective_text()
+	_board_meta_label.text = "%s | %s | %d flat-top hexes" % [
+		_game_state.board.map_display_name,
+		_controller_label(_current_player_controller_type()),
+		_game_state.board.cells.size(),
+	]
+	_board_hint_label.text = "Select, pressure, capture."
 	_map_label.text = "Map: %s\n%s" % [_game_state.board.map_display_name, _game_state.board.map_description]
 	_player_one_label.text = _player_summary_text(1)
 	_player_two_label.text = _player_summary_text(2)
@@ -388,6 +657,7 @@ func _refresh_view() -> void:
 	_board_view.set_selected_actor(_selected_actor_id)
 	_board_view.set_action_mode(_action_mode)
 	_board_view.set_highlighted_cells(_build_highlight_map())
+	_refresh_tank_showcases()
 	_recenter_board_view()
 	_refresh_event_log()
 	_refresh_history_panel()
@@ -424,6 +694,42 @@ func _refresh_event_log() -> void:
 	for event_item: GameEvent in _game_state.last_events:
 		lines.append(_format_event(event_item))
 	_event_log.text = "\n".join(lines) if not lines.is_empty() else "Event Log: no actions taken yet."
+
+
+func _refresh_tank_showcases() -> void:
+	for actor_id: String in _roster_status_labels.keys():
+		var roster_label: Label = _roster_status_labels[actor_id]
+		var roster_panel: PanelContainer = _roster_panels.get(actor_id) as PanelContainer
+		var tank: TankData = _game_state.get_tank(actor_id)
+		if roster_label == null or roster_panel == null:
+			continue
+
+		var accent: Color = _accent_for_actor(actor_id)
+		var fill_color: Color = COLOR_SURFACE if tank != null and tank.is_alive() else COLOR_SURFACE.darkened(0.18)
+		roster_panel.add_theme_stylebox_override("panel", _panel_style(accent if actor_id != _selected_actor_id else COLOR_GOLD, fill_color))
+
+		if tank == null:
+			roster_label.text = "Destroyed"
+			continue
+
+		var alive_state: String = "Ready" if tank.is_alive() else "Destroyed"
+		roster_label.text = "%s HP | %s%s" % [
+			tank.hp,
+			alive_state,
+			" | Active" if tank.owner_id == _game_state.current_player else "",
+		]
+
+	var focus_tank: TankData = _current_focus_tank()
+	if focus_tank == null:
+		_selected_model_name_label.text = "No active selection"
+		_selected_model_role_label.text = "Choose a unit or inspect the active player."
+		_selected_model_view.set_model_asset("")
+		return
+
+	_selected_model_name_label.text = _unit_card_name(focus_tank)
+	_selected_model_role_label.text = _unit_role_text(focus_tank)
+	_selected_model_view.set_accent_color(COLOR_P1 if focus_tank.owner_id == 1 else COLOR_P2)
+	_selected_model_view.set_model_asset(_model_path_for_actor(focus_tank.actor_id()))
 
 
 func _format_event(event_item: GameEvent) -> String:
@@ -884,34 +1190,34 @@ func _post_match_text() -> String:
 
 
 func _objective_text() -> String:
-	return "Objective: Destroy enemy Ktank or move your Ktank to the center hex."
+	return "Win by destroying the enemy Ktank or forcing your own Ktank onto the center."
 
 
 func _player_summary_text(player_id: int) -> String:
 	var controller_type: int = _game_state.get_ai_config_for_player(player_id).controller_type
 	var summary_lines: Array[String] = []
-	summary_lines.append("Player %d | %s" % [player_id, _controller_label(controller_type)])
+	summary_lines.append("%s pilot stack" % _controller_label(controller_type))
 
 	var ktank: TankData = _find_tank(player_id, GameTypes.TankType.KTANK)
 	var qtank: TankData = _find_tank(player_id, GameTypes.TankType.QTANK)
 	if ktank != null:
-		summary_lines.append("Ktank: %s HP | Dist %d | %s" % [ktank.hp, ktank.position.distance_to(HexCoord.new()), _buff_label(ktank.active_buff)])
+		summary_lines.append("Ktank %s HP | Center %d | %s" % [ktank.hp, ktank.position.distance_to(HexCoord.new()), _buff_label(ktank.active_buff)])
 	if qtank != null:
-		summary_lines.append("Qtank: %s HP | %s" % [qtank.hp, _buff_label(qtank.active_buff)])
+		summary_lines.append("Qtank %s HP | %s" % [qtank.hp, _buff_label(qtank.active_buff)])
 
 	var total_hp: int = 0
 	for tank: TankData in _game_state.get_player_tanks(player_id):
 		total_hp += tank.hp
-	summary_lines.append("Total Team HP: %d%s" % [total_hp, " | Active" if _game_state.current_player == player_id else ""])
+	summary_lines.append("Total %d HP%s" % [total_hp, " | Initiative" if _game_state.current_player == player_id else ""])
 	return "\n".join(summary_lines)
 
 
 func _preview_text() -> String:
 	if _autoplay_enabled:
-		return "Preview: Spectator mode active. Use the history list to inspect earlier turns while autoplay runs."
+		return "Spectator mode is active. Watch board control swing in the roster strip and inspect choices from Replay and Summary."
 
 	if _selected_actor_id == "":
-		return "Preview: Select a tank to inspect its move and attack options. Qtank fires a line laser. Ktank blasts adjacent hexes and wins instantly if it reaches center."
+		return "Select a tank to bring up tactical options. Qtanks dominate lines. Ktanks crack adjacent hexes and convert center pressure into instant wins."
 
 	var tank: TankData = _game_state.get_tank(_selected_actor_id)
 	if tank == null:
@@ -920,7 +1226,7 @@ func _preview_text() -> String:
 	var tank_name: String = "Qtank" if tank.tank_type == GameTypes.TankType.QTANK else "Ktank"
 	var move_count: int = _game_state.get_legal_move_targets(_selected_actor_id).size()
 	var attack_count: int = _game_state.get_legal_attack_targets(_selected_actor_id).size()
-	var base_text: String = "Preview: %s | %s HP | %s | %d moves | %d attack targets." % [tank_name, tank.hp, _buff_label(tank.active_buff), move_count, attack_count]
+	var base_text: String = "%s | %s HP | %s | %d moves | %d attack targets." % [tank_name, tank.hp, _buff_label(tank.active_buff), move_count, attack_count]
 
 	match _action_mode:
 		"move":
@@ -929,15 +1235,38 @@ func _preview_text() -> String:
 				if coord.q == 0 and coord.r == 0:
 					can_reach_center = true
 					break
-			return "%s Move mode is active.%s" % [base_text, " Center is reachable now." if can_reach_center else ""]
+			return "%s Move mode engaged.%s" % [base_text, " Center is reachable this turn." if can_reach_center else ""]
 		"attack":
-			return "%s Attack mode is active. Highlighted hexes show the current threat area." % base_text
+			return "%s Attack mode engaged. Highlighted hexes show the live threat lane." % base_text
 		_:
 			return "%s Choose Move, Attack, or Pass." % base_text
 
 
 func _guide_text() -> String:
-	return "Quick Guide:\n- Win by destroying the enemy Ktank or moving your own Ktank to the center.\n- Qtank controls long lines with a laser that stops at the first blocker.\n- Ktank is tougher, attacks adjacent hexes, and is the main objective piece.\n- Standard flow is one action per turn. Bonus Move grants the main extra-action exception.\n- Minimax is usually stronger in direct tactical positions, while MCTS explores more broadly on larger boards."
+	return "Quick Guide:\n- Center wins instantly for a Ktank, so mid-board tempo matters from turn one.\n- Qtank lasers stop at the first tank or blocking cell, making line control the core spacing puzzle.\n- Ktank attacks every adjacent hex, including allies, so heavy pressure can backfire.\n- Standard flow is one action per turn. Bonus Move is the main exception.\n- Minimax usually excels in sharp tactical fights. MCTS becomes more dangerous on larger, noisier maps."
+
+
+func _current_focus_tank() -> TankData:
+	if _selected_actor_id != "":
+		var selected_tank: TankData = _game_state.get_tank(_selected_actor_id)
+		if selected_tank != null and selected_tank.is_alive():
+			return selected_tank
+
+	for tank: TankData in _game_state.get_player_tanks(_game_state.current_player):
+		if tank.is_alive():
+			return tank
+	return null
+
+
+func _unit_card_name(tank: TankData) -> String:
+	var unit_name: String = "Qtank" if tank.tank_type == GameTypes.TankType.QTANK else "Ktank"
+	return "Player %d %s" % [tank.owner_id, unit_name]
+
+
+func _unit_role_text(tank: TankData) -> String:
+	if tank.tank_type == GameTypes.TankType.QTANK:
+		return "Long-range control chassis. Best when it owns clean lanes and punishes overextension."
+	return "Heavy breakthrough chassis. Forces trades, threatens the objective, and converts short-range pressure."
 
 
 func _find_tank(player_id: int, tank_type: int) -> TankData:
