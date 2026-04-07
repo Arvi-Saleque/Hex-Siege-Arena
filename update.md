@@ -236,6 +236,8 @@
   - removed the phase/debug feel from the match title in favor of a proper game identity
 - Added a Godot 4.6 compatibility hotfix:
   - switched the tank showcase viewport usage enum reference from `SubViewport.USAGE_3D` to `Viewport.USAGE_3D`
+- Added a second Godot 4.6 viewport compatibility hotfix:
+  - removed the explicit viewport `usage` assignment from the tank showcase because the enum is not exposed in this editor build
 
 ## Next Items
 
