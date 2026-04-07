@@ -5,6 +5,7 @@ const SETTINGS_SCENE := "res://scenes/settings/settings_root.tscn"
 
 
 func _ready() -> void:
+	AudioManager.play_menu_music()
 	_build_layout()
 
 
@@ -62,7 +63,11 @@ func _make_button(text: String, callback: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(280, 52)
-	button.pressed.connect(callback)
+	button.mouse_entered.connect(AudioManager.play_ui_hover)
+	button.pressed.connect(func() -> void:
+		AudioManager.play_ui_click()
+		callback.call()
+	)
 	return button
 
 

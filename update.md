@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 11: Combat VFX and feedback
+- Phase 12: Audio routing and live music
 
 ## Completed Items
 
@@ -182,14 +182,22 @@
   - damage now spawns floating text over impacted cells
   - hit and destruction events add flash pulses and subtle screen shake
   - movement now leaves a brief travel streak and arrival ring
+- Completed the Phase 12 audio pass:
+  - added `AudioManager` as a new autoload for music and SFX playback
+  - copied selected Kenney and custom files into `assets/audio` with stable runtime filenames
+  - menu and settings now play menu music automatically
+  - the match scene now switches to dedicated gameplay music
+  - UI buttons now play hover, click, and back sounds
+  - move, attack, hit, power-up, turn change, and result events now trigger audio feedback
+  - `audio.md` now documents the actual selected files and their runtime locations
 
 ## Next Items
 
-- Verify Phase 11 combat VFX and feedback inside Godot
-- Start Phase 12:
-  - audio routing
-  - action sound hooks
-  - volume controls and polish
+- Verify Phase 12 audio routing and live music inside Godot
+- Start Phase 13:
+  - menu shell polish
+  - replay shell
+  - settings UI expansion
 
 ## User Check List
 
@@ -203,7 +211,7 @@
   - map info
   - controller info
   - AI explanation text
-- Confirm the match title now reflects the unit art and material phase
+- Confirm the match title now reflects the audio phase
 - Confirm the new top section shows:
   - turn info
   - objective text
@@ -259,15 +267,24 @@
   - floating damage numbers appear over hit cells or tanks
   - brief shake happens on impactful attacks without breaking hover/click accuracy
   - move actions show a quick travel streak and landing pulse
+- Confirm Phase 12 audio is working:
+  - menu music starts in the menu
+  - settings keeps menu music
+  - opening the match switches to gameplay music
+  - button hover and click sounds play
+  - move sounds differ between Qtank and Ktank
+  - Qtank attack plays charge/fire/hit style audio
+  - Ktank attack plays heavy blast audio
+  - pickups, extra action, turn change, and result sounds play
 - Confirm `Auto` is disabled if either side is set to Human
 - Confirm reset clears history and returns the board to the start state
 - Open the settings placeholder scene from the menu and confirm the back button still returns to the menu
 
 ## Resources Needed Soon
 
-- No final art or audio needed yet
-- For Phase 12, an audio pack or reference list for movement, laser, blast, hit, shield, pickup, and win sounds would help a lot if you have them
-- Refined `audio.md` into a remaining-assets brief after reviewing the Kenney sound packs already in the repo
+- No immediate audio blocker remains for Phase 12
+- `audio.md` now documents the selected runtime audio set copied into `assets/audio`
+- For future polish, better custom heavy movement or bespoke match-result stings could still improve the feel
 - For future map polish, exact approved layouts for `standard`, `open`, and `fortress` would help replace the current implementation-ready presets
 
 ## Known Issues
@@ -277,4 +294,5 @@
 - Autoplay currently assumes both sides are AI-controlled and uses a simple timer loop rather than a full spectator shell
 - The visual pass is still code-drawn placeholder art, not final production assets
 - The new combat VFX are code-drawn and intentionally lightweight; final particles and authored animation can replace them later
+- The current audio selection is a curated first-pass mix of Kenney and custom files, so some sounds may still be swapped later for stronger cohesion
 - The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only

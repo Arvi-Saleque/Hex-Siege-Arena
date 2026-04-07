@@ -22,6 +22,7 @@ config/features=PackedStringArray("4.6", "Forward Plus")
 [autoload]
 
 AppState="*res://scripts/core/app_state.gd"
+AudioManager="*res://scripts/core/audio_manager.gd"
 EventBus="*res://scripts/core/event_bus.gd"
 
 [display]

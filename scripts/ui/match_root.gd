@@ -40,6 +40,7 @@ var _autoplay_speed_index: int = 1
 
 func _ready() -> void:
 	_reset_match()
+	AudioManager.play_match_music()
 	_build_layout()
 	_refresh_view()
 
@@ -83,7 +84,7 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Phase 11 Combat VFX And Feedback"
+	title.text = "Phase 12 Audio Routing And Live Music"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
@@ -237,18 +238,21 @@ func _build_layout() -> void:
 	_move_button.text = "Move"
 	_move_button.custom_minimum_size = Vector2(96, 44)
 	_move_button.pressed.connect(_on_move_mode_pressed)
+	_wire_button_audio(_move_button)
 	action_row.add_child(_move_button)
 
 	_attack_button = Button.new()
 	_attack_button.text = "Attack"
 	_attack_button.custom_minimum_size = Vector2(96, 44)
 	_attack_button.pressed.connect(_on_attack_mode_pressed)
+	_wire_button_audio(_attack_button)
 	action_row.add_child(_attack_button)
 
 	_pass_button = Button.new()
 	_pass_button.text = "Pass"
 	_pass_button.custom_minimum_size = Vector2(96, 44)
 	_pass_button.pressed.connect(_on_pass_pressed)
+	_wire_button_audio(_pass_button)
 	action_row.add_child(_pass_button)
 
 	var utility_row = HBoxContainer.new()
@@ -259,28 +263,32 @@ func _build_layout() -> void:
 	_ai_move_button.text = "Step AI"
 	_ai_move_button.custom_minimum_size = Vector2(120, 44)
 	_ai_move_button.pressed.connect(_on_ai_move_pressed)
+	_wire_button_audio(_ai_move_button)
 	utility_row.add_child(_ai_move_button)
 
 	_autoplay_button = Button.new()
 	_autoplay_button.text = "Auto: Off"
 	_autoplay_button.custom_minimum_size = Vector2(108, 44)
 	_autoplay_button.pressed.connect(_on_autoplay_pressed)
+	_wire_button_audio(_autoplay_button)
 	utility_row.add_child(_autoplay_button)
 
 	_speed_button = Button.new()
 	_speed_button.text = "Speed: Normal"
 	_speed_button.custom_minimum_size = Vector2(118, 44)
 	_speed_button.pressed.connect(_on_speed_pressed)
+	_wire_button_audio(_speed_button)
 	utility_row.add_child(_speed_button)
 
 	_reset_button = Button.new()
 	_reset_button.text = "Reset"
 	_reset_button.custom_minimum_size = Vector2(96, 44)
 	_reset_button.pressed.connect(_on_reset_pressed)
+	_wire_button_audio(_reset_button)
 	utility_row.add_child(_reset_button)
 
 	var legend = Label.new()
-	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use Step AI for one AI turn\n5. Use Auto to watch AI-vs-AI continuously\n6. Use Reset to restart the current map\n\nQtank = slim laser chassis\nKtank = heavy siege hull\nBlue = Player 1\nRed = Player 2\nLaser, blast, hit flash, and damage text should now appear during actions."
+	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use Step AI for one AI turn\n5. Use Auto to watch AI-vs-AI continuously\n6. Use Reset to restart the current map\n\nQtank = slim laser chassis\nKtank = heavy siege hull\nBlue = Player 1\nRed = Player 2\nMusic should swap between menu and match scenes.\nLaser, blast, hit flash, and damage audio should now play during actions."
 	legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(legend)
 
@@ -316,6 +324,7 @@ func _build_layout() -> void:
 	back_button.text = "Back To Menu"
 	back_button.custom_minimum_size = Vector2(220, 48)
 	back_button.pressed.connect(_on_back_pressed)
+	_wire_button_audio(back_button, true)
 	sidebar_layout.add_child(back_button)
 
 	_autoplay_timer = Timer.new()
@@ -648,6 +657,7 @@ func _execute_action(action: ActionData, source_label: String, explanation: Acti
 	var acting_player: int = _game_state.current_player
 	var previous_state: GameState = _game_state.clone()
 	_game_state.apply_action(action)
+	AudioManager.play_action_feedback(previous_state, _game_state, action, _game_state.last_events)
 	_board_view.play_action_feedback(previous_state, _game_state, action, _game_state.last_events)
 	if _game_state.game_over:
 		_disable_autoplay()
@@ -914,3 +924,13 @@ func _recenter_board_view() -> void:
 	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.72, 1.0)
 	_board_view.scale = Vector2.ONE * scale_factor
 	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.53)
+
+
+func _wire_button_audio(button: Button, use_back_sound: bool = false) -> void:
+	if button == null:
+		return
+	button.mouse_entered.connect(AudioManager.play_ui_hover)
+	if use_back_sound:
+		button.pressed.connect(AudioManager.play_ui_back)
+	else:
+		button.pressed.connect(AudioManager.play_ui_click)

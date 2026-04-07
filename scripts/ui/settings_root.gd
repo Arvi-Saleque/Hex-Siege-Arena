@@ -4,6 +4,7 @@ const MENU_SCENE := "res://scenes/menu/main_menu.tscn"
 
 
 func _ready() -> void:
+	AudioManager.play_menu_music()
 	_build_layout()
 
 
@@ -38,16 +39,18 @@ func _build_layout() -> void:
 	layout.add_child(title)
 
 	var description := Label.new()
-	description.text = "Later phases will add audio, accessibility, replay speed, and AI debug settings."
+	description.text = "Audio now plays in the menu and match scenes. Later phases will add volume controls, accessibility, replay speed, and more AI debug settings."
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(description)
 
 	var back_button := Button.new()
 	back_button.text = "Back To Menu"
 	back_button.custom_minimum_size = Vector2(220, 48)
+	back_button.mouse_entered.connect(AudioManager.play_ui_hover)
 	back_button.pressed.connect(_on_back_pressed)
 	layout.add_child(back_button)
 
 
 func _on_back_pressed() -> void:
+	AudioManager.play_ui_back()
 	get_tree().change_scene_to_file(MENU_SCENE)
