@@ -84,7 +84,7 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Phase 12 Audio Routing And Live Music"
+	title.text = "Phase 13 Arena With Menu And Replay Shell"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
@@ -661,6 +661,7 @@ func _execute_action(action: ActionData, source_label: String, explanation: Acti
 	_board_view.play_action_feedback(previous_state, _game_state, action, _game_state.last_events)
 	if _game_state.game_over:
 		_disable_autoplay()
+		AppState.current_replay.winner_label = _winner_label()
 	AppState.last_action_explanation = explanation
 	EventBus.action_explanation_updated.emit(explanation)
 	_record_turn_snapshot(acting_turn, acting_player, source_label, action, explanation)

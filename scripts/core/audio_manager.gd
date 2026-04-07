@@ -56,6 +56,20 @@ func _ready() -> void:
 	add_child(_music_player)
 
 
+func set_music_volume_db(value: float) -> void:
+	music_volume_db = value
+	if _music_player != null:
+		_music_player.volume_db = music_volume_db
+
+
+func set_sfx_volume_db(value: float) -> void:
+	sfx_volume_db = value
+
+
+func set_ui_volume_db(value: float) -> void:
+	ui_volume_db = value
+
+
 func play_menu_music() -> void:
 	_play_music("menu_loop")
 

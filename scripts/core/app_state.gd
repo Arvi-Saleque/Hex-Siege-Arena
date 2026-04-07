@@ -2,10 +2,11 @@ extends Node
 
 const DEFAULT_MATCH_SCENE := "res://scenes/match/match_root.tscn"
 const DEFAULT_MENU_SCENE := "res://scenes/menu/main_menu.tscn"
+const DEFAULT_REPLAY_SCENE := "res://scenes/replay/replay_shell.tscn"
 const DEFAULT_SETTINGS_SCENE := "res://scenes/settings/settings_root.tscn"
 
-var project_phase: int = 12
-var build_label: String = "phase12-audio-routing-and-live-music"
+var project_phase: int = 13
+var build_label: String = "phase13-menu-settings-and-replay-shell"
 var current_match_config: MatchConfig = MatchConfig.new()
 var current_replay: ReplayRecord = ReplayRecord.new()
 var last_action_explanation: ActionExplanation = ActionExplanation.new()

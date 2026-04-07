@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 12: Audio routing and live music
+- Phase 13: Menu, settings, and replay shell
 
 ## Completed Items
 
@@ -190,14 +190,20 @@
   - UI buttons now play hover, click, and back sounds
   - move, attack, hit, power-up, turn change, and result events now trigger audio feedback
   - `audio.md` now documents the actual selected files and their runtime locations
+- Completed the Phase 13 shell pass:
+  - the main menu now includes match setup controls for player controllers, map selection, and turn limit
+  - the settings scene now includes live audio sliders for music, SFX, and UI volume
+  - added a replay shell scene that browses recorded turns from `AppState.current_replay`
+  - the menu can now launch the replay shell when recorded turns exist
+  - replay metadata now records the winner label on game end
 
 ## Next Items
 
-- Verify Phase 12 audio routing and live music inside Godot
-- Start Phase 13:
-  - menu shell polish
-  - replay shell
-  - settings UI expansion
+- Verify Phase 13 menu, settings, and replay shell inside Godot
+- Start Phase 14:
+  - replay refinement
+  - analytics summary
+  - post-match presentation
 
 ## User Check List
 
@@ -211,7 +217,7 @@
   - map info
   - controller info
   - AI explanation text
-- Confirm the match title now reflects the audio phase
+- Confirm the match title reflects the current shell phase
 - Confirm the new top section shows:
   - turn info
   - objective text
@@ -276,14 +282,21 @@
   - Qtank attack plays charge/fire/hit style audio
   - Ktank attack plays heavy blast audio
   - pickups, extra action, turn change, and result sounds play
+- Confirm Phase 13 shell additions work:
+  - the main menu shows match setup controls
+  - changing controller or map setup updates the launch config
+  - settings sliders update audio levels live
+  - after a match with recorded turns, the replay viewer opens from the menu
+  - replay play/pause/step/restart controls browse the recorded turn list correctly
 - Confirm `Auto` is disabled if either side is set to Human
 - Confirm reset clears history and returns the board to the start state
-- Open the settings placeholder scene from the menu and confirm the back button still returns to the menu
+- Open the settings scene from the menu and confirm the back button still returns to the menu
 
 ## Resources Needed Soon
 
 - No immediate audio blocker remains for Phase 12
 - `audio.md` now documents the selected runtime audio set copied into `assets/audio`
+- No immediate asset blocker for Phase 13
 - For future polish, better custom heavy movement or bespoke match-result stings could still improve the feel
 - For future map polish, exact approved layouts for `standard`, `open`, and `fortress` would help replace the current implementation-ready presets
 
@@ -295,4 +308,5 @@
 - The visual pass is still code-drawn placeholder art, not final production assets
 - The new combat VFX are code-drawn and intentionally lightweight; final particles and authored animation can replace them later
 - The current audio selection is a curated first-pass mix of Kenney and custom files, so some sounds may still be swapped later for stronger cohesion
+- The replay shell currently browses recorded turn summaries rather than reconstructing the full board state frame-by-frame
 - The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only
