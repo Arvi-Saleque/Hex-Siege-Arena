@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 7: AI-vs-AI flow controls
+- Phase 8: Core interface and tactical readability
 
 ## Completed Items
 
@@ -136,15 +136,31 @@
   - reset
   - match end
   - leaving the match scene
+- Upgraded the match HUD with clearer tactical structure:
+  - objective header
+  - player summary cards
+  - preview panel
+  - stronger map/AI context grouping
+- Improved board readability in the match scene:
+  - center objective ring
+  - stronger move/attack preview outlines
+  - active-player tank outlines
+  - on-board HP numbers
+  - buff markers on units
+- Added player-facing summary helpers:
+  - Ktank center distance
+  - total team HP
+  - selected-unit preview text
+  - buff labels
 
 ## Next Items
 
-- Verify Phase 7 AI arena flow inside Godot
-- Start Phase 8:
-  - stronger HUD layout
-  - clearer player panels
-  - legend/info polish
-  - tactical preview readability
+- Verify Phase 8 tactical interface inside Godot
+- Start Phase 9:
+  - board depth treatment
+  - hover/selection polish
+  - fake-3D visual pass
+  - camera feel improvements
 
 ## User Check List
 
@@ -158,7 +174,17 @@
   - map info
   - controller info
   - AI explanation text
-- Confirm the match title now reflects the AI arena control phase
+- Confirm the match title now reflects the tactical interface phase
+- Confirm the new top section shows:
+  - turn info
+  - objective text
+  - Player 1 summary card
+  - Player 2 summary card
+- Confirm player cards show:
+  - controller type
+  - Ktank HP and center distance
+  - Qtank HP
+  - total team HP
 - Confirm the new buttons appear:
   - `Step AI`
   - `Auto`
@@ -172,6 +198,15 @@
 - Confirm the turn history list fills with entries as actions happen
 - Click older history entries and confirm the detail text changes
 - Confirm the arena stats panel updates with recorded turn count and state hash
+- Select a tank and confirm the preview panel changes based on:
+  - selected unit
+  - move mode
+  - attack mode
+- Confirm the board now makes it easier to read:
+  - active player's units
+  - center objective
+  - highlighted move vs attack tiles
+  - unit HP and buff markers
 - Confirm `Auto` is disabled if either side is set to Human
 - Confirm reset clears history and returns the board to the start state
 - Open the settings placeholder scene from the menu and confirm the back button still returns to the menu
@@ -179,12 +214,12 @@
 ## Resources Needed Soon
 
 - No final art or audio needed yet
-- For Phase 8, no art is required, but a preferred AI debug wording style would still be useful for the spectator panel
+- For Phase 9, no art is required yet, but a visual direction reference would help when I start the fake-3D board treatment
 - For future map polish, exact approved layouts for `standard`, `open`, and `fortress` would help replace the current implementation-ready presets
 
 ## Known Issues
 
 - Godot CLI is not available in this environment, so editor/runtime verification must be done manually inside Godot
-- The match scene is still a debug gameplay scene, not the final polished interface
+- The match scene is more readable now, but it is still a prototype HUD rather than the final styled interface
 - Autoplay currently assumes both sides are AI-controlled and uses a simple timer loop rather than a full spectator shell
 - The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only

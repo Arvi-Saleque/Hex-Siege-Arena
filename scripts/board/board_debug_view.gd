@@ -24,6 +24,7 @@ var hovered_key: String = ""
 var selected_key: String = ""
 var selected_actor_id: String = ""
 var highlighted_keys: Dictionary = {}
+var current_action_mode: String = ""
 
 
 func _ready() -> void:
@@ -57,6 +58,13 @@ func _draw() -> void:
 		var outline: PackedVector2Array = points.duplicate()
 		outline.append(points[0])
 		draw_polyline(outline, Color("0f131a"), 2.0, true)
+		if cell.cell_type == GameTypes.CellType.CENTER:
+			draw_arc(center, hex_size * 0.52, 0.0, TAU, 48, Color("fff2a8"), 2.0, true)
+		if highlighted_keys.has(cell.coord.key()) and current_action_mode != "":
+			var preview_outline: PackedVector2Array = points.duplicate()
+			preview_outline.append(points[0])
+			var preview_color: Color = Color("63e38f") if current_action_mode == "move" else Color("ff7a86")
+			draw_polyline(preview_outline, preview_color, 3.0, true)
 
 	if game_state != null:
 		_draw_tanks()
@@ -138,6 +146,11 @@ func set_highlighted_cells(keys: Dictionary) -> void:
 	queue_redraw()
 
 
+func set_action_mode(action_mode: String) -> void:
+	current_action_mode = action_mode
+	queue_redraw()
+
+
 func _active_board() -> BoardState:
 	return game_state.board if game_state != null else board_state
 
@@ -149,6 +162,8 @@ func _draw_tanks() -> void:
 			continue
 		var center: Vector2 = tank.position.to_world_flat(hex_size)
 		var player_color: Color = Color("72a7ff") if tank.owner_id == 1 else Color("ff6978")
+		if tank.owner_id == game_state.current_player:
+			draw_arc(center, 20.0, 0.0, TAU, 40, player_color.lerp(Color.WHITE, 0.2), 2.5, true)
 		if tank.actor_id() == selected_actor_id:
 			draw_circle(center, 18.0, player_color.lerp(Color.WHITE, 0.3))
 		else:
@@ -167,3 +182,21 @@ func _draw_tanks() -> void:
 		if font != null:
 			var label: String = "Q" if tank.tank_type == GameTypes.TankType.QTANK else "K"
 			draw_string(font, center + Vector2(-6, 24), "%s%d" % [label, tank.owner_id], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, Color.WHITE)
+			draw_string(font, center + Vector2(-10, -20), "%d" % tank.hp, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, Color("f5f7fb"))
+
+		if tank.active_buff != GameTypes.BuffType.NONE:
+			var buff_color: Color = _buff_color(tank.active_buff)
+			draw_circle(center + Vector2(13, -13), 5.0, buff_color)
+			draw_circle(center + Vector2(13, -13), 2.0, Color("10141c"))
+
+
+func _buff_color(buff_type: int) -> Color:
+	match buff_type:
+		GameTypes.BuffType.ATTACK_MULTIPLIER:
+			return Color("ff8c69")
+		GameTypes.BuffType.SHIELD_BUFFER:
+			return Color("7cc3ff")
+		GameTypes.BuffType.BONUS_MOVE:
+			return Color("69e59d")
+		_:
+			return Color.WHITE

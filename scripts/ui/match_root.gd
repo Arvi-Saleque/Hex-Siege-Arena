@@ -9,13 +9,17 @@ var _board_view: BoardDebugView
 var _hover_label: Label
 var _selected_label: Label
 var _turn_label: Label
+var _objective_label: Label
 var _status_label: Label
 var _mode_label: Label
 var _selected_actor_label: Label
 var _map_label: Label
 var _ai_label: Label
 var _explanation_label: Label
+var _preview_label: Label
 var _stats_label: Label
+var _player_one_label: Label
+var _player_two_label: Label
 var _event_log: RichTextLabel
 var _move_button: Button
 var _attack_button: Button
@@ -58,12 +62,56 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Phase 7 AI Arena Controls"
+	title.text = "Phase 8 Tactical Interface"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
+	var header_row = HBoxContainer.new()
+	header_row.add_theme_constant_override("separation", 16)
+	layout.add_child(header_row)
+
 	_turn_label = Label.new()
-	layout.add_child(_turn_label)
+	_turn_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_row.add_child(_turn_label)
+
+	_objective_label = Label.new()
+	_objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_objective_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_row.add_child(_objective_label)
+
+	var player_row = HBoxContainer.new()
+	player_row.add_theme_constant_override("separation", 14)
+	layout.add_child(player_row)
+
+	var p1_panel = PanelContainer.new()
+	p1_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	player_row.add_child(p1_panel)
+
+	var p1_margin = MarginContainer.new()
+	p1_margin.add_theme_constant_override("margin_left", 14)
+	p1_margin.add_theme_constant_override("margin_top", 10)
+	p1_margin.add_theme_constant_override("margin_right", 14)
+	p1_margin.add_theme_constant_override("margin_bottom", 10)
+	p1_panel.add_child(p1_margin)
+
+	_player_one_label = Label.new()
+	_player_one_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	p1_margin.add_child(_player_one_label)
+
+	var p2_panel = PanelContainer.new()
+	p2_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	player_row.add_child(p2_panel)
+
+	var p2_margin = MarginContainer.new()
+	p2_margin.add_theme_constant_override("margin_left", 14)
+	p2_margin.add_theme_constant_override("margin_top", 10)
+	p2_margin.add_theme_constant_override("margin_right", 14)
+	p2_margin.add_theme_constant_override("margin_bottom", 10)
+	p2_panel.add_child(p2_margin)
+
+	_player_two_label = Label.new()
+	_player_two_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	p2_margin.add_child(_player_two_label)
 
 	var content = HBoxContainer.new()
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -117,6 +165,10 @@ func _build_layout() -> void:
 	_ai_label = Label.new()
 	_ai_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(_ai_label)
+
+	_preview_label = Label.new()
+	_preview_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sidebar_layout.add_child(_preview_label)
 
 	_mode_label = Label.new()
 	sidebar_layout.add_child(_mode_label)
@@ -236,9 +288,13 @@ func _refresh_view() -> void:
 		_game_state.current_player,
 		_game_state.actions_remaining_in_turn,
 	]
+	_objective_label.text = _objective_text()
 	_map_label.text = "Map: %s\n%s" % [_game_state.board.map_display_name, _game_state.board.map_description]
+	_player_one_label.text = _player_summary_text(1)
+	_player_two_label.text = _player_summary_text(2)
 	_ai_label.text = _ai_status_text()
 	_explanation_label.text = _explanation_text()
+	_preview_label.text = _preview_text()
 	_stats_label.text = _stats_text()
 	_autoplay_button.text = "Auto: %s" % ("On" if _autoplay_enabled else "Off")
 	_speed_button.text = "Speed: %s" % AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
@@ -255,6 +311,7 @@ func _refresh_view() -> void:
 
 	_board_view.set_game_state(_game_state)
 	_board_view.set_selected_actor(_selected_actor_id)
+	_board_view.set_action_mode(_action_mode)
 	_board_view.set_highlighted_cells(_build_highlight_map())
 	_refresh_event_log()
 	_refresh_history_panel()
@@ -703,6 +760,78 @@ func _stats_text() -> String:
 		latest.get("source", "Unknown"),
 		latest.get("state_hash", ""),
 	]
+
+
+func _objective_text() -> String:
+	return "Objective: Destroy enemy Ktank or move your Ktank to the center hex."
+
+
+func _player_summary_text(player_id: int) -> String:
+	var controller_type: int = _game_state.get_ai_config_for_player(player_id).controller_type
+	var summary_lines: Array[String] = []
+	summary_lines.append("Player %d | %s" % [player_id, _controller_label(controller_type)])
+
+	var ktank: TankData = _find_tank(player_id, GameTypes.TankType.KTANK)
+	var qtank: TankData = _find_tank(player_id, GameTypes.TankType.QTANK)
+	if ktank != null:
+		summary_lines.append("Ktank: %s HP | Dist %d | %s" % [ktank.hp, ktank.position.distance_to(HexCoord.new()), _buff_label(ktank.active_buff)])
+	if qtank != null:
+		summary_lines.append("Qtank: %s HP | %s" % [qtank.hp, _buff_label(qtank.active_buff)])
+
+	var total_hp: int = 0
+	for tank: TankData in _game_state.get_player_tanks(player_id):
+		total_hp += tank.hp
+	summary_lines.append("Total Team HP: %d%s" % [total_hp, " | Active" if _game_state.current_player == player_id else ""])
+	return "\n".join(summary_lines)
+
+
+func _preview_text() -> String:
+	if _autoplay_enabled:
+		return "Preview: Spectator mode active. Use the history list to inspect earlier turns while autoplay runs."
+
+	if _selected_actor_id == "":
+		return "Preview: Select a tank to inspect its move and attack options. Qtank fires a line laser. Ktank blasts adjacent hexes and wins instantly if it reaches center."
+
+	var tank: TankData = _game_state.get_tank(_selected_actor_id)
+	if tank == null:
+		return "Preview: Selected tank is no longer available."
+
+	var tank_name: String = "Qtank" if tank.tank_type == GameTypes.TankType.QTANK else "Ktank"
+	var move_count: int = _game_state.get_legal_move_targets(_selected_actor_id).size()
+	var attack_count: int = _game_state.get_legal_attack_targets(_selected_actor_id).size()
+	var base_text: String = "Preview: %s | %s HP | %s | %d moves | %d attack targets." % [tank_name, tank.hp, _buff_label(tank.active_buff), move_count, attack_count]
+
+	match _action_mode:
+		"move":
+			var can_reach_center: bool = false
+			for coord: HexCoord in _game_state.get_legal_move_targets(_selected_actor_id):
+				if coord.q == 0 and coord.r == 0:
+					can_reach_center = true
+					break
+			return "%s Move mode is active.%s" % [base_text, " Center is reachable now." if can_reach_center else ""]
+		"attack":
+			return "%s Attack mode is active. Highlighted hexes show the current threat area." % base_text
+		_:
+			return "%s Choose Move, Attack, or Pass." % base_text
+
+
+func _find_tank(player_id: int, tank_type: int) -> TankData:
+	for tank: TankData in _game_state.get_all_tanks():
+		if tank.owner_id == player_id and tank.tank_type == tank_type and tank.is_alive():
+			return tank
+	return null
+
+
+func _buff_label(buff_type: int) -> String:
+	match buff_type:
+		GameTypes.BuffType.ATTACK_MULTIPLIER:
+			return "Attack Buff"
+		GameTypes.BuffType.SHIELD_BUFFER:
+			return "Shield Buff"
+		GameTypes.BuffType.BONUS_MOVE:
+			return "Bonus Move"
+		_:
+			return "No Buff"
 
 
 func _controller_label(controller_type: int) -> String:
