@@ -215,10 +215,15 @@
   - added an in-match guide panel toggle so the core rules stay accessible during play
   - reduced board shake automatically when reduced motion is enabled
   - strengthened contrast for previews and team colors when high contrast mode is enabled
+- Added a replay reconstruction upgrade:
+  - replay metadata now stores the initial board state
+  - each recorded turn now stores a full post-action state snapshot
+  - the replay viewer now includes a passive board preview that scrubs through actual recorded states
+  - replay browsing now starts from `Start State` and can step forward through reconstructed match positions
 
 ## Next Items
 
-- Verify the Phase 15 finish pass inside Godot
+- Verify the replay reconstruction upgrade inside Godot
 - Do a final bug-fix and styling sweep based on runtime feedback
 
 ## User Check List
@@ -322,6 +327,11 @@
   - enabling `High Contrast Highlights` makes move/attack/team colors stand out more strongly
   - the match scene title now reflects the Phase 15 finish pass
   - the `Guide` button in match shows and hides the quick guide text
+- Confirm the replay reconstruction upgrade works:
+  - replay viewer shows a board preview panel
+  - timeline begins with `Start State`
+  - stepping through replay updates the board position, not just the text panel
+  - the reconstructed board matches the selected turn details
 - Confirm `Auto` is disabled if either side is set to Human
 - Confirm reset clears history and returns the board to the start state
 - Open the settings scene from the menu and confirm the back button still returns to the menu

@@ -33,6 +33,7 @@ var selected_key: String = ""
 var selected_actor_id: String = ""
 var highlighted_keys: Dictionary = {}
 var current_action_mode: String = ""
+var interaction_enabled: bool = true
 var _pulse_time: float = 0.0
 var _beam_effects: Array[Dictionary] = []
 var _ring_effects: Array[Dictionary] = []
@@ -58,6 +59,8 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if not interaction_enabled:
+		return
 	if event is InputEventMouseMotion:
 		_update_hover(to_local(event.position))
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -215,6 +218,10 @@ func set_highlighted_cells(keys: Dictionary) -> void:
 func set_action_mode(action_mode: String) -> void:
 	current_action_mode = action_mode
 	queue_redraw()
+
+
+func set_interaction_enabled(enabled: bool) -> void:
+	interaction_enabled = enabled
 
 
 func play_action_feedback(previous_state: GameState, current_state: GameState, action: ActionData, events: Array[GameEvent]) -> void:

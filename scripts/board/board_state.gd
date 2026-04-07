@@ -107,3 +107,31 @@ func clone() -> BoardState:
 	duplicate.map_description = map_description
 	duplicate.power_block_reveals = power_block_reveals.duplicate(true)
 	return duplicate
+
+
+func to_snapshot() -> Dictionary:
+	var cell_entries: Array[Dictionary] = []
+	for key: String in cells.keys():
+		cell_entries.append((cells[key] as CellData).to_snapshot())
+	return {
+		"rings": rings,
+		"map_id": map_id,
+		"map_display_name": map_display_name,
+		"map_description": map_description,
+		"power_block_reveals": power_block_reveals.duplicate(true),
+		"cells": cell_entries,
+	}
+
+
+static func from_snapshot(snapshot: Dictionary) -> BoardState:
+	var restored: BoardState = BoardState.new(int(snapshot.get("rings", DEFAULT_RINGS)))
+	restored.cells.clear()
+	restored.map_id = str(snapshot.get("map_id", "standard"))
+	restored.map_display_name = str(snapshot.get("map_display_name", "Standard Arena"))
+	restored.map_description = str(snapshot.get("map_description", ""))
+	restored.power_block_reveals = (snapshot.get("power_block_reveals", {}) as Dictionary).duplicate(true)
+	for cell_snapshot: Variant in snapshot.get("cells", []):
+		if cell_snapshot is Dictionary:
+			var restored_cell: CellData = CellData.from_snapshot(cell_snapshot)
+			restored.set_cell(restored_cell)
+	return restored

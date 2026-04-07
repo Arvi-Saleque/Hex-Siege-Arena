@@ -65,6 +65,44 @@ func clone() -> GameState:
 	return duplicate
 
 
+func to_snapshot() -> Dictionary:
+	var tank_entries: Array[Dictionary] = []
+	for tank: TankData in get_all_tanks():
+		tank_entries.append(tank.to_snapshot())
+	return {
+		"board": board.to_snapshot(),
+		"map_id": board.map_id,
+		"current_player": current_player,
+		"winner": winner,
+		"game_over": game_over,
+		"turn_count": turn_count,
+		"actions_remaining_in_turn": actions_remaining_in_turn,
+		"max_turns": max_turns,
+		"repetition_counts": repetition_counts.duplicate(true),
+		"tanks": tank_entries,
+	}
+
+
+static func from_snapshot(snapshot: Dictionary) -> GameState:
+	var restored := GameState.new()
+	restored.board = BoardState.from_snapshot(snapshot.get("board", {}))
+	restored.map_preset = MapLibrary.get_preset(str(snapshot.get("map_id", restored.board.map_id)))
+	restored.tanks.clear()
+	for tank_snapshot: Variant in snapshot.get("tanks", []):
+		if tank_snapshot is Dictionary:
+			var restored_tank: TankData = TankData.from_snapshot(tank_snapshot)
+			restored.tanks[restored_tank.actor_id()] = restored_tank
+	restored.current_player = int(snapshot.get("current_player", 1))
+	restored.winner = int(snapshot.get("winner", 0))
+	restored.game_over = bool(snapshot.get("game_over", false))
+	restored.turn_count = int(snapshot.get("turn_count", 1))
+	restored.actions_remaining_in_turn = int(snapshot.get("actions_remaining_in_turn", 1))
+	restored.max_turns = int(snapshot.get("max_turns", 80))
+	restored.last_events = []
+	restored.repetition_counts = (snapshot.get("repetition_counts", {}) as Dictionary).duplicate(true)
+	return restored
+
+
 func get_tank(actor_id: String) -> TankData:
 	return tanks.get(actor_id)
 

@@ -49,6 +49,22 @@ func clone() -> CellData:
 	return CellData.new(coord.clone(), cell_type, hp)
 
 
+func to_snapshot() -> Dictionary:
+	return {
+		"coord": coord.key(),
+		"type": cell_type,
+		"hp": hp,
+	}
+
+
+static func from_snapshot(snapshot: Dictionary) -> CellData:
+	return CellData.new(
+		HexCoord.from_key(str(snapshot.get("coord", "0,0"))),
+		int(snapshot.get("type", GameTypes.CellType.EMPTY)),
+		int(snapshot.get("hp", 0))
+	)
+
+
 func set_type(new_type: int) -> void:
 	cell_type = new_type
 	hp = get_default_hp_for_type(new_type)

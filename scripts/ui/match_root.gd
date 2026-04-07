@@ -602,6 +602,7 @@ func _reset_match() -> void:
 		"map_name": _game_state.board.map_display_name,
 		"player_one_controller": _controller_label(AppState.current_match_config.player_one_ai.controller_type),
 		"player_two_controller": _controller_label(AppState.current_match_config.player_two_ai.controller_type),
+		"initial_state": _game_state.to_snapshot(),
 	}
 	call_deferred("_recenter_board_view")
 
@@ -722,6 +723,7 @@ func _record_turn_snapshot(acting_turn: int, acting_player: int, source_label: S
 		"events": event_lines,
 		"event_data": event_data,
 		"state_hash": _game_state.get_state_hash(),
+		"state_snapshot": _game_state.to_snapshot(),
 	}
 	AppState.current_replay.add_turn(snapshot)
 

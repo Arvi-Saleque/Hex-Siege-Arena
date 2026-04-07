@@ -38,6 +38,31 @@ func clone() -> TankData:
 	return duplicate
 
 
+func to_snapshot() -> Dictionary:
+	return {
+		"tank_type": tank_type,
+		"position": position.key(),
+		"hp": hp,
+		"max_hp": max_hp,
+		"owner_id": owner_id,
+		"active_buff": active_buff,
+		"shield_hits_remaining": shield_hits_remaining,
+	}
+
+
+static func from_snapshot(snapshot: Dictionary) -> TankData:
+	var tank := TankData.new(
+		int(snapshot.get("tank_type", GameTypes.TankType.QTANK)),
+		HexCoord.from_key(str(snapshot.get("position", "0,0"))),
+		int(snapshot.get("hp", 0)),
+		int(snapshot.get("max_hp", 0)),
+		int(snapshot.get("owner_id", 1))
+	)
+	tank.active_buff = int(snapshot.get("active_buff", GameTypes.BuffType.NONE))
+	tank.shield_hits_remaining = int(snapshot.get("shield_hits_remaining", 0))
+	return tank
+
+
 func actor_id() -> String:
 	return "%d_%d" % [owner_id, tank_type]
 

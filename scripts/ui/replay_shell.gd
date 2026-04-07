@@ -9,6 +9,8 @@ var _turn_list: ItemList
 var _summary_label: Label
 var _analytics_label: Label
 var _detail_label: Label
+var _board_view: BoardDebugView
+var _board_holder: Control
 var _timer: Timer
 var _current_index: int = -1
 var _autoplay_enabled: bool = false
@@ -86,8 +88,23 @@ func _build_layout() -> void:
 	left_layout.add_theme_constant_override("separation", 10)
 	left_margin.add_child(left_layout)
 
+	var preview_title := Label.new()
+	preview_title.text = "Board Replay"
+	left_layout.add_child(preview_title)
+
+	_board_holder = Control.new()
+	_board_holder.custom_minimum_size = Vector2(0, 360)
+	_board_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_board_holder.clip_contents = true
+	_board_holder.resized.connect(_on_board_holder_resized)
+	left_layout.add_child(_board_holder)
+
+	_board_view = BoardDebugView.new()
+	_board_view.set_interaction_enabled(false)
+	_board_holder.add_child(_board_view)
+
 	var list_title := Label.new()
-	list_title.text = "Recorded Turns"
+	list_title.text = "Replay Timeline"
 	left_layout.add_child(list_title)
 
 	_turn_list = ItemList.new()
@@ -140,11 +157,7 @@ func _refresh_replay() -> void:
 	_analytics_label.text = ReplayAnalytics.format_summary_text(ReplayAnalytics.build_summary(replay))
 
 	_turn_list.clear()
-	for index in range(replay.turns.size()):
-		var turn_data: Dictionary = replay.turns[index]
-		_turn_list.add_item("T%d P%d %s" % [int(turn_data.get("turn", 0)), int(turn_data.get("player", 0)), str(turn_data.get("source", "Unknown"))])
-
-	if replay.turns.is_empty():
+	if replay.turns.is_empty() and not replay.metadata.has("initial_state"):
 		_detail_label.text = "No replay data yet. Play a match first, then come back here to browse the recorded turns."
 		_analytics_label.text = ""
 		_play_button.disabled = true
@@ -155,18 +168,31 @@ func _refresh_replay() -> void:
 	_play_button.disabled = false
 	_step_button.disabled = false
 	_restart_button.disabled = false
-	_select_index(clampi(_current_index, 0, replay.turns.size() - 1) if _current_index >= 0 else 0)
+	_turn_list.add_item("Start State")
+	for index in range(replay.turns.size()):
+		var turn_data: Dictionary = replay.turns[index]
+		_turn_list.add_item("T%d P%d %s" % [int(turn_data.get("turn", 0)), int(turn_data.get("player", 0)), str(turn_data.get("source", "Unknown"))])
+	_select_index(clampi(_current_index, 0, replay.turns.size()) if _current_index >= 0 else 0)
 
 
 func _select_index(index: int) -> void:
 	var replay: ReplayRecord = AppState.current_replay
-	if replay.turns.is_empty():
+	if replay.turns.is_empty() and not replay.metadata.has("initial_state"):
 		return
-	_current_index = clampi(index, 0, replay.turns.size() - 1)
+	_current_index = clampi(index, 0, replay.turns.size())
 	_turn_list.select(_current_index)
-	var turn_data: Dictionary = replay.turns[_current_index]
+	var timeline_position: String = "Replay Position: %d / %d" % [_current_index + 1, replay.turns.size() + 1]
+	if _current_index == 0:
+		_apply_replay_state(replay.metadata.get("initial_state", {}))
+		_detail_label.text = "%s\n\nStart State\nMap: %s\nInitial board setup before any actions are taken." % [
+			timeline_position,
+			str(replay.metadata.get("map_name", "Unknown Map")),
+		]
+		return
+
+	var turn_data: Dictionary = replay.turns[_current_index - 1]
 	var metrics: Dictionary = turn_data.get("metrics", {})
-	var timeline_position: String = "Replay Position: %d / %d" % [_current_index + 1, replay.turns.size()]
+	_apply_replay_state(turn_data.get("state_snapshot", {}))
 	_detail_label.text = "Turn %d | Player %d\nSource: %s\nSummary: %s\nScore: %.2f\nMetrics: %s\nState Hash: %s\n\nEvents:\n%s" % [
 		int(turn_data.get("turn", 0)),
 		int(turn_data.get("player", 0)),
@@ -210,7 +236,7 @@ func _on_step_pressed() -> void:
 	_autoplay_enabled = false
 	_play_button.text = "Play"
 	_timer.stop()
-	_select_index(mini(_current_index + 1, AppState.current_replay.turns.size() - 1))
+	_select_index(mini(_current_index + 1, AppState.current_replay.turns.size()))
 
 
 func _on_restart_pressed() -> void:
@@ -224,7 +250,7 @@ func _on_timer_timeout() -> void:
 	if not _autoplay_enabled:
 		return
 	var next_index: int = _current_index + 1
-	if next_index >= AppState.current_replay.turns.size():
+	if next_index > AppState.current_replay.turns.size():
 		_autoplay_enabled = false
 		_play_button.text = "Play"
 		return
@@ -236,6 +262,36 @@ func _schedule_next() -> void:
 	_timer.stop()
 	_timer.wait_time = 0.65
 	_timer.start()
+
+
+func _apply_replay_state(snapshot: Dictionary) -> void:
+	if _board_view == null or not (snapshot is Dictionary) or snapshot.is_empty():
+		return
+	var replay_state: GameState = GameState.from_snapshot(snapshot)
+	_board_view.clear_transient_effects()
+	_board_view.set_selected_actor("")
+	_board_view.set_action_mode("")
+	_board_view.set_highlighted_cells({})
+	_board_view.set_game_state(replay_state)
+	call_deferred("_recenter_board_view")
+
+
+func _on_board_holder_resized() -> void:
+	_recenter_board_view()
+
+
+func _recenter_board_view() -> void:
+	if _board_view == null or _board_holder == null:
+		return
+	var holder_size: Vector2 = _board_holder.size
+	if holder_size.x <= 0.0 or holder_size.y <= 0.0:
+		return
+	var visual_size: Vector2 = _board_view.get_board_visual_size()
+	var width_scale: float = holder_size.x / maxf(visual_size.x, 1.0)
+	var height_scale: float = holder_size.y / maxf(visual_size.y, 1.0)
+	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.42, 0.92)
+	_board_view.scale = Vector2.ONE * scale_factor
+	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.53)
 
 
 func _on_back_pressed() -> void:
