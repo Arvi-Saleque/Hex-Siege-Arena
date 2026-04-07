@@ -56,7 +56,7 @@ func set_accent_color(color: Color) -> void:
 func _build_viewport() -> void:
 	_viewport = SubViewport.new()
 	_viewport.disable_3d = false
-	_viewport.usage = SubViewport.USAGE_3D
+	_viewport.usage = Viewport.USAGE_3D
 	_viewport.transparent_bg = true
 	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	_viewport.msaa_3d = Viewport.MSAA_4X

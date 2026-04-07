@@ -234,6 +234,8 @@
   - added a larger selected-unit showcase card that tracks the currently selected or active tank
   - upgraded on-board labels to use the same font family for a more cohesive look
   - removed the phase/debug feel from the match title in favor of a proper game identity
+- Added a Godot 4.6 compatibility hotfix:
+  - switched the tank showcase viewport usage enum reference from `SubViewport.USAGE_3D` to `Viewport.USAGE_3D`
 
 ## Next Items
 
