@@ -23,6 +23,7 @@ var _post_match_label: Label
 var _player_one_label: Label
 var _player_two_label: Label
 var _event_log: RichTextLabel
+var _guide_label: Label
 var _move_button: Button
 var _attack_button: Button
 var _pass_button: Button
@@ -37,9 +38,11 @@ var _action_mode: String = ""
 var _selected_actor_id: String = ""
 var _autoplay_enabled: bool = false
 var _autoplay_speed_index: int = 1
+var _guide_visible: bool = true
 
 
 func _ready() -> void:
+	AppState.apply_window_preferences(self)
 	_reset_match()
 	AudioManager.play_match_music()
 	_build_layout()
@@ -85,7 +88,7 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Phase 14 Replay Analytics And Match Summary"
+	title.text = "Phase 15 Finish Pass And Accessibility"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
@@ -288,10 +291,21 @@ func _build_layout() -> void:
 	_wire_button_audio(_reset_button)
 	utility_row.add_child(_reset_button)
 
+	var guide_button := Button.new()
+	guide_button.text = "Guide"
+	guide_button.custom_minimum_size = Vector2(96, 44)
+	guide_button.pressed.connect(_on_guide_pressed)
+	_wire_button_audio(guide_button)
+	utility_row.add_child(guide_button)
+
 	var legend = Label.new()
-	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use Step AI for one AI turn\n5. Use Auto to watch AI-vs-AI continuously\n6. Use Reset to restart the current map\n\nQtank = slim laser chassis\nKtank = heavy siege hull\nBlue = Player 1\nRed = Player 2\nMusic should swap between menu and match scenes.\nLaser, blast, hit flash, and damage audio should now play during actions."
+	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use Step AI for one AI turn\n5. Use Auto to watch AI-vs-AI continuously\n6. Use Reset to restart the current map\n\nQtank = slim laser chassis\nKtank = heavy siege hull\nBlue = Player 1\nRed = Player 2\nUse Settings for UI scale, reduced motion, and higher-contrast highlights."
 	legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(legend)
+
+	_guide_label = Label.new()
+	_guide_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sidebar_layout.add_child(_guide_label)
 
 	_explanation_label = Label.new()
 	_explanation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -355,6 +369,8 @@ func _refresh_view() -> void:
 	_preview_label.text = _preview_text()
 	_stats_label.text = _stats_text()
 	_post_match_label.text = _post_match_text()
+	_guide_label.text = _guide_text()
+	_guide_label.visible = _guide_visible
 	_autoplay_button.text = "Auto: %s" % ("On" if _autoplay_enabled else "Off")
 	_speed_button.text = "Speed: %s" % AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
 
@@ -380,22 +396,25 @@ func _refresh_view() -> void:
 
 func _build_highlight_map() -> Dictionary:
 	var highlights: Dictionary = {}
+	var selected_color: Color = Color("7bdcff") if AppState.high_contrast_mode else Color("69d2ff")
+	var move_color: Color = Color("95ff5f") if AppState.high_contrast_mode else Color("57d477")
+	var attack_color: Color = Color("ffb347") if AppState.high_contrast_mode else Color("ff6978")
 	if _selected_actor_id == "":
 		for tank: TankData in _game_state.get_player_tanks(_game_state.current_player):
-			highlights[tank.position.key()] = Color("69d2ff")
+			highlights[tank.position.key()] = selected_color
 		return highlights
 
 	var selected_tank: TankData = _game_state.get_tank(_selected_actor_id)
 	if selected_tank != null:
-		highlights[selected_tank.position.key()] = Color("69d2ff")
+		highlights[selected_tank.position.key()] = selected_color
 
 	match _action_mode:
 		"move":
 			for coord: HexCoord in _game_state.get_legal_move_targets(_selected_actor_id):
-				highlights[coord.key()] = Color("57d477")
+				highlights[coord.key()] = move_color
 		"attack":
 			for coord: HexCoord in _game_state.get_legal_attack_targets(_selected_actor_id):
-				highlights[coord.key()] = Color("ff6978")
+				highlights[coord.key()] = attack_color
 
 	return highlights
 
@@ -538,6 +557,11 @@ func _on_speed_pressed() -> void:
 	_autoplay_speed_index = (_autoplay_speed_index + 1) % AUTOPLAY_SPEED_LABELS.size()
 	if _autoplay_enabled:
 		_schedule_autoplay()
+	_refresh_view()
+
+
+func _on_guide_pressed() -> void:
+	_guide_visible = not _guide_visible
 	_refresh_view()
 
 
@@ -828,12 +852,16 @@ func _explanation_text() -> String:
 func _stats_text() -> String:
 	var total_turns: int = AppState.current_replay.turns.size()
 	if total_turns == 0:
-		return "Arena Stats: no recorded turns yet.\nUse Step AI or Auto to begin."
+		return "Arena Stats: no recorded turns yet.\nUse Step AI or Auto to begin.\nAccessibility: UI %.2fx | Motion %s | Contrast %s" % [
+			AppState.ui_scale,
+			"Reduced" if AppState.reduced_motion else "Standard",
+			"High" if AppState.high_contrast_mode else "Standard",
+		]
 
 	var latest: Dictionary = AppState.current_replay.turns[total_turns - 1]
 	var analytics: Dictionary = ReplayAnalytics.build_summary(AppState.current_replay)
 	var damage_bucket: Dictionary = analytics.get("player_damage", {})
-	return "Arena Stats: %d recorded turns\nLatest: T%d P%d via %s\nState Hash: %s\nDamage P1/P2: %d / %d" % [
+	return "Arena Stats: %d recorded turns\nLatest: T%d P%d via %s\nState Hash: %s\nDamage P1/P2: %d / %d\nAccessibility: UI %.2fx | Motion %s | Contrast %s" % [
 		total_turns,
 		latest.get("turn", 0),
 		latest.get("player", 0),
@@ -841,6 +869,9 @@ func _stats_text() -> String:
 		latest.get("state_hash", ""),
 		int(damage_bucket.get(1, 0)),
 		int(damage_bucket.get(2, 0)),
+		AppState.ui_scale,
+		"Reduced" if AppState.reduced_motion else "Standard",
+		"High" if AppState.high_contrast_mode else "Standard",
 	]
 
 
@@ -901,6 +932,10 @@ func _preview_text() -> String:
 			return "%s Attack mode is active. Highlighted hexes show the current threat area." % base_text
 		_:
 			return "%s Choose Move, Attack, or Pass." % base_text
+
+
+func _guide_text() -> String:
+	return "Quick Guide:\n- Win by destroying the enemy Ktank or moving your own Ktank to the center.\n- Qtank controls long lines with a laser that stops at the first blocker.\n- Ktank is tougher, attacks adjacent hexes, and is the main objective piece.\n- Standard flow is one action per turn. Bonus Move grants the main extra-action exception.\n- Minimax is usually stronger in direct tactical positions, while MCTS explores more broadly on larger boards."
 
 
 func _find_tank(player_id: int, tank_type: int) -> TankData:

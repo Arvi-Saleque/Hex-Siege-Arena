@@ -15,6 +15,7 @@ var _autoplay_enabled: bool = false
 
 
 func _ready() -> void:
+	AppState.apply_window_preferences(self)
 	AudioManager.play_menu_music()
 	_build_layout()
 	_refresh_replay()

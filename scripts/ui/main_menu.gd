@@ -3,6 +3,7 @@ extends Control
 const MATCH_SCENE := "res://scenes/match/match_root.tscn"
 const REPLAY_SCENE := "res://scenes/replay/replay_shell.tscn"
 const SETTINGS_SCENE := "res://scenes/settings/settings_root.tscn"
+const HELP_SCENE := "res://scenes/help/help_root.tscn"
 
 var _p1_controller: OptionButton
 var _p2_controller: OptionButton
@@ -15,6 +16,7 @@ var _summary_label: RichTextLabel
 
 
 func _ready() -> void:
+	AppState.apply_window_preferences(self)
 	AudioManager.play_menu_music()
 	_build_layout()
 	_refresh_summary()
@@ -59,7 +61,7 @@ func _build_layout() -> void:
 	hero_layout.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "Phase %d prototype build" % AppState.project_phase
+	subtitle.text = "Phase %d release-candidate build" % AppState.project_phase
 	subtitle.modulate = Color(0.74, 0.82, 0.92, 1.0)
 	hero_layout.add_child(subtitle)
 
@@ -129,6 +131,7 @@ func _build_layout() -> void:
 	_replay_button = _make_button("Open Replay Viewer", _on_open_replay_pressed)
 	button_column.add_child(_replay_button)
 
+	button_column.add_child(_make_button("Quick Start Guide", _on_open_help_pressed))
 	button_column.add_child(_make_button("Open Settings", _on_open_settings_pressed))
 	button_column.add_child(_make_button("Reset Runtime State", _on_reset_state_pressed))
 
@@ -148,12 +151,12 @@ func _build_layout() -> void:
 	side_margin.add_child(side_layout)
 
 	var side_title := Label.new()
-	side_title.text = "Shell Notes"
+	side_title.text = "Release Notes"
 	side_title.add_theme_font_size_override("font_size", 24)
 	side_layout.add_child(side_title)
 
 	var notes := Label.new()
-	notes.text = "This phase adds a proper outer shell around the arena prototype:\n\n- match setup before entering the board\n- replay browser shell backed by recorded turns\n- settings with live audio sliders\n- cleaner launch flow for testing different AI combinations"
+	notes.text = "This finish pass focuses on how the game is learned and read:\n\n- quick-start onboarding for new players\n- accessibility controls for UI scale, reduced motion, and higher-contrast previews\n- stronger release-style shell wording around the arena prototype\n- preserved AI-vs-AI workflow for testing Minimax and MCTS quickly"
 	notes.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	side_layout.add_child(notes)
 
@@ -238,6 +241,11 @@ func _refresh_summary() -> void:
 		config.map_id.capitalize(),
 		replay_ready,
 	]
+	_summary_label.text += "\n\n[center]UI Scale: %.2fx | Reduced Motion: %s | High Contrast: %s[/center]" % [
+		AppState.ui_scale,
+		"On" if AppState.reduced_motion else "Off",
+		"On" if AppState.high_contrast_mode else "Off",
+	]
 
 
 func _controller_label(controller_type: int) -> String:
@@ -258,6 +266,10 @@ func _on_open_match_pressed() -> void:
 
 func _on_open_replay_pressed() -> void:
 	get_tree().change_scene_to_file(REPLAY_SCENE)
+
+
+func _on_open_help_pressed() -> void:
+	get_tree().change_scene_to_file(HELP_SCENE)
 
 
 func _on_open_settings_pressed() -> void:

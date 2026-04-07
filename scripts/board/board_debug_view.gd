@@ -52,7 +52,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_pulse_time += delta
+	_pulse_time += delta * (0.35 if AppState.reduced_motion else 1.0)
 	_process_effects(delta)
 	queue_redraw()
 
@@ -71,11 +71,11 @@ func _draw() -> void:
 		var center: Vector2 = _tile_center(cell)
 		var fill: Color = COLOR_BY_TYPE.get(cell.cell_type, Color.DIM_GRAY)
 		if highlighted_keys.has(cell.coord.key()):
-			fill = fill.lerp(highlighted_keys[cell.coord.key()], 0.45)
+			fill = fill.lerp(highlighted_keys[cell.coord.key()], 0.58 if AppState.high_contrast_mode else 0.45)
 		if cell.coord.key() == hovered_key:
 			fill = fill.lerp(Color.WHITE, 0.18)
 		if cell.coord.key() == selected_key:
-			fill = fill.lerp(Color("67f0ff"), 0.35)
+			fill = fill.lerp(_selected_outline_color(), 0.42 if AppState.high_contrast_mode else 0.35)
 
 		var points: PackedVector2Array = _hex_points(center)
 		var shadow_points: PackedVector2Array = _offset_points(points, Vector2(0, 11 + _tile_depth(cell)))
@@ -97,13 +97,14 @@ func _draw() -> void:
 		draw_polyline(top_highlight, Color.WHITE.lerp(fill, 0.65), 1.5, true)
 		_draw_tile_material(cell, center, points, fill)
 		if cell.cell_type == GameTypes.CellType.CENTER:
-			var pulse_radius: float = hex_size * (0.52 + 0.08 * sin(_pulse_time * 2.2))
+			var pulse_amplitude: float = 0.03 if AppState.reduced_motion else 0.08
+			var pulse_radius: float = hex_size * (0.52 + pulse_amplitude * sin(_pulse_time * 2.2))
 			draw_circle(center, pulse_radius + 6.0, Color(1.0, 0.92, 0.47, 0.08))
 			draw_arc(center, pulse_radius, 0.0, TAU, 48, Color("fff2a8"), 2.0, true)
 		if highlighted_keys.has(cell.coord.key()) and current_action_mode != "":
 			var preview_outline: PackedVector2Array = points.duplicate()
 			preview_outline.append(points[0])
-			var preview_color: Color = Color("63e38f") if current_action_mode == "move" else Color("ff7a86")
+			var preview_color: Color = _move_preview_color() if current_action_mode == "move" else _attack_preview_color()
 			draw_polyline(preview_outline, preview_color, 3.0, true)
 		if cell.coord.key() == hovered_key:
 			draw_circle(center + Vector2(0, 2), hex_size * 0.33, Color(1.0, 1.0, 1.0, 0.06))
@@ -324,6 +325,30 @@ func _tile_glow_color(cell: CellData) -> Color:
 			return Color(0.0, 0.0, 0.0, 0.0)
 
 
+func _player_primary_color(player_id: int) -> Color:
+	if not AppState.high_contrast_mode:
+		return PLAYER_PRIMARY.get(player_id, Color.WHITE)
+	return Color("5fd0ff") if player_id == 1 else Color("ff8d4d")
+
+
+func _player_accent_color(player_id: int) -> Color:
+	if not AppState.high_contrast_mode:
+		return PLAYER_ACCENT.get(player_id, Color.WHITE)
+	return Color("f2fbff") if player_id == 1 else Color("fff1d9")
+
+
+func _selected_outline_color() -> Color:
+	return Color("86fff1") if AppState.high_contrast_mode else Color("67f0ff")
+
+
+func _move_preview_color() -> Color:
+	return Color("95ff5f") if AppState.high_contrast_mode else Color("63e38f")
+
+
+func _attack_preview_color() -> Color:
+	return Color("ffb347") if AppState.high_contrast_mode else Color("ff7a86")
+
+
 func _draw_board_backdrop(active_board: BoardState) -> void:
 	var used_rect: Rect2 = Rect2(Vector2(-420, -320), Vector2(840, 700))
 	if not active_board.cells.is_empty():
@@ -352,8 +377,8 @@ func _draw_tanks() -> void:
 			continue
 		var tank_cell: CellData = game_state.board.get_cell(tank.position)
 		var center: Vector2 = _tile_center(tank_cell) if tank_cell != null else tank.position.to_world_flat(hex_size)
-		var player_color: Color = PLAYER_PRIMARY.get(tank.owner_id, Color.WHITE)
-		var accent_color: Color = PLAYER_ACCENT.get(tank.owner_id, Color.WHITE)
+		var player_color: Color = _player_primary_color(tank.owner_id)
+		var accent_color: Color = _player_accent_color(tank.owner_id)
 		draw_colored_polygon(_ellipse_points(center + Vector2(0, 15), Vector2(18, 8), 20), Color(0.03, 0.05, 0.08, 0.4))
 		if tank.owner_id == game_state.current_player:
 			draw_arc(center, 20.0, 0.0, TAU, 40, player_color.lerp(Color.WHITE, 0.2), 2.5, true)
@@ -580,6 +605,11 @@ func _process_effects(delta: float) -> void:
 	_tick_effect_array(_ring_effects, delta)
 	_tick_effect_array(_flash_effects, delta)
 	_tick_effect_array(_floating_texts, delta)
+	if AppState.reduced_motion:
+		_shake_timer = 0.0
+		_shake_strength = 0.0
+		_shake_offset = Vector2.ZERO
+		return
 	if _shake_timer > 0.0:
 		_shake_timer = maxf(0.0, _shake_timer - delta)
 		var shake_ratio: float = _shake_timer / maxf(_shake_strength, 0.001)
@@ -728,6 +758,8 @@ func _play_attack_effect(previous_state: GameState, action: ActionData) -> void:
 
 
 func _trigger_shake(duration: float) -> void:
+	if AppState.reduced_motion:
+		return
 	_shake_timer = maxf(_shake_timer, duration)
 	_shake_strength = maxf(_shake_strength, duration)
 

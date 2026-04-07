@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 14: Replay analytics and post-match presentation
+- Phase 15: Onboarding, accessibility, and finish pass
 
 ## Completed Items
 
@@ -208,14 +208,18 @@
   - expanded Minimax evaluation with mobility, pressure, and danger awareness
   - added `labyrinth` as a larger obstacle-dense map for more deliberate tactical planning
   - lowered the board minimum scale clamp so larger maps still fit in the arena panel
+- Completed the Phase 15 finish pass:
+  - added a `Quick Start Guide` scene with rules, unit roles, AI overview, and first-match advice
+  - added accessibility settings for UI scale, reduced motion, and higher-contrast highlights
+  - applied window UI scaling across menu, match, settings, help, and replay screens
+  - added an in-match guide panel toggle so the core rules stay accessible during play
+  - reduced board shake automatically when reduced motion is enabled
+  - strengthened contrast for previews and team colors when high contrast mode is enabled
 
 ## Next Items
 
-- Verify Phase 14 replay analytics and post-match presentation inside Godot
-- Start Phase 15:
-  - onboarding/help
-  - balancing and polish
-  - release-style cleanup
+- Verify the Phase 15 finish pass inside Godot
+- Do a final bug-fix and styling sweep based on runtime feedback
 
 ## User Check List
 
@@ -309,6 +313,15 @@
   - the `Labyrinth` map appears in menu setup
   - the larger map fits in the match panel without clipping
   - the denser block layout creates more meaningful pathing choices
+- Confirm the Phase 15 finish pass works:
+  - `Quick Start Guide` opens from the menu
+  - the help scene shows onboarding sections and its buttons work
+  - Settings now show `UI Scale`, `Reduced Motion`, and `High Contrast Highlights`
+  - changing `UI Scale` visibly scales the interface
+  - enabling `Reduced Motion` removes board shake during attacks and movement
+  - enabling `High Contrast Highlights` makes move/attack/team colors stand out more strongly
+  - the match scene title now reflects the Phase 15 finish pass
+  - the `Guide` button in match shows and hides the quick guide text
 - Confirm `Auto` is disabled if either side is set to Human
 - Confirm reset clears history and returns the board to the start state
 - Open the settings scene from the menu and confirm the back button still returns to the menu
