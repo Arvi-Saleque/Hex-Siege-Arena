@@ -220,10 +220,15 @@
   - each recorded turn now stores a full post-action state snapshot
   - the replay viewer now includes a passive board preview that scrubs through actual recorded states
   - replay browsing now starts from `Start State` and can step forward through reconstructed match positions
+- Added preference persistence:
+  - match setup now saves to `user://` and reloads on startup
+  - accessibility settings now persist across sessions
+  - audio volume settings now persist across sessions
+  - reset runtime state now clears match/replay runtime data while preserving the saved preferences model
 
 ## Next Items
 
-- Verify the replay reconstruction upgrade inside Godot
+- Verify the persistence upgrade inside Godot
 - Do a final bug-fix and styling sweep based on runtime feedback
 
 ## User Check List
@@ -332,6 +337,10 @@
   - timeline begins with `Start State`
   - stepping through replay updates the board position, not just the text panel
   - the reconstructed board matches the selected turn details
+- Confirm the persistence upgrade works:
+  - change map/controller/depth/rollout values in menu, close the project, reopen it, and confirm they persist
+  - change audio/accessibility settings, close the project, reopen it, and confirm they persist
+  - `Reset Runtime State` restores default match config/replay runtime data cleanly
 - Confirm `Auto` is disabled if either side is set to Human
 - Confirm reset clears history and returns the board to the start state
 - Open the settings scene from the menu and confirm the back button still returns to the menu

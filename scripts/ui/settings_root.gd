@@ -169,34 +169,40 @@ func _refresh_labels() -> void:
 func _on_scale_changed(value: float) -> void:
 	AppState.ui_scale = value
 	AppState.apply_window_preferences(self)
+	AppState.save_preferences()
 	_refresh_labels()
 	AudioManager.play_ui_confirm()
 
 
 func _on_music_changed(value: float) -> void:
 	AudioManager.set_music_volume_db(value)
+	AppState.save_preferences()
 	_refresh_labels()
 
 
 func _on_sfx_changed(value: float) -> void:
 	AudioManager.set_sfx_volume_db(value)
+	AppState.save_preferences()
 	_refresh_labels()
 	AudioManager.play_ui_confirm()
 
 
 func _on_ui_changed(value: float) -> void:
 	AudioManager.set_ui_volume_db(value)
+	AppState.save_preferences()
 	_refresh_labels()
 	AudioManager.play_ui_confirm()
 
 
 func _on_reduced_motion_toggled(enabled: bool) -> void:
 	AppState.reduced_motion = enabled
+	AppState.save_preferences()
 	AudioManager.play_ui_confirm()
 
 
 func _on_high_contrast_toggled(enabled: bool) -> void:
 	AppState.high_contrast_mode = enabled
+	AppState.save_preferences()
 	AudioManager.play_ui_confirm()
 
 
@@ -217,6 +223,7 @@ func _on_restore_defaults_pressed() -> void:
 	AudioManager.set_music_volume_db(_music_slider.value)
 	AudioManager.set_sfx_volume_db(_sfx_slider.value)
 	AudioManager.set_ui_volume_db(_ui_slider.value)
+	AppState.save_preferences()
 	_refresh_labels()
 
 

@@ -226,6 +226,7 @@ func _on_setup_changed(_value: Variant = null) -> void:
 	config.player_one_ai.search_depth = int(_p1_depth_spin.value)
 	config.player_two_ai.rollout_limit = int(_p2_rollout_spin.value)
 	config.ai_vs_ai_mode = config.player_one_ai.controller_type != GameTypes.ControllerType.HUMAN and config.player_two_ai.controller_type != GameTypes.ControllerType.HUMAN
+	AppState.save_preferences()
 	_refresh_summary()
 
 
