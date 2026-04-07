@@ -48,6 +48,7 @@ var _player_one_label: Label
 var _player_two_label: Label
 var _event_log: RichTextLabel
 var _guide_label: Label
+var _sidebar_scroll: ScrollContainer
 var _board_meta_label: Label
 var _board_hint_label: Label
 var _move_button: Button
@@ -196,6 +197,46 @@ func _build_layout() -> void:
 	_player_two_label = _make_body_label()
 	p2_vbox.add_child(_player_two_label)
 
+	var roster_shell := _make_panel_card(COLOR_BORDER)
+	left_column.add_child(roster_shell)
+	var roster_shell_margin := _wrap_panel_content(roster_shell, 14, 14)
+	var roster_shell_layout := VBoxContainer.new()
+	roster_shell_layout.add_theme_constant_override("separation", 10)
+	roster_shell_margin.add_child(roster_shell_layout)
+	roster_shell_layout.add_child(_make_section_title("ACTIVE ROSTER"))
+
+	var roster_row := HBoxContainer.new()
+	roster_row.add_theme_constant_override("separation", 12)
+	roster_shell_layout.add_child(roster_row)
+
+	for actor_id: String in ["1_0", "1_1", "2_0", "2_1"]:
+		var roster_card := _make_panel_card(_accent_for_actor(actor_id))
+		roster_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		roster_row.add_child(roster_card)
+		_roster_panels[actor_id] = roster_card
+
+		var roster_margin := _wrap_panel_content(roster_card, 14, 14)
+		var roster_layout := VBoxContainer.new()
+		roster_layout.add_theme_constant_override("separation", 8)
+		roster_margin.add_child(roster_layout)
+
+		var roster_title := Label.new()
+		roster_title.text = _roster_title(actor_id)
+		roster_title.add_theme_font_override("font", FONT_SEMIBOLD)
+		roster_title.add_theme_font_size_override("font_size", 14)
+		roster_layout.add_child(roster_title)
+
+		var model_view := TankModelView.new()
+		model_view.custom_minimum_size = Vector2(0, 116)
+		model_view.set_accent_color(_accent_for_actor(actor_id))
+		model_view.set_model_asset(_model_path_for_actor(actor_id))
+		roster_layout.add_child(model_view)
+		_roster_model_views[actor_id] = model_view
+
+		var roster_status := _make_body_label()
+		roster_layout.add_child(roster_status)
+		_roster_status_labels[actor_id] = roster_status
+
 	var board_panel := _make_panel_card(COLOR_BORDER)
 	board_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -228,7 +269,7 @@ func _build_layout() -> void:
 	_board_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_board_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_board_holder.clip_contents = true
-	_board_holder.custom_minimum_size = Vector2(720, 560)
+	_board_holder.custom_minimum_size = Vector2(720, 460)
 	_board_holder.resized.connect(_on_board_holder_resized)
 	board_layout.add_child(_board_holder)
 
@@ -239,54 +280,22 @@ func _build_layout() -> void:
 	_board_view.cell_clicked.connect(_on_board_cell_clicked)
 	_board_holder.add_child(_board_view)
 
-	var roster_row := HBoxContainer.new()
-	roster_row.add_theme_constant_override("separation", 12)
-	board_layout.add_child(roster_row)
-
-	for actor_id: String in ["1_0", "1_1", "2_0", "2_1"]:
-		var roster_card := _make_panel_card(_accent_for_actor(actor_id))
-		roster_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		roster_row.add_child(roster_card)
-		_roster_panels[actor_id] = roster_card
-
-		var roster_margin := _wrap_panel_content(roster_card, 14, 14)
-		var roster_layout := VBoxContainer.new()
-		roster_layout.add_theme_constant_override("separation", 8)
-		roster_margin.add_child(roster_layout)
-
-		var roster_title := Label.new()
-		roster_title.text = _roster_title(actor_id)
-		roster_title.add_theme_font_override("font", FONT_SEMIBOLD)
-		roster_title.add_theme_font_size_override("font_size", 14)
-		roster_layout.add_child(roster_title)
-
-		var model_view := TankModelView.new()
-		model_view.custom_minimum_size = Vector2(0, 120)
-		model_view.set_accent_color(_accent_for_actor(actor_id))
-		model_view.set_model_asset(_model_path_for_actor(actor_id))
-		roster_layout.add_child(model_view)
-		_roster_model_views[actor_id] = model_view
-
-		var roster_status := _make_body_label()
-		roster_layout.add_child(roster_status)
-		_roster_status_labels[actor_id] = roster_status
-
 	var sidebar := _make_panel_card(COLOR_BORDER)
 	sidebar.custom_minimum_size = Vector2(390, 0)
 	sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(sidebar)
 
 	var sidebar_margin := _wrap_panel_content(sidebar, 18, 18)
-	var sidebar_scroll := ScrollContainer.new()
-	sidebar_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sidebar_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	sidebar_margin.add_child(sidebar_scroll)
+	_sidebar_scroll = ScrollContainer.new()
+	_sidebar_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_sidebar_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sidebar_margin.add_child(_sidebar_scroll)
 
 	var sidebar_layout := VBoxContainer.new()
 	sidebar_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sidebar_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	sidebar_layout.add_theme_constant_override("separation", 14)
-	sidebar_scroll.add_child(sidebar_layout)
+	_sidebar_scroll.add_child(sidebar_layout)
 
 	var status_card := _make_panel_card(COLOR_BORDER.darkened(0.2), COLOR_SURFACE_ALT)
 	sidebar_layout.add_child(status_card)
@@ -311,7 +320,7 @@ func _build_layout() -> void:
 	selected_layout.add_child(_make_section_title("SELECTED UNIT"))
 
 	_selected_model_view = TankModelView.new()
-	_selected_model_view.custom_minimum_size = Vector2(0, 220)
+	_selected_model_view.custom_minimum_size = Vector2(0, 170)
 	selected_layout.add_child(_selected_model_view)
 
 	_selected_model_name_label = Label.new()
@@ -456,6 +465,7 @@ func _build_layout() -> void:
 	add_child(_autoplay_timer)
 
 	call_deferred("_recenter_board_view")
+	call_deferred("_reset_sidebar_scroll")
 
 
 func _build_match_theme() -> Theme:
@@ -563,6 +573,7 @@ func _make_action_button(text_value: String, accent_color: Color) -> Button:
 	button.text = text_value
 	button.custom_minimum_size = Vector2(0, 46)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_stylebox_override("normal", _button_style(accent_color, 0.10))
 	button.add_theme_stylebox_override("hover", _button_style(accent_color, 0.18))
 	button.add_theme_stylebox_override("pressed", _button_style(accent_color, 0.24))
@@ -1314,6 +1325,11 @@ func _recenter_board_view() -> void:
 	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.52, 1.0)
 	_board_view.scale = Vector2.ONE * scale_factor
 	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.53)
+
+
+func _reset_sidebar_scroll() -> void:
+	if _sidebar_scroll != null:
+		_sidebar_scroll.scroll_vertical = 0
 
 
 func _wire_button_audio(button: Button, use_back_sound: bool = false) -> void:

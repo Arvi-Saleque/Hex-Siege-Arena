@@ -238,6 +238,11 @@
   - switched the tank showcase viewport usage enum reference from `SubViewport.USAGE_3D` to `Viewport.USAGE_3D`
 - Added a second Godot 4.6 viewport compatibility hotfix:
   - removed the explicit viewport `usage` assignment from the tank showcase because the enum is not exposed in this editor build
+- Added a match-layout visibility hotfix:
+  - moved the four 3D tank showcase cards into a guaranteed visible roster row above the board viewport
+  - reduced the board holder minimum height so the HUD has room for the roster strip
+  - reduced the selected-unit showcase height so more sidebar content fits on screen
+  - disabled button focus-jump behavior and reset the sidebar scroll to the top on scene load
 
 ## Next Items
 
