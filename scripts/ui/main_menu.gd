@@ -90,7 +90,7 @@ func _build_layout() -> void:
 
 	setup_grid.add_child(_field_label("Map"))
 	_map_select = OptionButton.new()
-	for map_id: String in ["standard", "open", "fortress"]:
+	for map_id: String in ["standard", "open", "fortress", "labyrinth"]:
 		_map_select.add_item(map_id.capitalize())
 		_map_select.set_item_metadata(_map_select.item_count - 1, map_id)
 	_map_select.item_selected.connect(_on_setup_changed)

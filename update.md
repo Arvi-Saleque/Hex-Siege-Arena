@@ -202,6 +202,12 @@
   - the replay viewer now shows winner, win condition, damage, pickups, kills, and average think times
   - the match scene now shows a post-match summary block when the game ends
   - replay metadata now stores the winner label for later review
+- Applied a focused balance/map expansion pass:
+  - strengthened default Minimax settings so the default AI-vs-AI matchup favors Minimax more reliably
+  - reduced default MCTS rollout/time settings so MCTS remains competitive without outpacing the deeper search default
+  - expanded Minimax evaluation with mobility, pressure, and danger awareness
+  - added `labyrinth` as a larger obstacle-dense map for more deliberate tactical planning
+  - lowered the board minimum scale clamp so larger maps still fit in the arena panel
 
 ## Next Items
 
@@ -298,6 +304,11 @@
   - the replay viewer shows winner, map, win condition, damage, pickups, kills, and average think times
   - the match scene shows a post-match summary after game over
   - replay details still open correctly for individual turns
+- Confirm the AI/map tuning works:
+  - in the default AI-vs-AI setup, Minimax should now perform more strongly against MCTS
+  - the `Labyrinth` map appears in menu setup
+  - the larger map fits in the match panel without clipping
+  - the denser block layout creates more meaningful pathing choices
 - Confirm `Auto` is disabled if either side is set to Human
 - Confirm reset clears history and returns the board to the start state
 - Open the settings scene from the menu and confirm the back button still returns to the menu

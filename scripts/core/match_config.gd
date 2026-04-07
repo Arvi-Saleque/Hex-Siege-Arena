@@ -11,12 +11,12 @@ var ai_vs_ai_mode: bool = true
 
 func _init() -> void:
 	player_one_ai.controller_type = GameTypes.ControllerType.MINIMAX
-	player_one_ai.search_depth = 3
-	player_one_ai.time_budget_ms = 1500
+	player_one_ai.search_depth = 4
+	player_one_ai.time_budget_ms = 2200
 
 	player_two_ai.controller_type = GameTypes.ControllerType.MCTS
-	player_two_ai.rollout_limit = 500
-	player_two_ai.time_budget_ms = 1500
+	player_two_ai.rollout_limit = 250
+	player_two_ai.time_budget_ms = 1200
 
 
 func clone() -> MatchConfig:

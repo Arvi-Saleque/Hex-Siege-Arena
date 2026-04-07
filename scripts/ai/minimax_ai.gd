@@ -9,6 +9,10 @@ const WEIGHT_QTANK_DISTANCE := 1.0
 const WEIGHT_ATTACK_BUFF := 8.0
 const WEIGHT_SHIELD := 7.0
 const WEIGHT_BONUS_MOVE := 5.0
+const WEIGHT_MOBILITY := 1.35
+const WEIGHT_KTANK_DANGER := 18.0
+const WEIGHT_QTANK_DANGER := 7.0
+const WEIGHT_OBJECTIVE_PRESSURE := 9.0
 
 var _root_player: int = 1
 var _time_deadline_ms: int = 0
@@ -143,6 +147,10 @@ func _evaluate_state(state: GameState, depth_remaining: int) -> float:
 	score -= _center_control_bonus(state, enemy_player)
 	score += _threat_bonus(state, _root_player)
 	score -= _threat_bonus(state, enemy_player)
+	score += _mobility_bonus(state, _root_player)
+	score -= _mobility_bonus(state, enemy_player)
+	score -= _danger_penalty(state, _root_player)
+	score += _danger_penalty(state, enemy_player)
 	return score
 
 
@@ -192,6 +200,34 @@ func _threat_bonus(state: GameState, player_id: int) -> float:
 				continue
 			score += 6.0 if target_tank.tank_type == GameTypes.TankType.KTANK else 3.0
 	return score
+
+
+func _mobility_bonus(state: GameState, player_id: int) -> float:
+	var score: float = 0.0
+	var previous_player: int = state.current_player
+	state.current_player = player_id
+	for tank: TankData in state.get_player_tanks(player_id):
+		var mobility: int = state.get_legal_move_targets(tank.actor_id()).size()
+		score += float(mobility) * WEIGHT_MOBILITY
+		if tank.tank_type == GameTypes.TankType.KTANK:
+			score += maxf(0.0, 10.0 - float(tank.position.distance_to(HexCoord.new()))) * WEIGHT_OBJECTIVE_PRESSURE
+	state.current_player = previous_player
+	return score
+
+
+func _danger_penalty(state: GameState, player_id: int) -> float:
+	var enemy_player: int = 2 if player_id == 1 else 1
+	var penalty: float = 0.0
+	for enemy_tank: TankData in state.get_player_tanks(enemy_player):
+		for target_coord: HexCoord in _attack_targets_for_tank(state, enemy_tank):
+			var target_tank: TankData = state.get_tank_at(target_coord)
+			if target_tank == null or target_tank.owner_id != player_id:
+				continue
+			if target_tank.tank_type == GameTypes.TankType.KTANK:
+				penalty += WEIGHT_KTANK_DANGER
+			else:
+				penalty += WEIGHT_QTANK_DANGER
+	return penalty
 
 
 func _attack_targets_for_tank(state: GameState, tank: TankData) -> Array[HexCoord]:

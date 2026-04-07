@@ -945,7 +945,7 @@ func _recenter_board_view() -> void:
 	var visual_size: Vector2 = _board_view.get_board_visual_size()
 	var width_scale: float = holder_size.x / maxf(visual_size.x, 1.0)
 	var height_scale: float = holder_size.y / maxf(visual_size.y, 1.0)
-	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.72, 1.0)
+	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.52, 1.0)
 	_board_view.scale = Vector2.ONE * scale_factor
 	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.53)
 
