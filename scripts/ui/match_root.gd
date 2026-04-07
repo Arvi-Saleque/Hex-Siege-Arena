@@ -83,7 +83,7 @@ func _build_layout() -> void:
 	root_margin.add_child(layout)
 
 	var title = Label.new()
-	title.text = "Phase 9 Battlefield Depth Pass"
+	title.text = "Phase 10 Unit Art And Material Pass"
 	title.add_theme_font_size_override("font_size", 32)
 	layout.add_child(title)
 
@@ -280,7 +280,7 @@ func _build_layout() -> void:
 	utility_row.add_child(_reset_button)
 
 	var legend = Label.new()
-	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use Step AI for one AI turn\n5. Use Auto to watch AI-vs-AI continuously\n6. Use Reset to restart the current map\n\nQtank = triangle marker\nKtank = circle marker\nBlue = Player 1\nRed = Player 2"
+	legend.text = "Testing flow:\n1. Click your tank for manual play\n2. Choose Move or Attack\n3. Click a highlighted target\n4. Use Step AI for one AI turn\n5. Use Auto to watch AI-vs-AI continuously\n6. Use Reset to restart the current map\n\nQtank = slim laser chassis\nKtank = heavy siege hull\nBlue = Player 1\nRed = Player 2"
 	legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sidebar_layout.add_child(legend)
 
