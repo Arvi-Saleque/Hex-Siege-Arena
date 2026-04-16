@@ -284,7 +284,7 @@ func _build_layout() -> void:
 	var debug_layout := VBoxContainer.new()
 	debug_layout.add_theme_constant_override("separation", 8)
 	debug_margin.add_child(debug_layout)
-	debug_layout.add_child(_make_section_title("Debug Panel (F3)"))
+	debug_layout.add_child(_make_section_title("Debug Panel (Shift+F3)"))
 
 	_debug_label = _make_body_label()
 	debug_layout.add_child(_debug_label)
@@ -603,7 +603,7 @@ func _refresh_view() -> void:
 	_score_label.text = "Score  P1 %d  :  %d P2" % [_control_score_for_player(1), _control_score_for_player(2)]
 	_hp_summary_label.text = _hp_summary_text()
 	_units_label.text = _remaining_units_text()
-	_map_label.text = "Map: %s\nController: P1 %s | P2 %s\nF3 toggles debug controls." % [
+	_map_label.text = "Map: %s\nController: P1 %s | P2 %s\nShift+F3 toggles debug controls." % [
 		_game_state.board.map_display_name,
 		_controller_label(AppState.current_match_config.player_one_ai.controller_type),
 		_controller_label(AppState.current_match_config.player_two_ai.controller_type),
@@ -845,6 +845,7 @@ func _after_action() -> void:
 func _on_move_mode_pressed() -> void:
 	if _selected_actor_id == "":
 		return
+	_debug_visible = false
 	_action_mode = "move"
 	_refresh_view()
 
@@ -852,11 +853,13 @@ func _on_move_mode_pressed() -> void:
 func _on_attack_mode_pressed() -> void:
 	if _selected_actor_id == "":
 		return
+	_debug_visible = false
 	_action_mode = "attack"
 	_refresh_view()
 
 
 func _on_pass_pressed() -> void:
+	_debug_visible = false
 	var action: ActionData = ActionData.new(GameTypes.ActionType.PASS)
 	_execute_action(action, "Human", _manual_explanation(action))
 
@@ -864,16 +867,19 @@ func _on_pass_pressed() -> void:
 func _on_reset_pressed() -> void:
 	if _presentation_locked:
 		return
+	_debug_visible = false
 	_disable_autoplay()
 	_reset_match()
 	_refresh_view()
 
 
 func _on_ai_move_pressed() -> void:
+	_debug_visible = false
 	_step_current_ai_turn()
 
 
 func _on_autoplay_pressed() -> void:
+	_debug_visible = false
 	if _autoplay_enabled:
 		_disable_autoplay()
 	else:
@@ -908,6 +914,7 @@ func _on_autoplay_timer_timeout() -> void:
 func _step_current_ai_turn() -> void:
 	if _presentation_locked:
 		return
+	_debug_visible = false
 	var controller_type: int = _current_player_controller_type()
 	if controller_type == GameTypes.ControllerType.HUMAN:
 		return
@@ -1365,9 +1372,9 @@ func _recenter_board_view() -> void:
 	var visual_size: Vector2 = _board_view.get_board_visual_size()
 	var width_scale: float = holder_size.x / maxf(visual_size.x, 1.0)
 	var height_scale: float = holder_size.y / maxf(visual_size.y, 1.0)
-	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.82, 1.72)
+	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.9, 1.9)
 	_board_view.scale = Vector2.ONE * scale_factor
-	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.51)
+	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.505)
 
 
 func _reset_sidebar_scroll() -> void:
@@ -1381,9 +1388,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	match event.keycode:
 		KEY_F3:
-			_debug_visible = not _debug_visible
-			_refresh_view()
-			accept_event()
+			if event.shift_pressed:
+				_debug_visible = not _debug_visible
+				_refresh_view()
+				accept_event()
 		KEY_M:
 			if not _move_button.disabled:
 				_on_move_mode_pressed()

@@ -304,6 +304,11 @@
   - narrowed the right rail so the battlefield owns more of the screen
   - strengthened the bottom action buttons with more size and visual weight
   - force-reset the debug overlay to hidden whenever a fresh match is built
+- Applied a final Step 1 cleanup pass:
+  - increased the board scale one more time inside the arena frame
+  - reduced internal board-fit padding again to cut leftover empty dark space
+  - moved debug toggling to `Shift+F3` so it stays out of normal showcase play
+  - auto-hides debug whenever gameplay actions or autoplay begin
 - Rebuilt the remaining shell scenes into the same premium visual language:
   - Settings now uses a hero header, grouped accessibility/audio cards, and stronger action buttons
   - Quick Start Guide now uses structured learning cards instead of a plain text page
@@ -470,6 +475,8 @@
 - Confirm the arena frame has much less wasted empty space around the hex grid
 - Confirm the bottom action buttons feel larger and more primary
 - Confirm a fresh match always starts with the debug overlay hidden
+- Confirm plain `F3` no longer opens debug by accident
+- Confirm `Shift+F3` still opens debug when intentionally testing
 - Confirm Settings now matches the menu/match visual language
 - Confirm Quick Start Guide feels more like a finished product page than a plain text scene
 - Confirm Replay Viewer feels polished, readable, and uses a larger board preview
