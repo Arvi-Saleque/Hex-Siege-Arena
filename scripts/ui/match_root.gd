@@ -329,6 +329,12 @@ func _build_layout() -> void:
 	_wire_button_audio(back_button, true)
 	debug_controls_bottom.add_child(back_button)
 
+	var quit_button := _make_action_button("Quit", COLOR_P2.darkened(0.18))
+	quit_button.custom_minimum_size = Vector2(82, 40)
+	quit_button.pressed.connect(_on_quit_pressed)
+	_wire_button_audio(quit_button, true)
+	debug_controls_bottom.add_child(quit_button)
+
 	_mini_board_holder = Control.new()
 	_mini_board_holder.custom_minimum_size = Vector2(120, 120)
 	_mini_board_holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -945,6 +951,11 @@ func _actor_label(actor_id: String) -> String:
 func _on_back_pressed() -> void:
 	_disable_autoplay()
 	get_tree().change_scene_to_file(MENU_SCENE)
+
+
+func _on_quit_pressed() -> void:
+	_disable_autoplay()
+	get_tree().quit()
 
 
 func _on_board_holder_resized() -> void:

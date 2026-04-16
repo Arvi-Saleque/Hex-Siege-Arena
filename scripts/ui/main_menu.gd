@@ -148,6 +148,7 @@ func _build_layout() -> void:
 	button_column.add_child(_make_button("Quick Start Guide", _on_open_help_pressed))
 	button_column.add_child(_make_button("Open Settings", _on_open_settings_pressed))
 	button_column.add_child(_make_button("Reset Runtime State", _on_reset_state_pressed))
+	button_column.add_child(_make_button("Exit Game", _on_exit_game_pressed))
 
 	var side_panel := PanelContainer.new()
 	side_panel.custom_minimum_size = Vector2(320, 0)
@@ -296,3 +297,7 @@ func _on_reset_state_pressed() -> void:
 	AppState.reset_runtime_state()
 	_apply_config_to_controls()
 	_refresh_summary()
+
+
+func _on_exit_game_pressed() -> void:
+	get_tree().quit()

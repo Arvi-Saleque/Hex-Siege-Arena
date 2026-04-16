@@ -280,6 +280,9 @@
 - Wrapped the debug overlay contents in a scroll container so the full debug panel remains reachable on smaller screens
 - Made the main menu fullscreen-safe by wrapping the page in a scroll container
 - Tightened menu spacing, titles, side panel width, and button sizing so the full menu remains readable without clipping
+- Added visible exit actions:
+  - `Exit Game` button on the main menu
+  - `Quit` button in the in-match `F3` debug overlay
   - redesigned the match HUD into a more product-style tactics layout with a hero header, cleaner card hierarchy, and a dedicated command deck
   - added a four-unit roster strip beneath the board so all four distinct tanks are visible in the main game scene
   - added a larger selected-unit showcase card that tracks the currently selected or active tank
@@ -426,6 +429,10 @@
 - Confirm `Auto` is disabled if either side is set to Human
 - Confirm reset clears history and returns the board to the start state
 - Open the settings scene from the menu and confirm the back button still returns to the menu
+- Confirm the main menu now shows an `Exit Game` button
+- Confirm pressing `Exit Game` closes the game
+- Confirm pressing `F3` in-match shows a `Quit` button in the debug overlay
+- Confirm pressing `Quit` from the match scene closes the game cleanly
 
 ## Resources Needed Soon
 
