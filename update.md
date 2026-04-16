@@ -293,6 +293,11 @@
   - cards and action buttons use stronger radius, shadow, and spacing treatment
   - selected-unit copy is more product-styled and less raw/debug-like
   - objective wording is shorter and cleaner in the live HUD
+- Expanded the live board viewport so fullscreen match play uses more of the screen:
+  - removed the fixed-size centered board holder
+  - let the arena surface fill the available board frame
+  - reduced the board’s internal safety padding so it scales up more aggressively
+  - trimmed the right rail width so the battlefield gets more horizontal space
   - redesigned the match HUD into a more product-style tactics layout with a hero header, cleaner card hierarchy, and a dedicated command deck
   - added a four-unit roster strip beneath the board so all four distinct tanks are visible in the main game scene
   - added a larger selected-unit showcase card that tracks the currently selected or active tank
@@ -450,6 +455,8 @@
   - support cards on the right
 - Confirm the match right rail scrolls cleanly if the window becomes shorter
 - Confirm the selected-unit panel wording now reads more like a finished game HUD than a debug tool
+- Confirm the board now fills more of the match screen in fullscreen
+- Confirm the arena frame has much less wasted empty space around the hex grid
 
 ## Resources Needed Soon
 

@@ -162,17 +162,17 @@ func _build_layout() -> void:
 	board_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(board_frame)
-	var board_margin := _wrap_panel_content(board_frame, 14, 14)
-	var board_center := CenterContainer.new()
-	board_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	board_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	board_margin.add_child(board_center)
+	var board_margin := _wrap_panel_content(board_frame, 8, 8)
+	var board_surface := Control.new()
+	board_surface.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	board_surface.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	board_margin.add_child(board_surface)
 
 	_board_holder = Control.new()
-	_board_holder.custom_minimum_size = Vector2(860, 640)
+	_board_holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_board_holder.clip_contents = false
 	_board_holder.resized.connect(_on_board_holder_resized)
-	board_center.add_child(_board_holder)
+	board_surface.add_child(_board_holder)
 
 	_board_view = BoardDebugView.new()
 	_board_view.set_game_state(_game_state)
@@ -182,13 +182,13 @@ func _build_layout() -> void:
 	_board_holder.add_child(_board_view)
 
 	var side_scroll := ScrollContainer.new()
-	side_scroll.custom_minimum_size = Vector2(310, 0)
+	side_scroll.custom_minimum_size = Vector2(280, 0)
 	side_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	content.add_child(side_scroll)
 
 	var side_rail := VBoxContainer.new()
-	side_rail.custom_minimum_size = Vector2(300, 0)
+	side_rail.custom_minimum_size = Vector2(270, 0)
 	side_rail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_rail.add_theme_constant_override("separation", 12)
 	side_scroll.add_child(side_rail)
@@ -1364,7 +1364,7 @@ func _recenter_board_view() -> void:
 	var visual_size: Vector2 = _board_view.get_board_visual_size()
 	var width_scale: float = holder_size.x / maxf(visual_size.x, 1.0)
 	var height_scale: float = holder_size.y / maxf(visual_size.y, 1.0)
-	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.52, 1.18)
+	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.68, 1.45)
 	_board_view.scale = Vector2.ONE * scale_factor
 	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.5)
 

@@ -355,7 +355,7 @@ func get_board_visual_size() -> Vector2:
 		max_x = maxf(max_x, center.x)
 		max_y = maxf(max_y, center.y)
 
-	return Vector2((max_x - min_x) + hex_size * 6.0, (max_y - min_y) + hex_size * 7.0)
+	return Vector2((max_x - min_x) + hex_size * 4.4, (max_y - min_y) + hex_size * 5.2)
 
 
 func _active_board() -> BoardState:
