@@ -370,6 +370,13 @@
   - added attack preview lines with invalid-target feedback
   - strengthened center-objective presentation and center-focus lighting bias
   - reordered board presentation so overlays, units, rings, targets, and hover cues stay visually readable
+- Applied a Step 3 follow-up readability correction:
+  - made full move range read more strongly as an area instead of only a destination marker
+  - made hovered move destinations brighter than the rest of the reachable field
+  - strengthened attack mode with clearer target-cell warning treatment and stronger target lines
+  - increased selected-unit grounding with brighter rings, stronger shadow, and stronger selection pulse
+  - made the hovered tile itself react more clearly
+  - added a simpler danger language for targetable enemy cells during attack mode
 
 ## Next Items
 
@@ -549,6 +556,13 @@
   - invalid attack previews look visibly different from valid ones
   - the center objective tile stands out even when nothing is selected
   - the board reads more clearly without looking noisy or muddy
+- Confirm the Step 3 readability correction works:
+  - full move area is visible at a glance, not just the chosen destination
+  - hovered move destination is brighter than the rest of the move field
+  - attack mode feels clearly different from move mode
+  - targetable enemy cells get stronger warning treatment in attack mode
+  - selected units are more unmistakable at a glance
+  - hovered tiles react clearly on the board itself, not only through a marker
 
 ## Resources Needed Soon
 
