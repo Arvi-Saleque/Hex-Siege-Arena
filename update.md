@@ -273,6 +273,8 @@
   - enlarging the board container
   - reducing empty space around it
   - increasing the board scale ceiling
+- Forced the game window into fullscreen on startup and in project settings
+- Tightened the match scene spacing and minimum sizes so the full HUD fits more safely on-screen in fullscreen play
   - redesigned the match HUD into a more product-style tactics layout with a hero header, cleaner card hierarchy, and a dedicated command deck
   - added a four-unit roster strip beneath the board so all four distinct tanks are visible in the main game scene
   - added a larger selected-unit showcase card that tracks the currently selected or active tank

@@ -88,22 +88,22 @@ func _build_layout() -> void:
 
 	var root_margin := MarginContainer.new()
 	root_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root_margin.add_theme_constant_override("margin_left", 28)
-	root_margin.add_theme_constant_override("margin_top", 28)
-	root_margin.add_theme_constant_override("margin_right", 28)
-	root_margin.add_theme_constant_override("margin_bottom", 28)
+	root_margin.add_theme_constant_override("margin_left", 20)
+	root_margin.add_theme_constant_override("margin_top", 20)
+	root_margin.add_theme_constant_override("margin_right", 20)
+	root_margin.add_theme_constant_override("margin_bottom", 20)
 	add_child(root_margin)
 
 	var root_layout := VBoxContainer.new()
 	root_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root_layout.add_theme_constant_override("separation", 16)
+	root_layout.add_theme_constant_override("separation", 12)
 	root_margin.add_child(root_layout)
 
 	var top_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
-	top_panel.custom_minimum_size = Vector2(0, 92)
+	top_panel.custom_minimum_size = Vector2(0, 78)
 	root_layout.add_child(top_panel)
-	var top_margin := _wrap_panel_content(top_panel, 20, 14)
+	var top_margin := _wrap_panel_content(top_panel, 18, 12)
 	var top_bar := HBoxContainer.new()
 	top_bar.add_theme_constant_override("separation", 16)
 	top_margin.add_child(top_bar)
@@ -115,7 +115,7 @@ func _build_layout() -> void:
 
 	_turn_label = Label.new()
 	_turn_label.add_theme_font_override("font", FONT_BOLD)
-	_turn_label.add_theme_font_size_override("font_size", 24)
+	_turn_label.add_theme_font_size_override("font_size", 22)
 	top_left.add_child(_turn_label)
 
 	_objective_label = Label.new()
@@ -127,7 +127,7 @@ func _build_layout() -> void:
 	_score_label = Label.new()
 	_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_score_label.custom_minimum_size = Vector2(220, 0)
+	_score_label.custom_minimum_size = Vector2(180, 0)
 	_score_label.add_theme_font_override("font", FONT_SEMIBOLD)
 	_score_label.add_theme_font_size_override("font_size", 16)
 	_score_label.add_theme_color_override("font_color", Color("d7d3c6"))
@@ -155,21 +155,21 @@ func _build_layout() -> void:
 	var content := HBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 16)
+	content.add_theme_constant_override("separation", 14)
 	root_layout.add_child(content)
 
 	var board_frame := _make_panel_card(COLOR_BORDER, Color("101927"))
 	board_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(board_frame)
-	var board_margin := _wrap_panel_content(board_frame, 18, 18)
+	var board_margin := _wrap_panel_content(board_frame, 14, 14)
 	var board_center := CenterContainer.new()
 	board_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	board_margin.add_child(board_center)
 
 	_board_holder = Control.new()
-	_board_holder.custom_minimum_size = Vector2(1020, 820)
+	_board_holder.custom_minimum_size = Vector2(860, 640)
 	_board_holder.clip_contents = false
 	_board_holder.resized.connect(_on_board_holder_resized)
 	board_center.add_child(_board_holder)
@@ -182,14 +182,14 @@ func _build_layout() -> void:
 	_board_holder.add_child(_board_view)
 
 	var side_rail := VBoxContainer.new()
-	side_rail.custom_minimum_size = Vector2(340, 0)
+	side_rail.custom_minimum_size = Vector2(300, 0)
 	side_rail.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	side_rail.add_theme_constant_override("separation", 16)
+	side_rail.add_theme_constant_override("separation", 12)
 	content.add_child(side_rail)
 
 	var info_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
 	side_rail.add_child(info_panel)
-	var info_margin := _wrap_panel_content(info_panel, 16, 16)
+	var info_margin := _wrap_panel_content(info_panel, 14, 14)
 	var info_layout := VBoxContainer.new()
 	info_layout.add_theme_constant_override("separation", 8)
 	info_margin.add_child(info_layout)
@@ -199,7 +199,7 @@ func _build_layout() -> void:
 
 	_selected_model_name_label = Label.new()
 	_selected_model_name_label.add_theme_font_override("font", FONT_SEMIBOLD)
-	_selected_model_name_label.add_theme_font_size_override("font_size", 18)
+	_selected_model_name_label.add_theme_font_size_override("font_size", 16)
 	info_layout.add_child(_selected_model_name_label)
 
 	_selected_model_role_label = Label.new()
@@ -214,7 +214,7 @@ func _build_layout() -> void:
 
 	var objective_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
 	side_rail.add_child(objective_panel)
-	var objective_margin := _wrap_panel_content(objective_panel, 16, 14)
+	var objective_margin := _wrap_panel_content(objective_panel, 14, 12)
 	var objective_layout := VBoxContainer.new()
 	objective_layout.add_theme_constant_override("separation", 8)
 	objective_margin.add_child(objective_layout)
@@ -225,7 +225,7 @@ func _build_layout() -> void:
 	var log_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
 	log_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_rail.add_child(log_panel)
-	var log_margin := _wrap_panel_content(log_panel, 16, 14)
+	var log_margin := _wrap_panel_content(log_panel, 14, 12)
 	var log_layout := VBoxContainer.new()
 	log_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	log_layout.add_theme_constant_override("separation", 10)
@@ -312,11 +312,11 @@ func _build_layout() -> void:
 	_mini_board_holder.add_child(_mini_board_view)
 
 	var bottom_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
-	bottom_panel.custom_minimum_size = Vector2(0, 88)
+	bottom_panel.custom_minimum_size = Vector2(0, 74)
 	root_layout.add_child(bottom_panel)
-	var bottom_margin := _wrap_panel_content(bottom_panel, 20, 16)
+	var bottom_margin := _wrap_panel_content(bottom_panel, 16, 12)
 	var bottom_row := HBoxContainer.new()
-	bottom_row.add_theme_constant_override("separation", 16)
+	bottom_row.add_theme_constant_override("separation", 12)
 	bottom_margin.add_child(bottom_row)
 
 	var left_spacer := Control.new()
@@ -324,28 +324,28 @@ func _build_layout() -> void:
 	bottom_row.add_child(left_spacer)
 
 	var controls_row := HBoxContainer.new()
-	controls_row.add_theme_constant_override("separation", 12)
+	controls_row.add_theme_constant_override("separation", 10)
 	bottom_row.add_child(controls_row)
 
 	_move_button = _make_action_button("Move", COLOR_GREEN)
-	_move_button.custom_minimum_size = Vector2(140, 44)
+	_move_button.custom_minimum_size = Vector2(124, 40)
 	_move_button.pressed.connect(_on_move_mode_pressed)
 	_wire_button_audio(_move_button)
 	controls_row.add_child(_move_button)
 
 	_attack_button = _make_action_button("Attack", COLOR_ATTACK)
-	_attack_button.custom_minimum_size = Vector2(140, 44)
+	_attack_button.custom_minimum_size = Vector2(124, 40)
 	_attack_button.pressed.connect(_on_attack_mode_pressed)
 	_wire_button_audio(_attack_button)
 	controls_row.add_child(_attack_button)
 
 	_ability_button = _make_action_button("Ability", COLOR_GOLD)
-	_ability_button.custom_minimum_size = Vector2(140, 44)
+	_ability_button.custom_minimum_size = Vector2(124, 40)
 	_ability_button.disabled = true
 	controls_row.add_child(_ability_button)
 
 	_pass_button = _make_action_button("End Turn", COLOR_BORDER.lightened(0.22))
-	_pass_button.custom_minimum_size = Vector2(140, 44)
+	_pass_button.custom_minimum_size = Vector2(124, 40)
 	_pass_button.pressed.connect(_on_pass_pressed)
 	_wire_button_audio(_pass_button)
 	controls_row.add_child(_pass_button)
@@ -460,7 +460,7 @@ func _make_body_label() -> Label:
 	var label := Label.new()
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_override("font", FONT_REGULAR)
-	label.add_theme_font_size_override("font_size", 15)
+	label.add_theme_font_size_override("font_size", 14)
 	label.add_theme_color_override("font_color", COLOR_TEXT)
 	return label
 
@@ -468,7 +468,7 @@ func _make_body_label() -> Label:
 func _make_action_button(text_value: String, accent_color: Color) -> Button:
 	var button := Button.new()
 	button.text = text_value
-	button.custom_minimum_size = Vector2(0, 34)
+	button.custom_minimum_size = Vector2(0, 32)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_stylebox_override("normal", _button_style(accent_color, 0.10))
@@ -476,7 +476,7 @@ func _make_action_button(text_value: String, accent_color: Color) -> Button:
 	button.add_theme_stylebox_override("pressed", _button_style(accent_color, 0.24))
 	button.add_theme_stylebox_override("disabled", _button_style(COLOR_BORDER, 0.04))
 	button.add_theme_font_override("font", FONT_SEMIBOLD)
-	button.add_theme_font_size_override("font_size", 13)
+	button.add_theme_font_size_override("font_size", 12)
 	button.add_theme_color_override("font_color", Color.WHITE)
 	button.add_theme_color_override("font_disabled_color", COLOR_TEXT_MUTED)
 	return button
@@ -496,10 +496,10 @@ func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 	style.border_color = accent_color
 	style.shadow_color = Color(0.0, 0.0, 0.0, 0.12)
 	style.shadow_size = 2
-	style.content_margin_left = 12.0
-	style.content_margin_top = 7.0
-	style.content_margin_right = 12.0
-	style.content_margin_bottom = 7.0
+	style.content_margin_left = 10.0
+	style.content_margin_top = 6.0
+	style.content_margin_right = 10.0
+	style.content_margin_bottom = 6.0
 	return style
 
 
@@ -1316,9 +1316,9 @@ func _recenter_board_view() -> void:
 	var visual_size: Vector2 = _board_view.get_board_visual_size()
 	var width_scale: float = holder_size.x / maxf(visual_size.x, 1.0)
 	var height_scale: float = holder_size.y / maxf(visual_size.y, 1.0)
-	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.62, 1.14)
+	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.52, 1.18)
 	_board_view.scale = Vector2.ONE * scale_factor
-	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.52)
+	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.5)
 
 
 func _reset_sidebar_scroll() -> void:

@@ -30,6 +30,8 @@ func apply_window_preferences(node: Node) -> void:
 		return
 	var window: Window = node.get_window()
 	if window != null:
+		window.mode = Window.MODE_FULLSCREEN
+		window.borderless = false
 		window.content_scale_factor = ui_scale
 
 
