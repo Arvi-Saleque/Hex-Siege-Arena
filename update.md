@@ -309,6 +309,11 @@
   - reduced internal board-fit padding again to cut leftover empty dark space
   - moved debug toggling to `Shift+F3` so it stays out of normal showcase play
   - auto-hides debug whenever gameplay actions or autoplay begin
+- Applied an aggressive board-fill pass:
+  - removed the last internal board frame margins
+  - cut the board-fit safety padding down again on both axes
+  - tightened the backdrop rectangle so the hex field uses more of the center frame
+  - increased the board scale cap again for fullscreen play
 - Rebuilt the remaining shell scenes into the same premium visual language:
   - Settings now uses a hero header, grouped accessibility/audio cards, and stronger action buttons
   - Quick Start Guide now uses structured learning cards instead of a plain text page
@@ -477,6 +482,7 @@
 - Confirm a fresh match always starts with the debug overlay hidden
 - Confirm plain `F3` no longer opens debug by accident
 - Confirm `Shift+F3` still opens debug when intentionally testing
+- Confirm the board now uses most of the central frame with very little left/right dead space
 - Confirm Settings now matches the menu/match visual language
 - Confirm Quick Start Guide feels more like a finished product page than a plain text scene
 - Confirm Replay Viewer feels polished, readable, and uses a larger board preview

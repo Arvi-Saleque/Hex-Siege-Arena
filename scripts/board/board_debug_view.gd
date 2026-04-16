@@ -355,7 +355,7 @@ func get_board_visual_size() -> Vector2:
 		max_x = maxf(max_x, center.x)
 		max_y = maxf(max_y, center.y)
 
-	return Vector2((max_x - min_x) + hex_size * 2.6, (max_y - min_y) + hex_size * 3.2)
+	return Vector2((max_x - min_x) + hex_size * 1.7, (max_y - min_y) + hex_size * 2.3)
 
 
 func _active_board() -> BoardState:
@@ -446,7 +446,7 @@ func _draw_board_backdrop(active_board: BoardState) -> void:
 			min_y = minf(min_y, center.y)
 			max_x = maxf(max_x, center.x)
 			max_y = maxf(max_y, center.y)
-		used_rect = Rect2(Vector2(min_x - 54.0, min_y - 54.0), Vector2((max_x - min_x) + 108.0, (max_y - min_y) + 126.0))
+		used_rect = Rect2(Vector2(min_x - 28.0, min_y - 28.0), Vector2((max_x - min_x) + 56.0, (max_y - min_y) + 72.0))
 
 	draw_rect(used_rect, Color("121722"))
 	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.3, used_rect.size.y * 0.28) + _shake_offset, 180.0, Color(0.2, 0.32, 0.48, 0.08))
