@@ -123,8 +123,8 @@ func play_move_confirm(tank_type: int) -> void:
 func play_move_arrival(tank_type: int, delay: float) -> void:
 	var move_key: String = "move_light" if tank_type == GameTypes.TankType.QTANK else "move_heavy"
 	var pitch: float = 1.18 if tank_type == GameTypes.TankType.QTANK else 0.9
-	_play_sfx_delayed(move_key, sfx_volume_db - 7.0, delay, pitch)
-	_play_sfx_delayed("ui_confirm", ui_volume_db - 7.0, delay + 0.02, 1.02)
+	_play_sfx_delayed(move_key, sfx_volume_db - 5.0, delay, pitch)
+	_play_sfx_delayed("ui_confirm", ui_volume_db - 4.0, delay + 0.02, 1.04)
 
 
 func play_action_feedback(previous_state: GameState, current_state: GameState, action: ActionData, events: Array[GameEvent]) -> void:
@@ -147,10 +147,10 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 			if attacking_tank != null:
 				if attacking_tank.tank_type == GameTypes.TankType.QTANK:
 					_play_sfx("laser_charge", sfx_volume_db - 6.0)
-					_play_sfx_delayed("laser_fire", sfx_volume_db - 0.5, 0.1)
+					_play_sfx_delayed("laser_fire", sfx_volume_db + 0.5, 0.1)
 				else:
 					_play_sfx("blast_charge", sfx_volume_db - 5.0)
-					_play_sfx_delayed("blast_fire", sfx_volume_db, 0.1)
+					_play_sfx_delayed("blast_fire", sfx_volume_db + 1.0, 0.1)
 		GameTypes.ActionType.PASS:
 			play_ui_cancel()
 		_:

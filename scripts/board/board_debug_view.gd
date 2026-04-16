@@ -302,7 +302,7 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 				var travel_dir: Vector2 = (end_center - start_center).normalized()
 				if travel_dir == Vector2.ZERO:
 					travel_dir = Vector2.UP
-				var settle_offset: Vector2 = travel_dir * 6.0
+				var settle_offset: Vector2 = travel_dir * 8.0
 				_tank_motion_overrides[action.actor_id] = {
 					"start": start_center - travel_dir * 4.0,
 					"end": end_center,
@@ -352,32 +352,52 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 				_ring_effects.append({
 					"center": end_center,
 					"color": Color("7be0ff"),
-					"radius": 26.0,
-					"time_left": 0.5,
-					"duration": 0.5,
+					"radius": 30.0,
+					"time_left": 0.62,
+					"duration": 0.62,
 					"delay": travel_duration * 0.78,
 					"filled": false,
+				})
+				_ring_effects.append({
+					"center": end_center,
+					"color": Color(0.66, 0.92, 1.0, 0.18),
+					"radius": 18.0,
+					"time_left": 0.36,
+					"duration": 0.36,
+					"delay": travel_duration * 0.8,
+					"filled": true,
 				})
 				_sprite_effects.append({
 					"texture": EFFECT_SMOKE,
 					"center": end_center,
-					"color": Color(0.72, 0.9, 1.0, 0.4),
-					"scale_start": 0.16,
-					"scale_end": 0.34,
-					"time_left": 0.44,
-					"duration": 0.44,
+					"color": Color(0.72, 0.9, 1.0, 0.48),
+					"scale_start": 0.2,
+					"scale_end": 0.4,
+					"time_left": 0.52,
+					"duration": 0.52,
 					"delay": travel_duration * 0.78,
-					"drift": Vector2(0, -10),
+					"drift": Vector2(0, -12),
+				})
+				_sprite_effects.append({
+					"texture": EFFECT_SPARK,
+					"center": end_center,
+					"color": Color(0.9, 0.98, 1.0, 0.56),
+					"scale_start": 0.18,
+					"scale_end": 0.34,
+					"time_left": 0.28,
+					"duration": 0.28,
+					"delay": travel_duration * 0.81,
+					"drift": Vector2(0, -6),
 				})
 				_flash_effects.append({
 					"center": end_center,
-					"color": Color(0.84, 0.97, 1.0, 0.22),
-					"radius": 18.0,
-					"time_left": 0.22,
-					"duration": 0.22,
+					"color": Color(0.84, 0.97, 1.0, 0.28),
+					"radius": 24.0,
+					"time_left": 0.28,
+					"duration": 0.28,
 					"delay": travel_duration * 0.8,
 				})
-				_trigger_shake(0.22)
+				_trigger_shake(0.26)
 		GameTypes.ActionType.ATTACK:
 			_play_attack_effect(previous_state, action)
 		GameTypes.ActionType.PASS:
@@ -675,12 +695,14 @@ func _draw_effects() -> void:
 			var ratio: float = _effect_float(floater, "time_left", 0.0) / maxf(_effect_float(floater, "duration", 1.0), 0.001)
 			var text_color: Color = _effect_color(floater, "color", Color.WHITE)
 			text_color.a = 0.15 + 0.85 * ratio
-			var drift: float = (1.0 - ratio) * 18.0
-			var position: Vector2 = _effect_vec2(floater, "center", Vector2.ZERO) + Vector2(-10, -18 - drift) + _shake_offset
+			var drift: float = (1.0 - ratio) * _effect_float(floater, "drift_distance", 22.0)
 			var font_size: int = int(_effect_float(floater, "font_size", 16.0))
+			var text_value: String = _effect_string(floater, "text", "")
+			var text_size: Vector2 = font.get_string_size(text_value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size)
+			var position: Vector2 = _effect_vec2(floater, "center", Vector2.ZERO) + Vector2(-text_size.x * 0.5, -20 - drift) + _shake_offset
 			var shadow_color: Color = Color(0.04, 0.06, 0.1, text_color.a * 0.9)
-			draw_string(font, position + Vector2(1, 2), _effect_string(floater, "text", ""), HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, shadow_color)
-			draw_string(font, position, _effect_string(floater, "text", ""), HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, text_color)
+			draw_string(font, position + Vector2(2, 3), text_value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, shadow_color)
+			draw_string(font, position, text_value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, text_color)
 
 
 func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2Array, fill: Color) -> void:
@@ -1274,11 +1296,12 @@ func _apply_event_feedback(previous_state: GameState, current_state: GameState, 
 			_floating_texts.append({
 				"center": hit_center,
 				"text": "-%d" % damage,
-				"color": Color("fff3d9"),
-				"time_left": 1.12,
-				"duration": 1.12,
-				"font_size": 24,
-				"delay": 0.05,
+				"color": Color("fff6df"),
+				"time_left": 0.78,
+				"duration": 0.78,
+				"font_size": 30,
+				"delay": 0.03,
+				"drift_distance": 26.0,
 			})
 			var target_tank: TankData = current_state.get_tank(target_id)
 			if target_tank != null:
@@ -1365,42 +1388,42 @@ func _apply_event_feedback(previous_state: GameState, current_state: GameState, 
 					"tank": destroyed_tank.clone(),
 					"center": destroyed_center,
 					"start_center": destroyed_center,
-					"collapse_offset": Vector2(0, 16),
-					"time_left": 0.52,
-					"duration": 0.52,
+					"collapse_offset": Vector2(0, 20),
+					"time_left": 0.72,
+					"duration": 0.72,
 				}
 				_flash_effects.append({
 					"center": destroyed_center,
 					"color": Color("fff0dd"),
-					"radius": 42.0,
-					"time_left": 0.34,
-					"duration": 0.34,
+					"radius": 48.0,
+					"time_left": 0.42,
+					"duration": 0.42,
 				})
 				_ring_effects.append({
 					"center": destroyed_center,
 					"color": Color("ffd09b"),
-					"radius": 38.0,
-					"time_left": 0.72,
-					"duration": 0.72,
+					"radius": 44.0,
+					"time_left": 0.86,
+					"duration": 0.86,
 					"filled": true,
 				})
 				_ring_effects.append({
 					"center": destroyed_center,
 					"color": Color("ffefbc"),
-					"radius": 28.0,
-					"time_left": 0.28,
-					"duration": 0.28,
+					"radius": 34.0,
+					"time_left": 0.38,
+					"duration": 0.38,
 					"filled": false,
 				})
 				_sprite_effects.append({
 					"texture": EFFECT_SMOKE,
 					"center": destroyed_center,
-					"color": Color(1.0, 0.84, 0.62, 0.72),
-					"scale_start": 0.26,
-					"scale_end": 0.56,
-					"time_left": 0.82,
-					"duration": 0.82,
-					"drift": Vector2(0, -18),
+					"color": Color(1.0, 0.84, 0.62, 0.8),
+					"scale_start": 0.32,
+					"scale_end": 0.64,
+					"time_left": 0.96,
+					"duration": 0.96,
+					"drift": Vector2(0, -22),
 				})
 				_sprite_effects.append({
 					"texture": EFFECT_SPARK,
@@ -1420,6 +1443,15 @@ func _apply_event_feedback(previous_state: GameState, current_state: GameState, 
 					"time_left": 0.46,
 					"duration": 0.46,
 					"drift": Vector2(0, -10),
+				})
+				_floating_texts.append({
+					"center": destroyed_center,
+					"text": "DESTROYED",
+					"color": Color("ffd8a3"),
+					"time_left": 0.72,
+					"duration": 0.72,
+					"font_size": 18,
+					"drift_distance": 18.0,
 				})
 			_trigger_shake(0.42)
 		"win_center":
@@ -1482,6 +1514,14 @@ func _play_attack_effect(previous_state: GameState, action: ActionData) -> void:
 		"duration": 0.12,
 		"filled": true,
 	})
+	_flash_effects.append({
+		"center": source_center + attack_dir * 10.0,
+		"color": Color("c5f9ff") if attacker.tank_type == GameTypes.TankType.QTANK else Color("ffc285"),
+		"radius": 16.0,
+		"time_left": 0.16,
+		"duration": 0.16,
+		"delay": 0.06,
+	})
 	if attacker.tank_type == GameTypes.TankType.QTANK:
 		var target_center: Vector2 = source_center
 		for step_coord: HexCoord in attacker.position.raycast(action.direction, previous_state.board.rings * 3):
@@ -1502,13 +1542,25 @@ func _play_attack_effect(previous_state: GameState, action: ActionData) -> void:
 		_sprite_effects.append({
 			"texture": EFFECT_MUZZLE,
 			"center": source_center,
-			"color": Color(0.66, 0.96, 1.0, 0.72),
-			"scale_start": 0.24,
-			"scale_end": 0.38,
+			"color": Color(0.72, 0.98, 1.0, 0.82),
+			"scale_start": 0.3,
+			"scale_end": 0.5,
 			"rotation": attacker.facing_angle,
-			"time_left": 0.16,
-			"duration": 0.16,
+			"time_left": 0.2,
+			"duration": 0.2,
 			"delay": 0.08,
+		})
+		_sprite_effects.append({
+			"texture": EFFECT_TRACE,
+			"center": source_center + attack_dir * 18.0,
+			"color": Color(0.62, 0.95, 1.0, 0.48),
+			"scale_start": 0.18,
+			"scale_end": 0.3,
+			"rotation": attacker.facing_angle,
+			"time_left": 0.18,
+			"duration": 0.18,
+			"delay": 0.08,
+			"drift": attack_dir * 16.0,
 		})
 		_sprite_effects.append({
 			"texture": EFFECT_SPARK,
@@ -1544,12 +1596,12 @@ func _play_attack_effect(previous_state: GameState, action: ActionData) -> void:
 		_sprite_effects.append({
 			"texture": EFFECT_MUZZLE,
 			"center": source_center,
-			"color": Color(1.0, 0.72, 0.42, 0.76),
-			"scale_start": 0.24,
-			"scale_end": 0.4,
+			"color": Color(1.0, 0.78, 0.48, 0.82),
+			"scale_start": 0.3,
+			"scale_end": 0.46,
 			"rotation": attacker.facing_angle,
-			"time_left": 0.18,
-			"duration": 0.18,
+			"time_left": 0.22,
+			"duration": 0.22,
 			"delay": 0.08,
 		})
 		for neighbor_coord: HexCoord in attacker.position.neighbors():

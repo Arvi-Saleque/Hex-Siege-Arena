@@ -6,6 +6,11 @@
 
 ## Completed Items
 
+- Tightened the Step 4 combat readability pass:
+  - damage numbers are now larger, centered better, and easier to read
+  - attacker fire cues are stronger before target impact
+  - movement arrival has a clearer landing pulse, puff, and resolve beat
+  - destruction now presents a stronger visible and audible finish state
 - Added Step 4F objective reaction polish:
   - objective state changes now pulse the affected tile
   - center/objective ring brightens briefly on key objective events
@@ -649,6 +654,11 @@
   - objective ring brightens briefly during those reactions
   - recent-events lines for pickups/center control read like game language
   - objective sound lines up with the visible pulse
+- Confirm the Step 4 readability-tuning correction works:
+  - damage numbers are clearly readable at normal speed
+  - attacker fire cue is obvious before the target impact
+  - movement landing feels more resolved at the destination
+  - at least one destruction moment reads clearly stronger than a normal hit
 
 ## Resources Needed Soon
 
