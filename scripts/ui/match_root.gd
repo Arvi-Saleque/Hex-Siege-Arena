@@ -33,13 +33,13 @@ var _score_label: Label
 var _hp_summary_label: Label
 var _units_label: Label
 var _control_strip_label: Label
-var _status_label: Label
+var _status_label: RichTextLabel
 var _mode_label: Label
 var _selected_actor_label: Label
 var _map_label: Label
 var _ai_label: Label
 var _explanation_label: Label
-var _preview_label: Label
+var _preview_label: RichTextLabel
 var _stats_label: Label
 var _post_match_label: Label
 var _player_one_label: Label
