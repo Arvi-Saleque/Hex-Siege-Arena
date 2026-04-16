@@ -349,6 +349,13 @@
   - darkened the board surround so the battlefield sits inside the same sci-fi system
   - raised text contrast across headings, labels, and body copy for faster readability
   - normalized the button family back into the darker tactical shell while the stronger Step 2B button pass remains pending
+- Applied Step 2B HUD emphasis pass:
+  - strengthened action buttons with larger size, brighter labels, stronger borders, and clearer hover/pressed states
+  - added obvious active-state styling for Move and Attack modes
+  - improved the selected-unit card hierarchy with dimmed labels and brighter values
+  - cleaned the Objective card into a shorter primary-goal block
+  - rewrote Recent Events into shorter player-facing combat lines instead of raw technical phrasing
+  - increased top-bar emphasis on turn, active side, and score while keeping counters quieter
 
 ## Next Items
 
@@ -505,6 +512,13 @@
   - Rajdhani is visible on headings, numbers, and action labels
   - Inter is visible on body copy, logs, and descriptive text
   - the board surround is dark enough to match the battlefield instead of fighting it
+- Confirm the Step 2B HUD emphasis pass works:
+  - bottom buttons feel stronger and more clickable
+  - active Move or Attack mode is visually obvious
+  - the Selected Unit card has clearer label/value hierarchy
+  - the Objective card reads as a short primary goal instead of a dense block
+  - Recent Events no longer shows raw technical-looking text
+  - the top bar makes turn, active side, and score stand out more clearly
 
 ## Resources Needed Soon
 

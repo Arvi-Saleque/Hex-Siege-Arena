@@ -117,12 +117,12 @@ func _build_layout() -> void:
 
 	_turn_label = Label.new()
 	_turn_label.add_theme_font_override("font", FONT_BOLD)
-	_turn_label.add_theme_font_size_override("font_size", 22)
+	_turn_label.add_theme_font_size_override("font_size", 28)
 	top_left.add_child(_turn_label)
 
 	_objective_label = Label.new()
 	_objective_label.add_theme_font_override("font", FONT_MEDIUM)
-	_objective_label.add_theme_font_size_override("font_size", 14)
+	_objective_label.add_theme_font_size_override("font_size", 13)
 	_objective_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	top_left.add_child(_objective_label)
 
@@ -131,7 +131,7 @@ func _build_layout() -> void:
 	_score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_score_label.custom_minimum_size = Vector2(180, 0)
 	_score_label.add_theme_font_override("font", FONT_SEMIBOLD)
-	_score_label.add_theme_font_size_override("font_size", 20)
+	_score_label.add_theme_font_size_override("font_size", 22)
 	_score_label.add_theme_color_override("font_color", COLOR_GOLD)
 	top_bar.add_child(_score_label)
 
@@ -144,13 +144,13 @@ func _build_layout() -> void:
 	_hp_summary_label = Label.new()
 	_hp_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_hp_summary_label.add_theme_font_override("font", FONT_SEMIBOLD)
-	_hp_summary_label.add_theme_font_size_override("font_size", 16)
+	_hp_summary_label.add_theme_font_size_override("font_size", 14)
 	top_right.add_child(_hp_summary_label)
 
 	_units_label = Label.new()
 	_units_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_units_label.add_theme_font_override("font", FONT_MEDIUM)
-	_units_label.add_theme_font_size_override("font_size", 14)
+	_units_label.add_theme_font_size_override("font_size", 12)
 	_units_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	top_right.add_child(_units_label)
 
@@ -199,7 +199,7 @@ func _build_layout() -> void:
 	side_rail.add_child(info_panel)
 	var info_margin := _wrap_panel_content(info_panel, 14, 14)
 	var info_layout := VBoxContainer.new()
-	info_layout.add_theme_constant_override("separation", 8)
+	info_layout.add_theme_constant_override("separation", 10)
 	info_margin.add_child(info_layout)
 
 	var selected_title := _make_section_title("Selected Unit")
@@ -208,7 +208,7 @@ func _build_layout() -> void:
 
 	_selected_model_name_label = Label.new()
 	_selected_model_name_label.add_theme_font_override("font", FONT_BOLD)
-	_selected_model_name_label.add_theme_font_size_override("font_size", 20)
+	_selected_model_name_label.add_theme_font_size_override("font_size", 22)
 	info_layout.add_child(_selected_model_name_label)
 
 	_selected_model_role_label = Label.new()
@@ -218,18 +218,18 @@ func _build_layout() -> void:
 	_selected_model_role_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	info_layout.add_child(_selected_model_role_label)
 
-	_status_label = _make_body_label()
+	_status_label = _make_rich_body_label()
 	info_layout.add_child(_status_label)
 
 	var objective_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
 	side_rail.add_child(objective_panel)
 	var objective_margin := _wrap_panel_content(objective_panel, 14, 12)
 	var objective_layout := VBoxContainer.new()
-	objective_layout.add_theme_constant_override("separation", 8)
+	objective_layout.add_theme_constant_override("separation", 10)
 	objective_margin.add_child(objective_layout)
 	objective_layout.add_child(_make_section_title("Objective"))
 	objective_layout.add_child(_make_section_divider())
-	_preview_label = _make_body_label()
+	_preview_label = _make_rich_body_label()
 	objective_layout.add_child(_preview_label)
 
 	var log_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
@@ -375,24 +375,24 @@ func _build_layout() -> void:
 	bottom_row.add_child(controls_row)
 
 	_move_button = _make_action_button("Move", COLOR_GREEN)
-	_move_button.custom_minimum_size = Vector2(154, 52)
+	_move_button.custom_minimum_size = Vector2(164, 56)
 	_move_button.pressed.connect(_on_move_mode_pressed)
 	_wire_button_audio(_move_button)
 	controls_row.add_child(_move_button)
 
 	_attack_button = _make_action_button("Attack", COLOR_ATTACK)
-	_attack_button.custom_minimum_size = Vector2(154, 52)
+	_attack_button.custom_minimum_size = Vector2(164, 56)
 	_attack_button.pressed.connect(_on_attack_mode_pressed)
 	_wire_button_audio(_attack_button)
 	controls_row.add_child(_attack_button)
 
-	_ability_button = _make_action_button("Ability", COLOR_GOLD)
-	_ability_button.custom_minimum_size = Vector2(154, 52)
+	_ability_button = _make_action_button("Ability", Color("9a89ff"))
+	_ability_button.custom_minimum_size = Vector2(164, 56)
 	_ability_button.disabled = true
 	controls_row.add_child(_ability_button)
 
 	_pass_button = _make_action_button("End Turn", COLOR_GOLD)
-	_pass_button.custom_minimum_size = Vector2(172, 52)
+	_pass_button.custom_minimum_size = Vector2(182, 56)
 	_pass_button.pressed.connect(_on_pass_pressed)
 	_wire_button_audio(_pass_button)
 	controls_row.add_child(_pass_button)
@@ -509,22 +509,35 @@ func _make_body_label() -> Label:
 	return label
 
 
+func _make_rich_body_label() -> RichTextLabel:
+	var label := RichTextLabel.new()
+	label.bbcode_enabled = true
+	label.fit_content = true
+	label.scroll_active = false
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_override("normal_font", FONT_REGULAR)
+	label.add_theme_font_size_override("normal_font_size", 15)
+	label.add_theme_font_override("bold_font", FONT_MEDIUM)
+	label.add_theme_font_size_override("bold_font_size", 15)
+	label.add_theme_color_override("default_color", COLOR_TEXT)
+	return label
+
+
 func _make_action_button(text_value: String, accent_color: Color) -> Button:
 	var button := Button.new()
 	button.text = text_value.to_upper()
 	button.custom_minimum_size = Vector2(0, 40)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_stylebox_override("normal", _button_style(accent_color, 0.14))
-	button.add_theme_stylebox_override("hover", _button_style(accent_color, 0.20))
-	button.add_theme_stylebox_override("pressed", _button_style(accent_color, 0.28))
-	button.add_theme_stylebox_override("disabled", _button_style(COLOR_BORDER, 0.06))
+	button.set_meta("accent_color", accent_color)
 	button.add_theme_font_override("font", FONT_SEMIBOLD)
-	button.add_theme_font_size_override("font_size", 18)
+	button.add_theme_font_override("font_pressed", FONT_BOLD)
+	button.add_theme_font_size_override("font_size", 20)
 	button.add_theme_color_override("font_color", COLOR_TEXT)
 	button.add_theme_color_override("font_hover_color", Color.WHITE)
 	button.add_theme_color_override("font_pressed_color", Color.WHITE)
 	button.add_theme_color_override("font_disabled_color", COLOR_TEXT_MUTED)
+	_apply_button_visual_state(button, accent_color, false)
 	return button
 
 
@@ -535,13 +548,14 @@ func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 	style.corner_radius_top_right = 12
 	style.corner_radius_bottom_left = 12
 	style.corner_radius_bottom_right = 12
-	style.border_width_left = 1
-	style.border_width_top = 1
-	style.border_width_right = 1
-	style.border_width_bottom = 1
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
 	style.border_color = accent_color.lerp(COLOR_BORDER, 0.35)
 	style.shadow_color = Color(0.0, 0.0, 0.0, 0.18)
 	style.shadow_size = 4
+	style.shadow_offset = Vector2(0, 2)
 	style.content_margin_left = 20.0
 	style.content_margin_top = 10.0
 	style.content_margin_right = 20.0
@@ -554,6 +568,28 @@ func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 			1.0
 		)
 	return style
+
+
+func _apply_button_visual_state(button: Button, accent_color: Color, active: bool) -> void:
+	var normal_fill: float = 0.18 if not active else 0.32
+	var hover_fill: float = 0.28 if not active else 0.38
+	var pressed_fill: float = 0.36 if not active else 0.44
+	var normal_style := _button_style(accent_color, normal_fill)
+	var hover_style := _button_style(accent_color, hover_fill)
+	var pressed_style := _button_style(accent_color, pressed_fill)
+	if active:
+		normal_style.border_color = accent_color
+		hover_style.border_color = accent_color.lightened(0.08)
+		pressed_style.border_color = accent_color.lightened(0.12)
+		normal_style.shadow_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.22)
+		hover_style.shadow_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.26)
+		pressed_style.shadow_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.3)
+	var disabled_style := _button_style(COLOR_BORDER, 0.04)
+	disabled_style.border_color = COLOR_BORDER.darkened(0.12)
+	button.add_theme_stylebox_override("normal", normal_style)
+	button.add_theme_stylebox_override("hover", hover_style)
+	button.add_theme_stylebox_override("pressed", pressed_style)
+	button.add_theme_stylebox_override("disabled", disabled_style)
 
 
 func _refresh_view_legacy() -> void:
@@ -610,7 +646,7 @@ func _refresh_view_legacy() -> void:
 func _refresh_view() -> void:
 	_turn_label.text = "Turn %d  |  %s" % [_game_state.turn_count, "Blue Command" if _game_state.current_player == 1 else "Red Command"]
 	_turn_label.add_theme_color_override("font_color", COLOR_P1 if _game_state.current_player == 1 else COLOR_P2)
-	_objective_label.text = _phase_text()
+	_objective_label.text = _phase_text().to_upper()
 	_score_label.text = "Score  P1 %d  :  %d P2" % [_control_score_for_player(1), _control_score_for_player(2)]
 	_hp_summary_label.text = _hp_summary_text()
 	_units_label.text = _remaining_units_text()
@@ -735,12 +771,12 @@ func _refresh_selected_unit_panel() -> void:
 	if focus_tank == null:
 		_selected_model_name_label.text = "No active selection"
 		_selected_model_role_label.text = "Select a unit to inspect combat and movement details."
-		_status_label.text = "Integrity  -\nMobility  -\nStrike  -\nStatus  -"
+		_status_label.text = "[color=#9db0cc]Integrity[/color]  [b]-[/b]\n[color=#9db0cc]Mobility[/color]  [b]-[/b]\n[color=#9db0cc]Strike[/color]  [b]-[/b]\n[color=#9db0cc]Status[/color]  [b]-[/b]"
 		return
 
 	_selected_model_name_label.text = _unit_card_name(focus_tank)
 	_selected_model_role_label.text = _unit_role_text(focus_tank)
-	_status_label.text = "Integrity  %d/%d\nMobility  %d hexes\nStrike  %d dmg\nStatus  %s" % [
+	_status_label.text = "[color=#9db0cc]Integrity[/color]  [b]%d/%d[/b]\n[color=#9db0cc]Mobility[/color]  [b]%d hexes[/b]\n[color=#9db0cc]Strike[/color]  [b]%d dmg[/b]\n[color=#9db0cc]Status[/color]  [b]%s[/b]" % [
 		focus_tank.hp,
 		focus_tank.max_hp,
 		focus_tank.get_move_range(),
@@ -763,37 +799,38 @@ func _refresh_debug_panel() -> void:
 func _format_event(event_item: GameEvent) -> String:
 	match event_item.event_name:
 		"move":
-			return "Move: %s %s -> %s" % [event_item.payload.get("actor_id", ""), event_item.payload.get("from", ""), event_item.payload.get("to", "")]
+			return "%s moved into position" % _actor_label(str(event_item.payload.get("actor_id", "")))
 		"attack":
-			return "Attack: %s used %s (%s dmg)" % [event_item.payload.get("actor_id", ""), event_item.payload.get("mode", ""), event_item.payload.get("damage", 0)]
+			return "%s launched an attack" % _actor_label(str(event_item.payload.get("actor_id", "")))
 		"hit_tank":
-			return "Hit Tank: %s took %s at %s" % [event_item.payload.get("target", ""), event_item.payload.get("damage", 0), event_item.payload.get("coord", "")]
+			return "%s took %s damage" % [_actor_label(str(event_item.payload.get("target", ""))), event_item.payload.get("damage", 0)]
 		"hit_cell":
-			var reveal_text: String = ""
-			var revealed_type: int = event_item.payload.get("revealed_type", -1)
-			if revealed_type != -1:
-				reveal_text = " reveal=%s" % _cell_type_label(revealed_type)
-			return "Hit Cell: %s dmg=%s destroyed=%s%s" % [event_item.payload.get("coord", ""), event_item.payload.get("damage", 0), event_item.payload.get("destroyed", false), reveal_text]
+			if bool(event_item.payload.get("destroyed", false)):
+				var revealed_type: int = int(event_item.payload.get("revealed_type", -1))
+				if revealed_type != -1:
+					return "A hidden %s was revealed" % _cell_type_label(revealed_type).capitalize()
+				return "A block was destroyed"
+			return "Terrain absorbed the blast"
 		"power_up":
-			return "Power-Up: %s gained %s" % [event_item.payload.get("actor_id", ""), event_item.payload.get("buff", "")]
+			return "%s gained %s" % [_actor_label(str(event_item.payload.get("actor_id", ""))), str(event_item.payload.get("buff", "")).capitalize()]
 		"extra_action_granted":
-			return "Extra Action: Player %s now has %s action(s)" % [event_item.payload.get("player", 0), event_item.payload.get("remaining", 0)]
+			return "Bonus action granted to Player %s" % event_item.payload.get("player", 0)
 		"tank_destroyed":
-			return "Destroyed: %s" % event_item.payload.get("target", "")
+			return "%s was destroyed" % _actor_label(str(event_item.payload.get("target", "")))
 		"win_center":
-			return "Win: Player %s captured the center" % event_item.payload.get("winner", 0)
+			return "Player %s captured the center" % event_item.payload.get("winner", 0)
 		"win_ktank_destroyed":
-			return "Win: Player %s destroyed the enemy Ktank" % event_item.payload.get("winner", 0)
+			return "Player %s destroyed the enemy Ktank" % event_item.payload.get("winner", 0)
 		"draw_turn_limit":
-			return "Draw: turn limit reached"
+			return "Draw declared at the turn limit"
 		"draw_repetition":
-			return "Draw: repeated state detected"
+			return "Draw declared by repetition"
 		"pass":
-			return "Pass: Player %s ended the turn" % event_item.payload.get("player", 0)
+			return "Player %s ended the turn" % event_item.payload.get("player", 0)
 		"invalid_action":
-			return "Invalid Action: %s" % event_item.payload.get("reason", "unknown")
+			return "Action was not allowed"
 		_:
-			return "%s %s" % [event_item.event_name, event_item.payload]
+			return "Battlefield state updated"
 
 
 func _update_button_state() -> void:
@@ -805,6 +842,10 @@ func _update_button_state() -> void:
 	_reset_button.disabled = _presentation_locked
 	_ai_move_button.disabled = _game_state.game_over or _autoplay_enabled or _presentation_locked or _current_player_controller_type() == GameTypes.ControllerType.HUMAN
 	_autoplay_button.disabled = _game_state.game_over or _presentation_locked or not _both_players_are_ai()
+	_apply_button_visual_state(_move_button, _move_button.get_meta("accent_color"), _action_mode == "move" and not _move_button.disabled)
+	_apply_button_visual_state(_attack_button, _attack_button.get_meta("accent_color"), _action_mode == "attack" and not _attack_button.disabled)
+	_apply_button_visual_state(_ability_button, _ability_button.get_meta("accent_color"), false)
+	_apply_button_visual_state(_pass_button, _pass_button.get_meta("accent_color"), false)
 
 
 func _on_board_cell_clicked(coord_key: String) -> void:
@@ -1262,7 +1303,7 @@ func _post_match_text() -> String:
 
 
 func _objective_text() -> String:
-	return "Destroy the enemy Ktank or move your own Ktank onto the center hex."
+	return "[color=#9db0cc]Primary Goal[/color]\n[b]Destroy the enemy Ktank or occupy the center hex.[/b]"
 
 
 func _player_summary_text(player_id: int) -> String:
