@@ -298,6 +298,12 @@
   - let the arena surface fill the available board frame
   - reduced the board’s internal safety padding so it scales up more aggressively
   - trimmed the right rail width so the battlefield gets more horizontal space
+- Applied a Step 1 completion pass to the match scene:
+  - made the board scale noticeably larger again
+  - cut more empty safety space from the board frame and backdrop
+  - narrowed the right rail so the battlefield owns more of the screen
+  - strengthened the bottom action buttons with more size and visual weight
+  - force-reset the debug overlay to hidden whenever a fresh match is built
 - Rebuilt the remaining shell scenes into the same premium visual language:
   - Settings now uses a hero header, grouped accessibility/audio cards, and stronger action buttons
   - Quick Start Guide now uses structured learning cards instead of a plain text page
@@ -462,6 +468,8 @@
 - Confirm the selected-unit panel wording now reads more like a finished game HUD than a debug tool
 - Confirm the board now fills more of the match screen in fullscreen
 - Confirm the arena frame has much less wasted empty space around the hex grid
+- Confirm the bottom action buttons feel larger and more primary
+- Confirm a fresh match always starts with the debug overlay hidden
 - Confirm Settings now matches the menu/match visual language
 - Confirm Quick Start Guide feels more like a finished product page than a plain text scene
 - Confirm Replay Viewer feels polished, readable, and uses a larger board preview

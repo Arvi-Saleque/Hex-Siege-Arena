@@ -88,10 +88,10 @@ func _build_layout() -> void:
 
 	var root_margin := MarginContainer.new()
 	root_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root_margin.add_theme_constant_override("margin_left", 20)
-	root_margin.add_theme_constant_override("margin_top", 20)
-	root_margin.add_theme_constant_override("margin_right", 20)
-	root_margin.add_theme_constant_override("margin_bottom", 20)
+	root_margin.add_theme_constant_override("margin_left", 16)
+	root_margin.add_theme_constant_override("margin_top", 16)
+	root_margin.add_theme_constant_override("margin_right", 16)
+	root_margin.add_theme_constant_override("margin_bottom", 16)
 	add_child(root_margin)
 
 	var root_layout := VBoxContainer.new()
@@ -101,7 +101,7 @@ func _build_layout() -> void:
 	root_margin.add_child(root_layout)
 
 	var top_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
-	top_panel.custom_minimum_size = Vector2(0, 78)
+	top_panel.custom_minimum_size = Vector2(0, 74)
 	root_layout.add_child(top_panel)
 	var top_margin := _wrap_panel_content(top_panel, 18, 12)
 	var top_bar := HBoxContainer.new()
@@ -155,14 +155,14 @@ func _build_layout() -> void:
 	var content := HBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 14)
+	content.add_theme_constant_override("separation", 12)
 	root_layout.add_child(content)
 
 	var board_frame := _make_panel_card(COLOR_BORDER, Color("101927"))
 	board_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(board_frame)
-	var board_margin := _wrap_panel_content(board_frame, 8, 8)
+	var board_margin := _wrap_panel_content(board_frame, 4, 4)
 	var board_surface := Control.new()
 	board_surface.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_surface.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -182,13 +182,13 @@ func _build_layout() -> void:
 	_board_holder.add_child(_board_view)
 
 	var side_scroll := ScrollContainer.new()
-	side_scroll.custom_minimum_size = Vector2(280, 0)
+	side_scroll.custom_minimum_size = Vector2(248, 0)
 	side_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	content.add_child(side_scroll)
 
 	var side_rail := VBoxContainer.new()
-	side_rail.custom_minimum_size = Vector2(270, 0)
+	side_rail.custom_minimum_size = Vector2(238, 0)
 	side_rail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_rail.add_theme_constant_override("separation", 12)
 	side_scroll.add_child(side_rail)
@@ -354,11 +354,11 @@ func _build_layout() -> void:
 	_mini_board_holder.add_child(_mini_board_view)
 
 	var bottom_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
-	bottom_panel.custom_minimum_size = Vector2(0, 74)
+	bottom_panel.custom_minimum_size = Vector2(0, 84)
 	root_layout.add_child(bottom_panel)
-	var bottom_margin := _wrap_panel_content(bottom_panel, 16, 12)
+	var bottom_margin := _wrap_panel_content(bottom_panel, 16, 14)
 	var bottom_row := HBoxContainer.new()
-	bottom_row.add_theme_constant_override("separation", 12)
+	bottom_row.add_theme_constant_override("separation", 14)
 	bottom_margin.add_child(bottom_row)
 
 	var left_spacer := Control.new()
@@ -366,28 +366,28 @@ func _build_layout() -> void:
 	bottom_row.add_child(left_spacer)
 
 	var controls_row := HBoxContainer.new()
-	controls_row.add_theme_constant_override("separation", 10)
+	controls_row.add_theme_constant_override("separation", 12)
 	bottom_row.add_child(controls_row)
 
 	_move_button = _make_action_button("Move", COLOR_GREEN)
-	_move_button.custom_minimum_size = Vector2(124, 40)
+	_move_button.custom_minimum_size = Vector2(146, 48)
 	_move_button.pressed.connect(_on_move_mode_pressed)
 	_wire_button_audio(_move_button)
 	controls_row.add_child(_move_button)
 
 	_attack_button = _make_action_button("Attack", COLOR_ATTACK)
-	_attack_button.custom_minimum_size = Vector2(124, 40)
+	_attack_button.custom_minimum_size = Vector2(146, 48)
 	_attack_button.pressed.connect(_on_attack_mode_pressed)
 	_wire_button_audio(_attack_button)
 	controls_row.add_child(_attack_button)
 
 	_ability_button = _make_action_button("Ability", COLOR_GOLD)
-	_ability_button.custom_minimum_size = Vector2(124, 40)
+	_ability_button.custom_minimum_size = Vector2(146, 48)
 	_ability_button.disabled = true
 	controls_row.add_child(_ability_button)
 
-	_pass_button = _make_action_button("End Turn", COLOR_BORDER.lightened(0.22))
-	_pass_button.custom_minimum_size = Vector2(124, 40)
+	_pass_button = _make_action_button("End Turn", COLOR_GOLD)
+	_pass_button.custom_minimum_size = Vector2(158, 48)
 	_pass_button.pressed.connect(_on_pass_pressed)
 	_wire_button_audio(_pass_button)
 	controls_row.add_child(_pass_button)
@@ -510,15 +510,15 @@ func _make_body_label() -> Label:
 func _make_action_button(text_value: String, accent_color: Color) -> Button:
 	var button := Button.new()
 	button.text = text_value
-	button.custom_minimum_size = Vector2(0, 32)
+	button.custom_minimum_size = Vector2(0, 40)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_stylebox_override("normal", _button_style(accent_color, 0.10))
-	button.add_theme_stylebox_override("hover", _button_style(accent_color, 0.18))
-	button.add_theme_stylebox_override("pressed", _button_style(accent_color, 0.24))
+	button.add_theme_stylebox_override("normal", _button_style(accent_color, 0.16))
+	button.add_theme_stylebox_override("hover", _button_style(accent_color, 0.24))
+	button.add_theme_stylebox_override("pressed", _button_style(accent_color, 0.31))
 	button.add_theme_stylebox_override("disabled", _button_style(COLOR_BORDER, 0.04))
 	button.add_theme_font_override("font", FONT_SEMIBOLD)
-	button.add_theme_font_size_override("font_size", 12)
+	button.add_theme_font_size_override("font_size", 14)
 	button.add_theme_color_override("font_color", Color.WHITE)
 	button.add_theme_color_override("font_disabled_color", COLOR_TEXT_MUTED)
 	return button
@@ -924,6 +924,7 @@ func _reset_match() -> void:
 	_action_mode = ""
 	_selected_actor_id = ""
 	_presentation_locked = false
+	_debug_visible = false
 	if _board_view != null:
 		_board_view.clear_transient_effects()
 	AppState.last_action_explanation = ActionExplanation.new()
@@ -1364,9 +1365,9 @@ func _recenter_board_view() -> void:
 	var visual_size: Vector2 = _board_view.get_board_visual_size()
 	var width_scale: float = holder_size.x / maxf(visual_size.x, 1.0)
 	var height_scale: float = holder_size.y / maxf(visual_size.y, 1.0)
-	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.68, 1.45)
+	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.82, 1.72)
 	_board_view.scale = Vector2.ONE * scale_factor
-	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.5)
+	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.51)
 
 
 func _reset_sidebar_scroll() -> void:
