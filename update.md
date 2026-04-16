@@ -377,6 +377,10 @@
   - increased selected-unit grounding with brighter rings, stronger shadow, and stronger selection pulse
   - made the hovered tile itself react more clearly
   - added a simpler danger language for targetable enemy cells during attack mode
+- Added a human-turn input reliability fix:
+  - human turns now auto-sync to a real selected unit instead of only showing a visual focus unit
+  - Move and Attack now recover from empty selection state before trying to enter their modes
+  - human button flow should no longer feel dead at the start of a turn
 
 ## Next Items
 
@@ -563,6 +567,11 @@
   - targetable enemy cells get stronger warning treatment in attack mode
   - selected units are more unmistakable at a glance
   - hovered tiles react clearly on the board itself, not only through a marker
+- Confirm the human control fix works:
+  - on a Human-controlled turn, a real unit is selected for Move and Attack actions
+  - Move enters move mode normally
+  - Attack enters attack mode normally
+  - End Turn still works normally
 
 ## Resources Needed Soon
 

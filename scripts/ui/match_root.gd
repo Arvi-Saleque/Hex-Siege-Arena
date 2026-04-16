@@ -656,6 +656,7 @@ func _refresh_view_legacy() -> void:
 
 
 func _refresh_view() -> void:
+	_sync_human_selection()
 	_turn_label.text = "Turn %d  |  %s" % [_game_state.turn_count, "Blue Command" if _game_state.current_player == 1 else "Red Command"]
 	_turn_label.add_theme_color_override("font_color", COLOR_P1 if _game_state.current_player == 1 else COLOR_P2)
 	_objective_label.text = _phase_text().to_upper()
@@ -688,6 +689,22 @@ func _refresh_view() -> void:
 	_update_button_state()
 	_autoplay_button.text = "Auto %s" % ("On" if _autoplay_enabled else "Off")
 	_speed_button.text = AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
+
+
+func _sync_human_selection() -> void:
+	if _game_state == null:
+		return
+	if _current_player_controller_type() != GameTypes.ControllerType.HUMAN:
+		return
+	if _selected_actor_id != "":
+		var selected_tank: TankData = _game_state.get_tank(_selected_actor_id)
+		if selected_tank != null and selected_tank.is_alive() and selected_tank.owner_id == _game_state.current_player:
+			return
+	for tank: TankData in _game_state.get_player_tanks(_game_state.current_player):
+		if tank.is_alive():
+			_selected_actor_id = tank.actor_id()
+			return
+	_selected_actor_id = ""
 
 
 func _control_score_for_player(player_id: int) -> int:
@@ -910,6 +927,7 @@ func _after_action() -> void:
 
 
 func _on_move_mode_pressed() -> void:
+	_sync_human_selection()
 	if _selected_actor_id == "":
 		return
 	_debug_visible = false
@@ -918,6 +936,7 @@ func _on_move_mode_pressed() -> void:
 
 
 func _on_attack_mode_pressed() -> void:
+	_sync_human_selection()
 	if _selected_actor_id == "":
 		return
 	_debug_visible = false
