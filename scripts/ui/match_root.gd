@@ -241,10 +241,40 @@ func _build_layout() -> void:
 	_event_log.add_theme_font_size_override("normal_font_size", 14)
 	log_layout.add_child(_event_log)
 
+	var overlay_layer := Control.new()
+	overlay_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root_margin.add_child(overlay_layer)
+
+	var overlay_margin := MarginContainer.new()
+	overlay_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay_margin.add_theme_constant_override("margin_top", 92)
+	overlay_margin.add_theme_constant_override("margin_right", 0)
+	overlay_margin.add_theme_constant_override("margin_bottom", 88)
+	overlay_layer.add_child(overlay_margin)
+
+	var overlay_row := HBoxContainer.new()
+	overlay_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	overlay_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	overlay_margin.add_child(overlay_row)
+
+	var overlay_spacer := Control.new()
+	overlay_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	overlay_row.add_child(overlay_spacer)
+
 	_debug_panel = _make_panel_card(COLOR_GOLD.darkened(0.28), COLOR_SURFACE)
 	_debug_panel.visible = false
-	side_rail.add_child(_debug_panel)
-	var debug_margin := _wrap_panel_content(_debug_panel, 16, 14)
+	_debug_panel.custom_minimum_size = Vector2(320, 0)
+	overlay_row.add_child(_debug_panel)
+	var debug_scroll := ScrollContainer.new()
+	debug_scroll.custom_minimum_size = Vector2(0, 360)
+	debug_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_debug_panel.add_child(debug_scroll)
+	var debug_margin := MarginContainer.new()
+	debug_margin.add_theme_constant_override("margin_left", 16)
+	debug_margin.add_theme_constant_override("margin_top", 14)
+	debug_margin.add_theme_constant_override("margin_right", 16)
+	debug_margin.add_theme_constant_override("margin_bottom", 14)
+	debug_scroll.add_child(debug_margin)
 	var debug_layout := VBoxContainer.new()
 	debug_layout.add_theme_constant_override("separation", 8)
 	debug_margin.add_child(debug_layout)
@@ -566,7 +596,8 @@ func _refresh_view() -> void:
 		_controller_label(AppState.current_match_config.player_one_ai.controller_type),
 		_controller_label(AppState.current_match_config.player_two_ai.controller_type),
 	]
-	_debug_panel.visible = _debug_visible
+	if _debug_panel != null:
+		_debug_panel.visible = _debug_visible
 
 	_preview_label.text = _objective_text()
 
@@ -1334,37 +1365,37 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_F3:
 			_debug_visible = not _debug_visible
 			_refresh_view()
-			get_viewport().set_input_as_handled()
+			accept_event()
 		KEY_M:
 			if not _move_button.disabled:
 				_on_move_mode_pressed()
-				get_viewport().set_input_as_handled()
+				accept_event()
 		KEY_A:
 			if not _attack_button.disabled:
 				_on_attack_mode_pressed()
-				get_viewport().set_input_as_handled()
+				accept_event()
 		KEY_P:
 			if not _pass_button.disabled:
 				_on_pass_pressed()
-				get_viewport().set_input_as_handled()
+				accept_event()
 		KEY_SPACE:
 			if not _ai_move_button.disabled:
 				_on_ai_move_pressed()
-				get_viewport().set_input_as_handled()
+				accept_event()
 		KEY_Z:
 			if not _autoplay_button.disabled:
 				_on_autoplay_pressed()
-				get_viewport().set_input_as_handled()
+				accept_event()
 		KEY_R:
 			if not _presentation_locked:
 				_on_reset_pressed()
-				get_viewport().set_input_as_handled()
+				accept_event()
 		KEY_H:
 			get_tree().change_scene_to_file(AppState.HELP_SCENE)
-			get_viewport().set_input_as_handled()
+			accept_event()
 		KEY_ESCAPE:
 			get_tree().change_scene_to_file(MENU_SCENE)
-			get_viewport().set_input_as_handled()
+			accept_event()
 
 
 func _wire_button_audio(button: Button, use_back_sound: bool = false) -> void:
