@@ -71,6 +71,8 @@ var _autoplay_speed_index: int = 1
 var _guide_visible: bool = false
 var _presentation_locked: bool = false
 var _debug_visible: bool = false
+var _top_panel: PanelContainer
+var _selected_unit_panel: PanelContainer
 
 
 func _ready() -> void:
@@ -102,10 +104,10 @@ func _build_layout() -> void:
 	root_layout.add_theme_constant_override("separation", 12)
 	root_margin.add_child(root_layout)
 
-	var top_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
-	top_panel.custom_minimum_size = Vector2(0, 80)
-	root_layout.add_child(top_panel)
-	var top_margin := _wrap_panel_content(top_panel, 18, 12)
+	_top_panel = _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
+	_top_panel.custom_minimum_size = Vector2(0, 80)
+	root_layout.add_child(_top_panel)
+	var top_margin := _wrap_panel_content(_top_panel, 18, 12)
 	var top_bar := HBoxContainer.new()
 	top_bar.add_theme_constant_override("separation", 16)
 	top_margin.add_child(top_bar)
@@ -195,9 +197,9 @@ func _build_layout() -> void:
 	side_rail.add_theme_constant_override("separation", 12)
 	side_scroll.add_child(side_rail)
 
-	var info_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
-	side_rail.add_child(info_panel)
-	var info_margin := _wrap_panel_content(info_panel, 14, 14)
+	_selected_unit_panel = _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
+	side_rail.add_child(_selected_unit_panel)
+	var info_margin := _wrap_panel_content(_selected_unit_panel, 14, 14)
 	var info_layout := VBoxContainer.new()
 	info_layout.add_theme_constant_override("separation", 10)
 	info_margin.add_child(info_layout)
@@ -882,6 +884,10 @@ func _update_button_state() -> void:
 	_apply_button_visual_state(_attack_button, _attack_button.get_meta("accent_color"), _action_mode == "attack" and not _attack_button.disabled)
 	_apply_button_visual_state(_ability_button, _ability_button.get_meta("accent_color"), false)
 	_apply_button_visual_state(_pass_button, _pass_button.get_meta("accent_color"), false)
+	_set_button_feedback_state(_move_button, false, false)
+	_set_button_feedback_state(_attack_button, false, false)
+	_set_button_feedback_state(_ability_button, false, false)
+	_set_button_feedback_state(_pass_button, false, false)
 
 
 func _on_board_cell_clicked(coord_key: String) -> void:
@@ -891,8 +897,14 @@ func _on_board_cell_clicked(coord_key: String) -> void:
 	var clicked_tank: TankData = _game_state.get_tank_at(coord)
 
 	if clicked_tank != null and clicked_tank.owner_id == _game_state.current_player:
+		var selection_changed: bool = _selected_actor_id != clicked_tank.actor_id()
 		_selected_actor_id = clicked_tank.actor_id()
 		_action_mode = ""
+		if selection_changed:
+			AudioManager.play_unit_select()
+			if _board_view != null:
+				_board_view.play_selection_feedback(_selected_actor_id)
+			_pulse_control(_selected_unit_panel, 1.02, 0.16)
 		_refresh_view()
 		return
 
@@ -1101,6 +1113,30 @@ func _on_selected_summary_changed(summary: String) -> void:
 	_selected_label.text = "Selected Tile: %s" % summary
 
 
+func _play_turn_transition_feedback(next_player: int) -> void:
+	if _top_panel == null:
+		return
+	_pulse_control(_top_panel, 1.012, 0.18)
+	_pulse_label_color(_turn_label, COLOR_P1 if next_player == 1 else COLOR_P2)
+
+
+func _pulse_control(control: Control, peak_scale: float, duration: float) -> void:
+	if control == null:
+		return
+	control.scale = Vector2.ONE
+	var tween := create_tween()
+	tween.tween_property(control, "scale", Vector2.ONE * peak_scale, duration * 0.45).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(control, "scale", Vector2.ONE, duration * 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+
+
+func _pulse_label_color(label: Label, accent_color: Color) -> void:
+	if label == null:
+		return
+	label.modulate = accent_color.lerp(Color.WHITE, 0.32)
+	var tween := create_tween()
+	tween.tween_property(label, "modulate", Color.WHITE, 0.34).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
 func _cell_type_label(cell_type: int) -> String:
 	match cell_type:
 		GameTypes.CellType.EMPTY:
@@ -1154,6 +1190,8 @@ func _execute_action(action: ActionData, source_label: String, explanation: Acti
 	_game_state.apply_action(action)
 	AudioManager.play_action_feedback(previous_state, _game_state, action, _game_state.last_events)
 	_board_view.play_action_feedback(previous_state, _game_state, action, _game_state.last_events)
+	if previous_state.current_player != _game_state.current_player:
+		_play_turn_transition_feedback(_game_state.current_player)
 	var feedback_hold: float = _board_view.get_feedback_hold_seconds(action, previous_state)
 	if _game_state.game_over:
 		_disable_autoplay()
@@ -1528,8 +1566,43 @@ func _unhandled_input(event: InputEvent) -> void:
 func _wire_button_audio(button: Button, use_back_sound: bool = false) -> void:
 	if button == null:
 		return
-	button.mouse_entered.connect(AudioManager.play_ui_hover)
+	button.pivot_offset = button.size * 0.5
+	button.resized.connect(func() -> void:
+		button.pivot_offset = button.size * 0.5
+	)
+	button.mouse_entered.connect(func() -> void:
+		AudioManager.play_ui_hover()
+		_set_button_feedback_state(button, true, false)
+	)
+	button.mouse_exited.connect(func() -> void:
+		_set_button_feedback_state(button, false, false)
+	)
+	button.button_down.connect(func() -> void:
+		_set_button_feedback_state(button, true, true)
+	)
+	button.button_up.connect(func() -> void:
+		_set_button_feedback_state(button, true, false)
+	)
 	if use_back_sound:
 		button.pressed.connect(AudioManager.play_ui_back)
 	else:
 		button.pressed.connect(AudioManager.play_ui_click)
+
+
+func _set_button_feedback_state(button: Button, hovered: bool, pressed: bool) -> void:
+	if button == null:
+		return
+	if button.disabled:
+		button.scale = Vector2.ONE
+		button.modulate = Color(0.72, 0.78, 0.88, 0.9)
+		return
+	var target_scale: Vector2 = Vector2.ONE
+	var target_modulate: Color = Color.WHITE
+	if hovered:
+		target_scale = Vector2.ONE * 1.015
+		target_modulate = Color(1.06, 1.06, 1.06, 1.0)
+	if pressed:
+		target_scale = Vector2.ONE * 0.992
+		target_modulate = Color(0.92, 0.92, 0.92, 1.0)
+	button.scale = target_scale
+	button.modulate = target_modulate

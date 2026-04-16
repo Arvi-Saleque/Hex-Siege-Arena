@@ -102,6 +102,18 @@ func play_ui_cancel() -> void:
 	_play_sfx("ui_cancel", ui_volume_db - 2.0)
 
 
+func play_unit_select() -> void:
+	_play_sfx("ui_confirm", ui_volume_db - 3.0, 1.08)
+
+
+func play_turn_transition() -> void:
+	_play_sfx("turn_change", sfx_volume_db - 3.0, 1.0)
+
+
+func play_objective_feedback() -> void:
+	_play_sfx("pickup_bonus_move", sfx_volume_db - 4.0, 1.04)
+
+
 func play_action_feedback(previous_state: GameState, current_state: GameState, action: ActionData, events: Array[GameEvent]) -> void:
 	if previous_state == null or current_state == null:
 		return
@@ -130,7 +142,7 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 		_play_event(previous_state, current_state, action, event_item)
 
 	if not current_state.game_over and previous_state.current_player != current_state.current_player:
-		_play_sfx("turn_change", sfx_volume_db - 3.0)
+		play_turn_transition()
 
 
 func _play_event(previous_state: GameState, current_state: GameState, action: ActionData, event_item: GameEvent) -> void:
@@ -157,6 +169,7 @@ func _play_event(previous_state: GameState, current_state: GameState, action: Ac
 				_play_sfx("blast_hit", sfx_volume_db - 2.0)
 		"power_up":
 			var buff_name: String = str(event_item.payload.get("buff", ""))
+			play_objective_feedback()
 			match buff_name:
 				"attack_multiplier":
 					_play_sfx("pickup_attack", sfx_volume_db - 1.0)
@@ -169,6 +182,7 @@ func _play_event(previous_state: GameState, current_state: GameState, action: Ac
 		"tank_destroyed":
 			_play_sfx("tank_destroyed", sfx_volume_db + 1.0)
 		"win_center", "win_ktank_destroyed":
+			play_objective_feedback()
 			_play_match_result(int(event_item.payload.get("winner", 0)))
 		"draw_turn_limit", "draw_repetition":
 			_play_sfx("draw", sfx_volume_db - 1.0)

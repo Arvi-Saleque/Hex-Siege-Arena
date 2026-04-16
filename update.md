@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Step 3: Tactical battlefield readability polish
+- Step 4: Responsive feedback and readable combat feel
 
 ## Completed Items
 
@@ -384,6 +384,13 @@
 - Added a mouse-input HUD fix:
   - the fullscreen debug overlay now ignores mouse input while hidden
   - visible HUD buttons such as Move, Attack, and End Turn should now be clickable by mouse
+- Started Step 4 feedback polish using the existing `assets/audio` runtime set plus curated Kenney sci-fi/interface/particle assets:
+  - added stronger button hover/press feedback so the main actions feel less static
+  - added unit-selection acknowledgment with sound and ring pulse
+  - strengthened movement feedback with path-trace and arrival puff support
+  - strengthened attack feedback with muzzle/impact sprite accents on top of the existing beam/blast logic
+  - strengthened destruction/objective feedback with clearer burst layers
+  - added a top-bar turn transition pulse so state changes read more clearly
 
 ## Next Items
 
@@ -579,6 +586,13 @@
   - clicking Move works the same way as pressing `M`
   - clicking Attack works the same way as pressing `A`
   - clicking End Turn works normally by mouse
+- Confirm the first Step 4 feedback pass works:
+  - main buttons feel more responsive on hover and press
+  - selecting a unit gives a clear acknowledgment
+  - movement has clearer start/travel/arrival feedback
+  - attacks feel sharper at source and impact
+  - destruction and objective moments read more strongly without overwhelming the board
+  - turn changes feel more noticeable from the HUD
 
 ## Resources Needed Soon
 
