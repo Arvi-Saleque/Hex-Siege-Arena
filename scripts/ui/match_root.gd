@@ -850,13 +850,23 @@ func _format_event(event_item: GameEvent) -> String:
 				return "A block broke apart"
 			return ""
 		"power_up":
-			return "%s gained %s" % [_actor_short_label(str(event_item.payload.get("actor_id", ""))), str(event_item.payload.get("buff", "")).capitalize()]
+			var buff_name: String = str(event_item.payload.get("buff", ""))
+			var actor_label: String = _actor_short_label(str(event_item.payload.get("actor_id", "")))
+			match buff_name:
+				"attack_multiplier":
+					return "%s secured the attack core" % actor_label
+				"shield_buffer":
+					return "%s secured the shield core" % actor_label
+				"bonus_move":
+					return "%s triggered the mobility core" % actor_label
+				_:
+					return "%s claimed an objective" % actor_label
 		"extra_action_granted":
 			return "%s gained a bonus action" % ("Blue" if int(event_item.payload.get("player", 0)) == 1 else "Red")
 		"tank_destroyed":
 			return "%s was destroyed" % _actor_short_label(str(event_item.payload.get("target", "")))
 		"win_center":
-			return "%s captured the center" % ("Blue" if int(event_item.payload.get("winner", 0)) == 1 else "Red")
+			return "%s seized the center hex" % ("Blue" if int(event_item.payload.get("winner", 0)) == 1 else "Red")
 		"win_ktank_destroyed":
 			return "%s eliminated the enemy Ktank" % ("Blue" if int(event_item.payload.get("winner", 0)) == 1 else "Red")
 		"draw_turn_limit":

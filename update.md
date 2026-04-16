@@ -6,6 +6,11 @@
 
 ## Completed Items
 
+- Added Step 4F objective reaction polish:
+  - objective state changes now pulse the affected tile
+  - center/objective ring brightens briefly on key objective events
+  - recent-events wording for objective moments is cleaner and more game-like
+  - existing objective confirmation sound now lines up with those reactions
 - Added Step 4D destroy feedback polish:
   - kills now trigger a stronger elimination burst than a normal hit
   - destroyed units spawn a brief smoke-and-spark follow-through
@@ -639,6 +644,11 @@
   - smoke and spark follow-through are visible on destruction
   - the destroyed unit fades/collapses out cleanly
   - destroy sound reads stronger than a normal impact
+- Confirm the Step 4F objective-reaction correction works:
+  - objective state changes pulse the relevant tile
+  - objective ring brightens briefly during those reactions
+  - recent-events lines for pickups/center control read like game language
+  - objective sound lines up with the visible pulse
 
 ## Resources Needed Soon
 

@@ -75,6 +75,7 @@ var _floating_texts: Array[Dictionary] = []
 var _tank_motion_overrides: Dictionary = {}
 var _tank_hit_reactions: Dictionary = {}
 var _tank_fadeouts: Dictionary = {}
+var _objective_tile_reactions: Dictionary = {}
 var _shake_timer: float = 0.0
 var _shake_strength: float = 0.0
 var _shake_offset: Vector2 = Vector2.ZERO
@@ -134,6 +135,7 @@ func _draw() -> void:
 		draw_polyline(lower_shadow, fill.darkened(0.32), 1.3, true)
 		_draw_tile_material(cell, center, points, fill)
 		_draw_objective_tile_effects(cell, center, points)
+		_draw_objective_state_reaction(cell, center, points)
 
 	_draw_range_overlays(active_board)
 	_draw_path_preview(active_board)
@@ -778,11 +780,27 @@ func _draw_objective_tile_effects(cell: CellData, center: Vector2, points: Packe
 		return
 	var pulse_amplitude: float = 0.03 if AppState.reduced_motion else 0.08
 	var pulse_radius: float = hex_size * (0.52 + pulse_amplitude * sin(_pulse_time * 2.2))
+	var reaction_strength: float = _objective_reaction_strength(cell.coord.key())
 	draw_circle(center, pulse_radius + 6.0, Color(1.0, 0.92, 0.47, 0.08))
-	draw_arc(center, pulse_radius, 0.0, TAU, 48, Color("fff2a8"), 2.0, true)
+	draw_arc(center, pulse_radius, 0.0, TAU, 48, Color(1.0, 0.95, 0.66, 0.82 + reaction_strength * 0.18), 2.0 + reaction_strength * 0.7, true)
 	var objective_outline: PackedVector2Array = points.duplicate()
 	objective_outline.append(points[0])
-	draw_polyline(objective_outline, Color("f4d96b"), 2.0, true)
+	draw_polyline(objective_outline, Color(0.96, 0.85, 0.42, 0.82 + reaction_strength * 0.18), 2.0 + reaction_strength * 1.0, true)
+
+
+func _draw_objective_state_reaction(cell: CellData, center: Vector2, points: PackedVector2Array) -> void:
+	var strength: float = _objective_reaction_strength(cell.coord.key())
+	if strength <= 0.0:
+		return
+	var reaction: Dictionary = _objective_tile_reactions.get(cell.coord.key(), {})
+	var reaction_color: Color = _effect_color(reaction, "color", Color("fff1a9"))
+	var inset_points: PackedVector2Array = _scaled_points(points, center, 0.84)
+	var overlay_color := Color(reaction_color.r, reaction_color.g, reaction_color.b, 0.08 + strength * 0.12)
+	draw_colored_polygon(inset_points, overlay_color)
+	var outline: PackedVector2Array = inset_points.duplicate()
+	outline.append(inset_points[0])
+	draw_polyline(outline, Color(reaction_color.r, reaction_color.g, reaction_color.b, 0.38 + strength * 0.4), 2.0 + strength * 1.2, true)
+	draw_circle(center, hex_size * (0.22 + strength * 0.08), Color(reaction_color.r, reaction_color.g, reaction_color.b, 0.1 + strength * 0.08))
 
 
 func _draw_range_overlays(active_board: BoardState) -> void:
@@ -1078,6 +1096,7 @@ func _process_effects(delta: float) -> void:
 	_tick_motion_overrides(delta)
 	_tick_hit_reactions(delta)
 	_tick_fadeouts(delta)
+	_tick_objective_tile_reactions(delta)
 	if AppState.reduced_motion:
 		_shake_timer = 0.0
 		_shake_strength = 0.0
@@ -1139,6 +1158,16 @@ func _tick_fadeouts(delta: float) -> void:
 			_tank_fadeouts[actor_id] = fadeout
 
 
+func _tick_objective_tile_reactions(delta: float) -> void:
+	for coord_key: String in _objective_tile_reactions.keys():
+		var reaction: Dictionary = _objective_tile_reactions[coord_key]
+		reaction["time_left"] = _effect_float(reaction, "time_left", 0.0) - delta
+		if _effect_float(reaction, "time_left", 0.0) <= 0.0:
+			_objective_tile_reactions.erase(coord_key)
+		else:
+			_objective_tile_reactions[coord_key] = reaction
+
+
 func _motion_override_center(actor_id: String, fallback_center: Vector2) -> Vector2:
 	var motion: Dictionary = _tank_motion_overrides.get(actor_id, {})
 	if motion.is_empty():
@@ -1191,6 +1220,16 @@ func _tank_fade_alpha(actor_id: String) -> float:
 	var duration: float = maxf(_effect_float(fadeout, "duration", 1.0), 0.001)
 	var time_left: float = clampf(_effect_float(fadeout, "time_left", 0.0), 0.0, duration)
 	return clampf(1.0 - (time_left / duration), 0.0, 1.0)
+
+
+func _objective_reaction_strength(coord_key: String) -> float:
+	var reaction: Dictionary = _objective_tile_reactions.get(coord_key, {})
+	if reaction.is_empty():
+		return 0.0
+	var duration: float = maxf(_effect_float(reaction, "duration", 1.0), 0.001)
+	var time_left: float = clampf(_effect_float(reaction, "time_left", 0.0), 0.0, duration)
+	var progress: float = 1.0 - (time_left / duration)
+	return sin(progress * PI)
 
 
 func _tank_draw_rotation(tank: TankData) -> float:
@@ -1287,6 +1326,11 @@ func _apply_event_feedback(previous_state: GameState, current_state: GameState, 
 			var buff_tank: TankData = current_state.get_tank(actor_id)
 			if buff_tank != null:
 				var buff_center: Vector2 = buff_tank.position.to_world_flat(hex_size)
+				_objective_tile_reactions[buff_tank.position.key()] = {
+					"color": _buff_color(buff_tank.active_buff),
+					"time_left": 0.56,
+					"duration": 0.56,
+				}
 				_ring_effects.append({
 					"center": buff_center,
 					"color": _buff_color(buff_tank.active_buff),
@@ -1304,6 +1348,13 @@ func _apply_event_feedback(previous_state: GameState, current_state: GameState, 
 					"time_left": 0.34,
 					"duration": 0.34,
 					"drift": Vector2(0, -6),
+				})
+				_flash_effects.append({
+					"center": buff_center,
+					"color": Color(_buff_color(buff_tank.active_buff).r, _buff_color(buff_tank.active_buff).g, _buff_color(buff_tank.active_buff).b, 0.2),
+					"radius": 24.0,
+					"time_left": 0.26,
+					"duration": 0.26,
 				})
 		"tank_destroyed":
 			var destroyed_id: String = str(event_item.payload.get("target", ""))
@@ -1372,6 +1423,18 @@ func _apply_event_feedback(previous_state: GameState, current_state: GameState, 
 				})
 			_trigger_shake(0.42)
 		"win_center":
+			_objective_tile_reactions[HexCoord.new().key()] = {
+				"color": Color("fff0a9"),
+				"time_left": 0.84,
+				"duration": 0.84,
+			}
+			_flash_effects.append({
+				"center": HexCoord.new().to_world_flat(hex_size),
+				"color": Color("fff4c6"),
+				"radius": 34.0,
+				"time_left": 0.38,
+				"duration": 0.38,
+			})
 			_ring_effects.append({
 				"center": HexCoord.new().to_world_flat(hex_size),
 				"color": Color("fff1a9"),
@@ -1530,6 +1593,7 @@ func clear_transient_effects() -> void:
 	_tank_motion_overrides.clear()
 	_tank_hit_reactions.clear()
 	_tank_fadeouts.clear()
+	_objective_tile_reactions.clear()
 	_shake_timer = 0.0
 	_shake_strength = 0.0
 	_shake_offset = Vector2.ZERO
