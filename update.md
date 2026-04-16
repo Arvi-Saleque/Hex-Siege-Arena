@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 16: Match scene professional HUD pass
+- Phase 16: Match scene professional HUD and hierarchy pass
 
 ## Completed Items
 
@@ -258,6 +258,21 @@
   - copied the four custom `.glb` tank assets into `assets/art/tanks` with stable runtime names
   - copied `Space Grotesk` into `assets/fonts/space_grotesk` and wired it into the match scene
   - added `TankModelView`, a live 3D showcase control for tank models
+- Rebuilt the gameplay HUD around a clearer production layout:
+  - top HUD now carries only match-critical information
+  - center area is dominated by the board inside a framed arena container
+  - right panel now groups selected unit info, objective text, and a compact combat log
+  - bottom action bar now groups the main player actions into one place
+- Hid debug-style controls and helper text from the default match view
+- Added an `F3` debug toggle for:
+  - AI step/autoplay controls
+  - reset/back controls
+  - raw hover/selected tile summaries
+  - minimap and technical state text
+- Increased the board’s visual priority by:
+  - enlarging the board container
+  - reducing empty space around it
+  - increasing the board scale ceiling
   - redesigned the match HUD into a more product-style tactics layout with a hero header, cleaner card hierarchy, and a dedicated command deck
   - added a four-unit roster strip beneath the board so all four distinct tanks are visible in the main game scene
   - added a larger selected-unit showcase card that tracks the currently selected or active tank
