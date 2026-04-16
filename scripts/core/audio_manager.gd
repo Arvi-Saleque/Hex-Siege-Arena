@@ -129,10 +129,10 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 			if attacking_tank != null:
 				if attacking_tank.tank_type == GameTypes.TankType.QTANK:
 					_play_sfx("laser_charge", sfx_volume_db - 6.0)
-					_play_sfx("laser_fire", sfx_volume_db - 1.0)
+					_play_sfx_delayed("laser_fire", sfx_volume_db - 0.5, 0.1)
 				else:
 					_play_sfx("blast_charge", sfx_volume_db - 5.0)
-					_play_sfx("blast_fire", sfx_volume_db)
+					_play_sfx_delayed("blast_fire", sfx_volume_db, 0.1)
 		GameTypes.ActionType.PASS:
 			play_ui_cancel()
 		_:
@@ -228,6 +228,16 @@ func _play_sfx(key: String, base_volume_db: float, pitch_scale: float = 1.0) -> 
 	player.finished.connect(player.queue_free)
 	add_child(player)
 	player.play()
+
+
+func _play_sfx_delayed(key: String, base_volume_db: float, delay: float, pitch_scale: float = 1.0) -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	var timer := tree.create_timer(delay)
+	timer.timeout.connect(func() -> void:
+		_play_sfx(key, base_volume_db, pitch_scale)
+	)
 
 
 func _load_stream(key: String) -> AudioStream:

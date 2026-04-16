@@ -391,6 +391,12 @@
   - strengthened attack feedback with muzzle/impact sprite accents on top of the existing beam/blast logic
   - strengthened destruction/objective feedback with clearer burst layers
   - added a top-bar turn transition pulse so state changes read more clearly
+- Applied a focused Step 4A attack-feel correction:
+  - attacks now use a short readable wind-up before firing
+  - attack audio now sequences charge into fire instead of stacking instantly
+  - muzzle flashes, beams, and impact sparks land in a clearer timed order
+  - damage popups are larger and more readable
+  - hit targets now get a clearer impact flash and small recoil response
 
 ## Next Items
 
@@ -593,6 +599,13 @@
   - attacks feel sharper at source and impact
   - destruction and objective moments read more strongly without overwhelming the board
   - turn changes feel more noticeable from the HUD
+- Confirm the Step 4A attack-feel correction works:
+  - attacks show a brief readable wind-up before firing
+  - muzzle flash appears clearly at the attacker
+  - beam or blast timing is easier to follow
+  - impact spark reads clearly on the target
+  - damage numbers are easier to notice
+  - hit targets react more clearly instead of feeling static
 
 ## Resources Needed Soon
 

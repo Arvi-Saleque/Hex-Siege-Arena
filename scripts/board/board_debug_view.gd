@@ -366,7 +366,7 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 			pass
 
 	for event_item: GameEvent in events:
-		_apply_event_feedback(current_state, event_item)
+		_apply_event_feedback(previous_state, current_state, action, event_item)
 
 	queue_redraw()
 
@@ -385,8 +385,8 @@ func get_feedback_hold_seconds(action: ActionData, previous_state: GameState = n
 			if previous_state != null:
 				var attacker: TankData = previous_state.get_tank(action.actor_id)
 				if attacker != null and attacker.tank_type == GameTypes.TankType.KTANK:
-					return 0.82
-			return 0.68
+					return 0.96
+			return 0.84
 		GameTypes.ActionType.PASS:
 			return 0.2
 		_:
@@ -558,6 +558,8 @@ func _draw_tanks() -> void:
 func _draw_effects() -> void:
 	var font: Font = BOARD_FONT if BOARD_FONT != null else ThemeDB.fallback_font
 	for beam: Dictionary in _beam_effects:
+		if _effect_float(beam, "delay", 0.0) > 0.0:
+			continue
 		var ratio: float = _effect_float(beam, "time_left", 0.0) / maxf(_effect_float(beam, "duration", 1.0), 0.001)
 		var beam_color: Color = _effect_color(beam, "color", Color.WHITE)
 		beam_color.a = 0.15 + 0.85 * ratio
@@ -568,6 +570,8 @@ func _draw_effects() -> void:
 		draw_circle(beam_end + _shake_offset, 4.0 + 6.0 * ratio, beam_color)
 
 	for ring: Dictionary in _ring_effects:
+		if _effect_float(ring, "delay", 0.0) > 0.0:
+			continue
 		var ratio: float = _effect_float(ring, "time_left", 0.0) / maxf(_effect_float(ring, "duration", 1.0), 0.001)
 		var ring_color: Color = _effect_color(ring, "color", Color.WHITE)
 		ring_color.a = 0.1 + 0.7 * ratio
@@ -578,12 +582,16 @@ func _draw_effects() -> void:
 		draw_arc(ring_center, radius, 0.0, TAU, 42, ring_color, 2.4, true)
 
 	for flash: Dictionary in _flash_effects:
+		if _effect_float(flash, "delay", 0.0) > 0.0:
+			continue
 		var ratio: float = _effect_float(flash, "time_left", 0.0) / maxf(_effect_float(flash, "duration", 1.0), 0.001)
 		var flash_color: Color = _effect_color(flash, "color", Color.WHITE)
 		flash_color.a = 0.08 + 0.45 * ratio
 		draw_circle(_effect_vec2(flash, "center", Vector2.ZERO) + _shake_offset, _effect_float(flash, "radius", 16.0) * (1.0 + 0.25 * (1.0 - ratio)), flash_color)
 
 	for sprite_fx: Dictionary in _sprite_effects:
+		if _effect_float(sprite_fx, "delay", 0.0) > 0.0:
+			continue
 		var ratio: float = _effect_float(sprite_fx, "time_left", 0.0) / maxf(_effect_float(sprite_fx, "duration", 1.0), 0.001)
 		var texture: Texture2D = sprite_fx.get("texture", null) as Texture2D
 		if texture == null:
@@ -602,12 +610,17 @@ func _draw_effects() -> void:
 
 	if font != null:
 		for floater: Dictionary in _floating_texts:
+			if _effect_float(floater, "delay", 0.0) > 0.0:
+				continue
 			var ratio: float = _effect_float(floater, "time_left", 0.0) / maxf(_effect_float(floater, "duration", 1.0), 0.001)
 			var text_color: Color = _effect_color(floater, "color", Color.WHITE)
 			text_color.a = 0.15 + 0.85 * ratio
 			var drift: float = (1.0 - ratio) * 18.0
 			var position: Vector2 = _effect_vec2(floater, "center", Vector2.ZERO) + Vector2(-10, -18 - drift) + _shake_offset
-			draw_string(font, position, _effect_string(floater, "text", ""), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 16, text_color)
+			var font_size: int = int(_effect_float(floater, "font_size", 16.0))
+			var shadow_color: Color = Color(0.04, 0.06, 0.1, text_color.a * 0.9)
+			draw_string(font, position + Vector2(1, 2), _effect_string(floater, "text", ""), HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, shadow_color)
+			draw_string(font, position, _effect_string(floater, "text", ""), HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, text_color)
 
 
 func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2Array, fill: Color) -> void:
@@ -1022,6 +1035,13 @@ func _process_effects(delta: float) -> void:
 func _tick_effect_array(effect_array: Array[Dictionary], delta: float) -> void:
 	for index in range(effect_array.size() - 1, -1, -1):
 		var effect: Dictionary = effect_array[index]
+		var delay_remaining: float = _effect_float(effect, "delay", 0.0)
+		if delay_remaining > 0.0:
+			delay_remaining -= delta
+			effect["delay"] = delay_remaining
+			if delay_remaining > 0.0:
+				effect_array[index] = effect
+				continue
 		effect["time_left"] = _effect_float(effect, "time_left", 0.0) - delta
 		if _effect_float(effect, "time_left", 0.0) <= 0.0:
 			effect_array.remove_at(index)
@@ -1070,26 +1090,55 @@ func _tank_draw_rotation(tank: TankData) -> float:
 	return base_angle
 
 
-func _apply_event_feedback(current_state: GameState, event_item: GameEvent) -> void:
+func _apply_event_feedback(previous_state: GameState, current_state: GameState, action: ActionData, event_item: GameEvent) -> void:
 	match event_item.event_name:
 		"hit_tank":
 			var hit_coord: HexCoord = HexCoord.from_key(str(event_item.payload.get("coord", "")))
 			var hit_center: Vector2 = hit_coord.to_world_flat(hex_size)
 			var damage: int = int(event_item.payload.get("damage", 0))
+			var target_id: String = str(event_item.payload.get("target", ""))
 			_flash_effects.append({
 				"center": hit_center,
-				"color": Color("ffb0b8"),
-				"radius": 18.0,
-				"time_left": 0.36,
-				"duration": 0.36,
+				"color": Color("ffc7cf"),
+				"radius": 24.0,
+				"time_left": 0.42,
+				"duration": 0.42,
+			})
+			_sprite_effects.append({
+				"texture": EFFECT_SPARK,
+				"center": hit_center,
+				"color": Color(1.0, 0.88, 0.74, 0.82),
+				"scale_start": 0.22,
+				"scale_end": 0.42,
+				"time_left": 0.28,
+				"duration": 0.28,
+				"drift": Vector2(0, -8),
 			})
 			_floating_texts.append({
 				"center": hit_center,
 				"text": "-%d" % damage,
-				"color": Color("fff1f3"),
-				"time_left": 0.9,
-				"duration": 0.9,
+				"color": Color("fff3d9"),
+				"time_left": 1.05,
+				"duration": 1.05,
+				"font_size": 22,
+				"delay": 0.04,
 			})
+			var target_tank: TankData = current_state.get_tank(target_id)
+			if target_tank != null:
+				var attacker: TankData = previous_state.get_tank(str(action.actor_id))
+				var recoil_dir: Vector2 = Vector2.ZERO
+				if attacker != null:
+					recoil_dir = (hit_center - attacker.position.to_world_flat(hex_size)).normalized()
+				if recoil_dir == Vector2.ZERO:
+					recoil_dir = Vector2(0, -1)
+				_tank_motion_overrides[target_id] = {
+					"start": hit_center + recoil_dir * 8.0,
+					"end": hit_center,
+					"start_angle": target_tank.facing_angle + 0.04,
+					"end_angle": target_tank.facing_angle,
+					"time_left": 0.16,
+					"duration": 0.16,
+				}
 			_trigger_shake(0.26)
 		"hit_cell":
 			var cell_coord: HexCoord = HexCoord.from_key(str(event_item.payload.get("coord", "")))
@@ -1193,6 +1242,28 @@ func _play_attack_effect(previous_state: GameState, action: ActionData) -> void:
 	if attacker == null:
 		return
 	var source_center: Vector2 = attacker.position.to_world_flat(hex_size)
+	var attack_dir: Vector2 = Vector2.UP
+	if action.direction >= 0 and action.direction < HexCoord.DIRECTIONS.size():
+		var neighbor_center: Vector2 = attacker.position.neighbor(action.direction).to_world_flat(hex_size)
+		attack_dir = (neighbor_center - source_center).normalized()
+	if attack_dir == Vector2.ZERO:
+		attack_dir = Vector2.UP
+	_tank_motion_overrides[action.actor_id] = {
+		"start": source_center - attack_dir * 6.0,
+		"end": source_center,
+		"start_angle": attacker.facing_angle - 0.03,
+		"end_angle": attacker.facing_angle,
+		"time_left": 0.14,
+		"duration": 0.14,
+	}
+	_ring_effects.append({
+		"center": source_center,
+		"color": Color(1.0, 1.0, 1.0, 0.18) if attacker.tank_type == GameTypes.TankType.QTANK else Color(1.0, 0.78, 0.48, 0.2),
+		"radius": 18.0,
+		"time_left": 0.12,
+		"duration": 0.12,
+		"filled": true,
+	})
 	if attacker.tank_type == GameTypes.TankType.QTANK:
 		var target_center: Vector2 = source_center
 		for step_coord: HexCoord in attacker.position.raycast(action.direction, previous_state.board.rings * 3):
@@ -1205,36 +1276,40 @@ func _play_attack_effect(previous_state: GameState, action: ActionData) -> void:
 			"start": source_center,
 			"end": target_center,
 			"color": Color("7ef3ff"),
-			"width": 5.0,
-			"time_left": 0.34,
-			"duration": 0.34,
+			"width": 6.8,
+			"time_left": 0.22,
+			"duration": 0.22,
+			"delay": 0.1,
 		})
 		_sprite_effects.append({
 			"texture": EFFECT_MUZZLE,
 			"center": source_center,
 			"color": Color(0.66, 0.96, 1.0, 0.72),
-			"scale_start": 0.16,
-			"scale_end": 0.28,
+			"scale_start": 0.24,
+			"scale_end": 0.38,
 			"rotation": attacker.facing_angle,
-			"time_left": 0.18,
-			"duration": 0.18,
+			"time_left": 0.16,
+			"duration": 0.16,
+			"delay": 0.08,
 		})
 		_sprite_effects.append({
 			"texture": EFFECT_SPARK,
 			"center": target_center,
 			"color": Color(0.84, 1.0, 1.0, 0.74),
-			"scale_start": 0.18,
-			"scale_end": 0.32,
-			"time_left": 0.28,
-			"duration": 0.28,
+			"scale_start": 0.26,
+			"scale_end": 0.46,
+			"time_left": 0.24,
+			"duration": 0.24,
+			"delay": 0.11,
 			"drift": Vector2(0, -6),
 		})
 		_ring_effects.append({
 			"center": target_center,
 			"color": Color("b7ffff"),
-			"radius": 18.0,
-			"time_left": 0.44,
-			"duration": 0.44,
+			"radius": 22.0,
+			"time_left": 0.28,
+			"duration": 0.28,
+			"delay": 0.11,
 			"filled": false,
 		})
 		_trigger_shake(0.22)
@@ -1243,19 +1318,21 @@ func _play_attack_effect(previous_state: GameState, action: ActionData) -> void:
 			"center": source_center,
 			"color": Color("ffb46f"),
 			"radius": 26.0,
-			"time_left": 0.5,
-			"duration": 0.5,
+			"time_left": 0.46,
+			"duration": 0.46,
+			"delay": 0.08,
 			"filled": true,
 		})
 		_sprite_effects.append({
 			"texture": EFFECT_MUZZLE,
 			"center": source_center,
 			"color": Color(1.0, 0.72, 0.42, 0.76),
-			"scale_start": 0.18,
-			"scale_end": 0.3,
+			"scale_start": 0.24,
+			"scale_end": 0.4,
 			"rotation": attacker.facing_angle,
-			"time_left": 0.2,
-			"duration": 0.2,
+			"time_left": 0.18,
+			"duration": 0.18,
+			"delay": 0.08,
 		})
 		for neighbor_coord: HexCoord in attacker.position.neighbors():
 			if previous_state.board.has_cell(neighbor_coord):
@@ -1263,18 +1340,20 @@ func _play_attack_effect(previous_state: GameState, action: ActionData) -> void:
 				_flash_effects.append({
 					"center": neighbor_center,
 					"color": Color("ff936d"),
-					"radius": 12.0,
-					"time_left": 0.38,
-					"duration": 0.38,
+					"radius": 16.0,
+					"time_left": 0.28,
+					"duration": 0.28,
+					"delay": 0.11,
 				})
 				_sprite_effects.append({
 					"texture": EFFECT_SPARK,
 					"center": neighbor_center,
 					"color": Color(1.0, 0.66, 0.48, 0.7),
-					"scale_start": 0.16,
-					"scale_end": 0.3,
-					"time_left": 0.28,
-					"duration": 0.28,
+					"scale_start": 0.24,
+					"scale_end": 0.42,
+					"time_left": 0.24,
+					"duration": 0.24,
+					"delay": 0.11,
 					"drift": Vector2(0, -4),
 				})
 		_trigger_shake(0.34)
