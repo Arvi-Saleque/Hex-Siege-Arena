@@ -397,6 +397,11 @@
   - muzzle flashes, beams, and impact sparks land in a clearer timed order
   - damage popups are larger and more readable
   - hit targets now get a clearer impact flash and small recoil response
+- Applied a focused Step 4B target-reaction correction:
+  - hit targets now get a brighter direct flash on the unit itself
+  - target recoil is stronger and lasts slightly longer
+  - impact burst and hit ring are easier to read
+  - damage numbers are larger and easier to notice over the battlefield
 
 ## Next Items
 
@@ -606,6 +611,11 @@
   - impact spark reads clearly on the target
   - damage numbers are easier to notice
   - hit targets react more clearly instead of feeling static
+- Confirm the Step 4B target-reaction correction works:
+  - hit targets flash clearly for a brief moment
+  - hit targets recoil visibly before settling back
+  - impact spark/burst reads clearly on contact
+  - damage numbers stand out immediately when damage lands
 
 ## Resources Needed Soon
 

@@ -73,6 +73,7 @@ var _flash_effects: Array[Dictionary] = []
 var _sprite_effects: Array[Dictionary] = []
 var _floating_texts: Array[Dictionary] = []
 var _tank_motion_overrides: Dictionary = {}
+var _tank_hit_reactions: Dictionary = {}
 var _shake_timer: float = 0.0
 var _shake_strength: float = 0.0
 var _shake_offset: Vector2 = Vector2.ZERO
@@ -522,12 +523,16 @@ func _draw_tanks() -> void:
 		var player_color: Color = _player_primary_color(tank.owner_id)
 		var accent_color: Color = _player_accent_color(tank.owner_id)
 		var is_selected: bool = tank.actor_id() == selected_actor_id
+		var hit_flash_alpha: float = _tank_hit_flash_alpha(tank.actor_id())
 		var shadow_size: Vector2 = Vector2(21, 8) if not is_selected else Vector2(24, 9)
 		draw_colored_polygon(_ellipse_points(center + Vector2(0, 17), shadow_size, 20), Color(0.03, 0.05, 0.08, 0.45 if not is_selected else 0.58))
 		draw_circle(center + Vector2(0, 7), 14.0, Color(player_color.r, player_color.g, player_color.b, 0.08 if not is_selected else 0.16))
 		draw_arc(center + Vector2(0, 7), 18.0, 0.0, TAU, 40, Color(player_color.r, player_color.g, player_color.b, 0.54), 2.2, true)
 		if tank.owner_id == game_state.current_player:
 			draw_arc(center + Vector2(0, 7), 22.0, 0.0, TAU, 40, Color(player_color.r, player_color.g, player_color.b, 0.78), 2.5, true)
+		if hit_flash_alpha > 0.0:
+			draw_circle(center + Vector2(0, 5), 18.0, Color(1.0, 1.0, 1.0, hit_flash_alpha))
+			draw_arc(center + Vector2(0, 5), 21.0, 0.0, TAU, 36, Color(1.0, 0.92, 0.82, hit_flash_alpha * 0.95), 2.4, true)
 		_draw_tank_sprite(center, tank, tank_rotation)
 		if is_selected:
 			var pulse_radius: float = 25.0 + (1.8 if AppState.reduced_motion else 3.8 * (0.5 + 0.5 * sin(_pulse_time * 2.2)))
@@ -1018,6 +1023,7 @@ func _process_effects(delta: float) -> void:
 	_tick_effect_array(_sprite_effects, delta)
 	_tick_effect_array(_floating_texts, delta)
 	_tick_motion_overrides(delta)
+	_tick_hit_reactions(delta)
 	if AppState.reduced_motion:
 		_shake_timer = 0.0
 		_shake_strength = 0.0
@@ -1059,6 +1065,16 @@ func _tick_motion_overrides(delta: float) -> void:
 			_tank_motion_overrides[actor_id] = motion
 
 
+func _tick_hit_reactions(delta: float) -> void:
+	for actor_id: String in _tank_hit_reactions.keys():
+		var reaction: Dictionary = _tank_hit_reactions[actor_id]
+		reaction["time_left"] = _effect_float(reaction, "time_left", 0.0) - delta
+		if _effect_float(reaction, "time_left", 0.0) <= 0.0:
+			_tank_hit_reactions.erase(actor_id)
+		else:
+			_tank_hit_reactions[actor_id] = reaction
+
+
 func _motion_override_center(actor_id: String, fallback_center: Vector2) -> Vector2:
 	var motion: Dictionary = _tank_motion_overrides.get(actor_id, {})
 	if motion.is_empty():
@@ -1083,6 +1099,16 @@ func _motion_override_angle(actor_id: String, fallback_angle: float) -> float:
 	return lerp_angle(start_angle, end_angle, eased_progress)
 
 
+func _tank_hit_flash_alpha(actor_id: String) -> float:
+	var reaction: Dictionary = _tank_hit_reactions.get(actor_id, {})
+	if reaction.is_empty():
+		return 0.0
+	var duration: float = maxf(_effect_float(reaction, "duration", 1.0), 0.001)
+	var time_left: float = clampf(_effect_float(reaction, "time_left", 0.0), 0.0, duration)
+	var progress: float = 1.0 - (time_left / duration)
+	return sin(progress * PI) * 0.32
+
+
 func _tank_draw_rotation(tank: TankData) -> float:
 	var base_angle: float = tank.facing_angle + PI * 0.5
 	if _tank_motion_overrides.has(tank.actor_id()):
@@ -1099,29 +1125,37 @@ func _apply_event_feedback(previous_state: GameState, current_state: GameState, 
 			var target_id: String = str(event_item.payload.get("target", ""))
 			_flash_effects.append({
 				"center": hit_center,
-				"color": Color("ffc7cf"),
-				"radius": 24.0,
-				"time_left": 0.42,
-				"duration": 0.42,
+				"color": Color("fff5ef"),
+				"radius": 28.0,
+				"time_left": 0.46,
+				"duration": 0.46,
 			})
 			_sprite_effects.append({
 				"texture": EFFECT_SPARK,
 				"center": hit_center,
-				"color": Color(1.0, 0.88, 0.74, 0.82),
-				"scale_start": 0.22,
-				"scale_end": 0.42,
-				"time_left": 0.28,
-				"duration": 0.28,
-				"drift": Vector2(0, -8),
+				"color": Color(1.0, 0.9, 0.76, 0.9),
+				"scale_start": 0.28,
+				"scale_end": 0.52,
+				"time_left": 0.32,
+				"duration": 0.32,
+				"drift": Vector2(0, -10),
+			})
+			_ring_effects.append({
+				"center": hit_center,
+				"color": Color("fff2c6"),
+				"radius": 22.0,
+				"time_left": 0.24,
+				"duration": 0.24,
+				"filled": false,
 			})
 			_floating_texts.append({
 				"center": hit_center,
 				"text": "-%d" % damage,
 				"color": Color("fff3d9"),
-				"time_left": 1.05,
-				"duration": 1.05,
-				"font_size": 22,
-				"delay": 0.04,
+				"time_left": 1.12,
+				"duration": 1.12,
+				"font_size": 24,
+				"delay": 0.05,
 			})
 			var target_tank: TankData = current_state.get_tank(target_id)
 			if target_tank != null:
@@ -1131,15 +1165,19 @@ func _apply_event_feedback(previous_state: GameState, current_state: GameState, 
 					recoil_dir = (hit_center - attacker.position.to_world_flat(hex_size)).normalized()
 				if recoil_dir == Vector2.ZERO:
 					recoil_dir = Vector2(0, -1)
-				_tank_motion_overrides[target_id] = {
-					"start": hit_center + recoil_dir * 8.0,
-					"end": hit_center,
-					"start_angle": target_tank.facing_angle + 0.04,
-					"end_angle": target_tank.facing_angle,
-					"time_left": 0.16,
-					"duration": 0.16,
+				_tank_hit_reactions[target_id] = {
+					"time_left": 0.22,
+					"duration": 0.22,
 				}
-			_trigger_shake(0.26)
+				_tank_motion_overrides[target_id] = {
+					"start": hit_center + recoil_dir * 12.0,
+					"end": hit_center,
+					"start_angle": target_tank.facing_angle + 0.07,
+					"end_angle": target_tank.facing_angle,
+					"time_left": 0.22,
+					"duration": 0.22,
+				}
+			_trigger_shake(0.3)
 		"hit_cell":
 			var cell_coord: HexCoord = HexCoord.from_key(str(event_item.payload.get("coord", "")))
 			var cell_center: Vector2 = cell_coord.to_world_flat(hex_size)
@@ -1373,6 +1411,7 @@ func clear_transient_effects() -> void:
 	_sprite_effects.clear()
 	_floating_texts.clear()
 	_tank_motion_overrides.clear()
+	_tank_hit_reactions.clear()
 	_shake_timer = 0.0
 	_shake_strength = 0.0
 	_shake_offset = Vector2.ZERO
