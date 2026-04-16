@@ -486,6 +486,13 @@
 - Confirm Settings now matches the menu/match visual language
 - Confirm Quick Start Guide feels more like a finished product page than a plain text scene
 - Confirm Replay Viewer feels polished, readable, and uses a larger board preview
+- Confirm the Step 2 HUD skin is applied consistently:
+  - the top HUD uses the new exported sci-fi panel skin
+  - the bottom action bar uses the new skinned button family
+  - the right rail cards use the same panel family and shorter section titles
+  - Rajdhani is visible on headings, numbers, and action labels
+  - Inter is visible on body copy, logs, and descriptive text
+  - the new 9-slice panels and buttons scale cleanly in fullscreen without stretched corners
 
 ## Resources Needed Soon
 
@@ -505,3 +512,4 @@
 - The new combat VFX are code-drawn and intentionally lightweight; final particles and authored animation can replace them later
 - The current audio selection is a curated first-pass mix of Kenney and custom files, so some sounds may still be swapped later for stronger cohesion
 - The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only
+- The Step 2 UI skin uses curated exported pieces from the Kenney space expansion pack; if a different sci-fi family is preferred later, swapping the exported textures should be straightforward

@@ -3,10 +3,18 @@ extends Control
 const MENU_SCENE := "res://scenes/menu/main_menu.tscn"
 const AUTOPLAY_SPEED_LABELS := ["Slow", "Normal", "Fast"]
 const AUTOPLAY_SPEED_SECONDS := [0.9, 0.45, 0.15]
-const FONT_REGULAR := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Regular.ttf")
-const FONT_MEDIUM := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Medium.ttf")
-const FONT_SEMIBOLD := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-SemiBold.ttf")
-const FONT_BOLD := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Bold.ttf")
+const FONT_REGULAR := preload("res://assets/ui/fonts/inter-regular.ttf")
+const FONT_MEDIUM := preload("res://assets/ui/fonts/inter-medium.ttf")
+const FONT_SEMIBOLD := preload("res://assets/ui/fonts/rajdhani-semibold.ttf")
+const FONT_BOLD := preload("res://assets/ui/fonts/rajdhani-bold.ttf")
+const TEXTURE_PANEL_MAIN := preload("res://assets/ui/exported/panel_main.png")
+const TEXTURE_BUTTON_PRIMARY := preload("res://assets/ui/exported/button_primary.png")
+const TEXTURE_BUTTON_PRIMARY_HOVER := preload("res://assets/ui/exported/button_primary_hover.png")
+const TEXTURE_BUTTON_PRIMARY_PRESSED := preload("res://assets/ui/exported/button_primary_pressed.png")
+const TEXTURE_BUTTON_EMPHASIS := preload("res://assets/ui/exported/button_emphasis.png")
+const TEXTURE_BUTTON_DISABLED := preload("res://assets/ui/exported/button_disabled.png")
+const TEXTURE_BADGE_SMALL := preload("res://assets/ui/exported/badge_small.png")
+const TEXTURE_DIVIDER := preload("res://assets/ui/exported/divider.png")
 const COLOR_BG := Color("09111c")
 const COLOR_SURFACE := Color("111c2b")
 const COLOR_SURFACE_ALT := Color("162335")
@@ -101,7 +109,7 @@ func _build_layout() -> void:
 	root_margin.add_child(root_layout)
 
 	var top_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
-	top_panel.custom_minimum_size = Vector2(0, 74)
+	top_panel.custom_minimum_size = Vector2(0, 80)
 	root_layout.add_child(top_panel)
 	var top_margin := _wrap_panel_content(top_panel, 18, 12)
 	var top_bar := HBoxContainer.new()
@@ -120,7 +128,7 @@ func _build_layout() -> void:
 
 	_objective_label = Label.new()
 	_objective_label.add_theme_font_override("font", FONT_MEDIUM)
-	_objective_label.add_theme_font_size_override("font_size", 13)
+	_objective_label.add_theme_font_size_override("font_size", 14)
 	_objective_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	top_left.add_child(_objective_label)
 
@@ -129,7 +137,7 @@ func _build_layout() -> void:
 	_score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_score_label.custom_minimum_size = Vector2(180, 0)
 	_score_label.add_theme_font_override("font", FONT_SEMIBOLD)
-	_score_label.add_theme_font_size_override("font_size", 16)
+	_score_label.add_theme_font_size_override("font_size", 20)
 	_score_label.add_theme_color_override("font_color", Color("d7d3c6"))
 	top_bar.add_child(_score_label)
 
@@ -142,13 +150,13 @@ func _build_layout() -> void:
 	_hp_summary_label = Label.new()
 	_hp_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_hp_summary_label.add_theme_font_override("font", FONT_SEMIBOLD)
-	_hp_summary_label.add_theme_font_size_override("font_size", 14)
+	_hp_summary_label.add_theme_font_size_override("font_size", 16)
 	top_right.add_child(_hp_summary_label)
 
 	_units_label = Label.new()
 	_units_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_units_label.add_theme_font_override("font", FONT_MEDIUM)
-	_units_label.add_theme_font_size_override("font_size", 13)
+	_units_label.add_theme_font_size_override("font_size", 14)
 	_units_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	top_right.add_child(_units_label)
 
@@ -202,10 +210,11 @@ func _build_layout() -> void:
 
 	var selected_title := _make_section_title("Selected Unit")
 	info_layout.add_child(selected_title)
+	info_layout.add_child(_make_section_divider())
 
 	_selected_model_name_label = Label.new()
-	_selected_model_name_label.add_theme_font_override("font", FONT_SEMIBOLD)
-	_selected_model_name_label.add_theme_font_size_override("font_size", 16)
+	_selected_model_name_label.add_theme_font_override("font", FONT_BOLD)
+	_selected_model_name_label.add_theme_font_size_override("font_size", 20)
 	info_layout.add_child(_selected_model_name_label)
 
 	_selected_model_role_label = Label.new()
@@ -225,6 +234,7 @@ func _build_layout() -> void:
 	objective_layout.add_theme_constant_override("separation", 8)
 	objective_margin.add_child(objective_layout)
 	objective_layout.add_child(_make_section_title("Objective"))
+	objective_layout.add_child(_make_section_divider())
 	_preview_label = _make_body_label()
 	objective_layout.add_child(_preview_label)
 
@@ -236,7 +246,8 @@ func _build_layout() -> void:
 	log_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	log_layout.add_theme_constant_override("separation", 10)
 	log_margin.add_child(log_layout)
-	log_layout.add_child(_make_section_title("Combat Log"))
+	log_layout.add_child(_make_section_title("Recent Events"))
+	log_layout.add_child(_make_section_divider())
 
 	_event_log = RichTextLabel.new()
 	_event_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -370,24 +381,24 @@ func _build_layout() -> void:
 	bottom_row.add_child(controls_row)
 
 	_move_button = _make_action_button("Move", COLOR_GREEN)
-	_move_button.custom_minimum_size = Vector2(146, 48)
+	_move_button.custom_minimum_size = Vector2(154, 52)
 	_move_button.pressed.connect(_on_move_mode_pressed)
 	_wire_button_audio(_move_button)
 	controls_row.add_child(_move_button)
 
 	_attack_button = _make_action_button("Attack", COLOR_ATTACK)
-	_attack_button.custom_minimum_size = Vector2(146, 48)
+	_attack_button.custom_minimum_size = Vector2(154, 52)
 	_attack_button.pressed.connect(_on_attack_mode_pressed)
 	_wire_button_audio(_attack_button)
 	controls_row.add_child(_attack_button)
 
 	_ability_button = _make_action_button("Ability", COLOR_GOLD)
-	_ability_button.custom_minimum_size = Vector2(146, 48)
+	_ability_button.custom_minimum_size = Vector2(154, 52)
 	_ability_button.disabled = true
 	controls_row.add_child(_ability_button)
 
 	_pass_button = _make_action_button("End Turn", COLOR_GOLD)
-	_pass_button.custom_minimum_size = Vector2(158, 48)
+	_pass_button.custom_minimum_size = Vector2(172, 52)
 	_pass_button.pressed.connect(_on_pass_pressed)
 	_wire_button_audio(_pass_button)
 	controls_row.add_child(_pass_button)
@@ -428,25 +439,14 @@ func _build_match_theme() -> Theme:
 	match_theme.set_color("default_color", "RichTextLabel", COLOR_TEXT)
 	match_theme.set_color("font_color", "RichTextLabel", COLOR_TEXT)
 
-	var item_list_style := StyleBoxFlat.new()
-	item_list_style.bg_color = COLOR_SURFACE
-	item_list_style.corner_radius_top_left = 12
-	item_list_style.corner_radius_top_right = 12
-	item_list_style.corner_radius_bottom_left = 12
-	item_list_style.corner_radius_bottom_right = 12
-	item_list_style.border_width_left = 1
-	item_list_style.border_width_top = 1
-	item_list_style.border_width_right = 1
-	item_list_style.border_width_bottom = 1
-	item_list_style.border_color = COLOR_BORDER
+	var item_list_style := _panel_style(COLOR_BORDER, COLOR_SURFACE) as StyleBoxTexture
 	item_list_style.content_margin_left = 10.0
 	item_list_style.content_margin_top = 8.0
 	item_list_style.content_margin_right = 10.0
 	item_list_style.content_margin_bottom = 8.0
 	match_theme.set_stylebox("panel", "ItemList", item_list_style)
 
-	var item_focus: StyleBoxFlat = item_list_style.duplicate() as StyleBoxFlat
-	item_focus.border_color = COLOR_GOLD
+	var item_focus: StyleBoxTexture = item_list_style.duplicate() as StyleBoxTexture
 	match_theme.set_stylebox("focus", "ItemList", item_focus)
 
 	return match_theme
@@ -468,80 +468,79 @@ func _wrap_panel_content(panel: PanelContainer, horizontal_margin: int, vertical
 	return margin
 
 
-func _panel_style(accent_color: Color, fill_color: Color = COLOR_SURFACE) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = fill_color
-	style.corner_radius_top_left = 14
-	style.corner_radius_top_right = 14
-	style.corner_radius_bottom_left = 14
-	style.corner_radius_bottom_right = 14
-	style.border_width_left = 1
-	style.border_width_top = 1
-	style.border_width_right = 1
-	style.border_width_bottom = 1
-	style.border_color = accent_color.lerp(COLOR_BORDER, 0.56)
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.22)
-	style.shadow_size = 8
-	style.content_margin_left = 2.0
-	style.content_margin_top = 2.0
-	style.content_margin_right = 2.0
-	style.content_margin_bottom = 2.0
+func _panel_style(_accent_color: Color, _fill_color: Color = COLOR_SURFACE) -> StyleBoxTexture:
+	var style := StyleBoxTexture.new()
+	style.texture = TEXTURE_PANEL_MAIN
+	style.texture_margin_left = 26.0
+	style.texture_margin_top = 24.0
+	style.texture_margin_right = 26.0
+	style.texture_margin_bottom = 24.0
+	style.content_margin_left = 4.0
+	style.content_margin_top = 4.0
+	style.content_margin_right = 4.0
+	style.content_margin_bottom = 4.0
 	return style
 
 
 func _make_section_title(title_text: String) -> Label:
 	var label := Label.new()
-	label.text = title_text
+	label.text = title_text.to_upper()
 	label.add_theme_font_override("font", FONT_SEMIBOLD)
-	label.add_theme_font_size_override("font_size", 13)
-	label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	label.add_theme_font_size_override("font_size", 15)
+	label.add_theme_color_override("font_color", Color("9ec8ff"))
 	return label
+
+
+func _make_section_divider() -> TextureRect:
+	var divider := TextureRect.new()
+	divider.texture = TEXTURE_DIVIDER
+	divider.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	divider.stretch_mode = TextureRect.STRETCH_SCALE
+	divider.custom_minimum_size = Vector2(0, 6)
+	divider.modulate = Color(0.72, 0.83, 1.0, 0.34)
+	return divider
 
 
 func _make_body_label() -> Label:
 	var label := Label.new()
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_override("font", FONT_REGULAR)
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", 15)
 	label.add_theme_color_override("font_color", COLOR_TEXT)
 	return label
 
 
 func _make_action_button(text_value: String, accent_color: Color) -> Button:
 	var button := Button.new()
-	button.text = text_value
+	var use_emphasis := text_value == "End Turn"
+	button.text = text_value.to_upper()
 	button.custom_minimum_size = Vector2(0, 40)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_stylebox_override("normal", _button_style(accent_color, 0.16))
-	button.add_theme_stylebox_override("hover", _button_style(accent_color, 0.24))
-	button.add_theme_stylebox_override("pressed", _button_style(accent_color, 0.31))
-	button.add_theme_stylebox_override("disabled", _button_style(COLOR_BORDER, 0.04))
+	button.add_theme_stylebox_override("normal", _button_style(TEXTURE_BUTTON_EMPHASIS if use_emphasis else TEXTURE_BUTTON_PRIMARY))
+	button.add_theme_stylebox_override("hover", _button_style(TEXTURE_BUTTON_PRIMARY_HOVER if not use_emphasis else TEXTURE_BUTTON_EMPHASIS))
+	button.add_theme_stylebox_override("pressed", _button_style(TEXTURE_BUTTON_PRIMARY_PRESSED if not use_emphasis else TEXTURE_BUTTON_EMPHASIS))
+	button.add_theme_stylebox_override("disabled", _button_style(TEXTURE_BUTTON_DISABLED))
 	button.add_theme_font_override("font", FONT_SEMIBOLD)
-	button.add_theme_font_size_override("font_size", 14)
-	button.add_theme_color_override("font_color", Color.WHITE)
+	button.add_theme_font_size_override("font_size", 18)
+	button.add_theme_color_override("font_color", accent_color.lightened(0.18) if not use_emphasis else Color("fff5d8"))
+	button.add_theme_color_override("font_hover_color", Color.WHITE)
+	button.add_theme_color_override("font_pressed_color", Color.WHITE)
 	button.add_theme_color_override("font_disabled_color", COLOR_TEXT_MUTED)
 	return button
 
 
-func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(accent_color.r, accent_color.g, accent_color.b, fill_alpha)
-	style.corner_radius_top_left = 12
-	style.corner_radius_top_right = 12
-	style.corner_radius_bottom_left = 12
-	style.corner_radius_bottom_right = 12
-	style.border_width_left = 1
-	style.border_width_top = 1
-	style.border_width_right = 1
-	style.border_width_bottom = 1
-	style.border_color = accent_color
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.18)
-	style.shadow_size = 4
-	style.content_margin_left = 12.0
-	style.content_margin_top = 7.0
-	style.content_margin_right = 12.0
-	style.content_margin_bottom = 7.0
+func _button_style(texture: Texture2D) -> StyleBoxTexture:
+	var style := StyleBoxTexture.new()
+	style.texture = texture
+	style.texture_margin_left = 26.0
+	style.texture_margin_top = 24.0
+	style.texture_margin_right = 26.0
+	style.texture_margin_bottom = 24.0
+	style.content_margin_left = 20.0
+	style.content_margin_top = 10.0
+	style.content_margin_right = 20.0
+	style.content_margin_bottom = 10.0
 	return style
 
 
@@ -713,8 +712,8 @@ func _refresh_event_log() -> void:
 		var events: Array = turn_data.get("events", [])
 		for event_line: Variant in events:
 			lines.append("[color=#5d6f88]T%d[/color] [color=#%s]%s[/color]" % [turn_data.get("turn", 0), player_color, str(event_line)])
-	if lines.size() > 12:
-		lines = lines.slice(lines.size() - 12, lines.size())
+	if lines.size() > 6:
+		lines = lines.slice(lines.size() - 6, lines.size())
 
 	_event_log.text = "\n".join(lines)
 
