@@ -3,117 +3,260 @@ extends Control
 const MENU_SCENE := "res://scenes/menu/main_menu.tscn"
 const MATCH_SCENE := "res://scenes/match/match_root.tscn"
 const SETTINGS_SCENE := "res://scenes/settings/settings_root.tscn"
+const FONT_REGULAR := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Regular.ttf")
+const FONT_MEDIUM := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Medium.ttf")
+const FONT_SEMIBOLD := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-SemiBold.ttf")
+const FONT_BOLD := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Bold.ttf")
+const COLOR_BG := Color("09111c")
+const COLOR_SURFACE := Color("111c2b")
+const COLOR_SURFACE_ALT := Color("162335")
+const COLOR_BORDER := Color("2c3f59")
+const COLOR_TEXT := Color("edf4ff")
+const COLOR_TEXT_MUTED := Color("98adc7")
+const COLOR_GOLD := Color("f0c05e")
+const COLOR_P1 := Color("77b8ff")
+const COLOR_GREEN := Color("69dd8e")
+const COLOR_P2 := Color("ff8a76")
 
 
 func _ready() -> void:
 	AppState.apply_window_preferences(self)
 	AudioManager.play_menu_music()
+	theme = _build_theme()
 	_build_layout()
 
 
 func _build_layout() -> void:
 	var background := ColorRect.new()
-	background.color = Color("0f141d")
+	background.color = COLOR_BG
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
-	var root_margin := MarginContainer.new()
-	root_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root_margin.add_theme_constant_override("margin_left", 24)
-	root_margin.add_theme_constant_override("margin_top", 24)
-	root_margin.add_theme_constant_override("margin_right", 24)
-	root_margin.add_theme_constant_override("margin_bottom", 24)
-	add_child(root_margin)
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(scroll)
 
-	var layout := VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 16)
-	root_margin.add_child(layout)
+	var root_margin := MarginContainer.new()
+	root_margin.add_theme_constant_override("margin_left", 28)
+	root_margin.add_theme_constant_override("margin_top", 28)
+	root_margin.add_theme_constant_override("margin_right", 28)
+	root_margin.add_theme_constant_override("margin_bottom", 28)
+	scroll.add_child(root_margin)
+
+	var root_layout := VBoxContainer.new()
+	root_layout.add_theme_constant_override("separation", 20)
+	root_margin.add_child(root_layout)
+
+	var hero_panel := _make_panel_card(COLOR_GREEN, COLOR_SURFACE_ALT)
+	root_layout.add_child(hero_panel)
+	var hero_margin := _wrap_panel_content(hero_panel, 28, 24)
+	var hero_layout := HBoxContainer.new()
+	hero_layout.add_theme_constant_override("separation", 24)
+	hero_margin.add_child(hero_layout)
+
+	var hero_left := VBoxContainer.new()
+	hero_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hero_left.add_theme_constant_override("separation", 8)
+	hero_layout.add_child(hero_left)
+
+	var eyebrow := Label.new()
+	eyebrow.text = "QUICK START GUIDE"
+	eyebrow.add_theme_font_override("font", FONT_SEMIBOLD)
+	eyebrow.add_theme_font_size_override("font_size", 13)
+	eyebrow.add_theme_color_override("font_color", COLOR_GREEN)
+	hero_left.add_child(eyebrow)
 
 	var title := Label.new()
-	title.text = "Quick Start Guide"
-	title.add_theme_font_size_override("font_size", 34)
-	layout.add_child(title)
+	title.text = "Learn The Arena Fast"
+	title.add_theme_font_override("font", FONT_BOLD)
+	title.add_theme_font_size_override("font_size", 42)
+	hero_left.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "Use this page to understand the core rules before jumping into the arena."
+	subtitle.text = "Everything you need to understand the win conditions, tank roles, and best first checks before you launch a match."
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	subtitle.modulate = Color(0.8, 0.87, 0.94, 1.0)
-	layout.add_child(subtitle)
+	subtitle.add_theme_font_override("font", FONT_MEDIUM)
+	subtitle.add_theme_font_size_override("font_size", 17)
+	subtitle.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	hero_left.add_child(subtitle)
 
-	var content_panel := PanelContainer.new()
-	content_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_child(content_panel)
+	var hero_right := _make_panel_card(COLOR_GOLD, COLOR_SURFACE)
+	hero_right.custom_minimum_size = Vector2(320, 0)
+	hero_layout.add_child(hero_right)
+	var hero_right_margin := _wrap_panel_content(hero_right, 18, 16)
+	var hero_right_layout := VBoxContainer.new()
+	hero_right_layout.add_theme_constant_override("separation", 8)
+	hero_right_margin.add_child(hero_right_layout)
+	hero_right_layout.add_child(_make_section_heading("Recommended First Match"))
 
-	var content_margin := MarginContainer.new()
-	content_margin.add_theme_constant_override("margin_left", 22)
-	content_margin.add_theme_constant_override("margin_top", 22)
-	content_margin.add_theme_constant_override("margin_right", 22)
-	content_margin.add_theme_constant_override("margin_bottom", 22)
-	content_panel.add_child(content_margin)
+	var first_match_text := Label.new()
+	first_match_text.text = "Standard Arena\nP1 Minimax vs P2 MCTS\nAuto enabled\nReplay review after finish"
+	first_match_text.add_theme_font_override("font", FONT_MEDIUM)
+	first_match_text.add_theme_font_size_override("font_size", 15)
+	first_match_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hero_right_layout.add_child(first_match_text)
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_margin.add_child(scroll)
+	var content_grid := GridContainer.new()
+	content_grid.columns = 2
+	content_grid.add_theme_constant_override("h_separation", 18)
+	content_grid.add_theme_constant_override("v_separation", 18)
+	root_layout.add_child(content_grid)
 
-	var sections := VBoxContainer.new()
-	sections.add_theme_constant_override("separation", 18)
-	scroll.add_child(sections)
+	content_grid.add_child(_section("Objective", "You win by either destroying the enemy Ktank or moving your own Ktank onto the center hex.", COLOR_GOLD))
+	content_grid.add_child(_section("Turn Structure", "Each turn usually gives one action: Move, Attack, or End Turn. Bonus Move is the main exception and grants one extra action.", COLOR_P1))
+	content_grid.add_child(_section("Qtank", "Controls long straight lanes with laser fire, repositions quickly, and is strongest on clean boards or open pressure lines.", COLOR_GREEN))
+	content_grid.add_child(_section("Ktank", "Heavier objective tank with adjacent blast pressure. It is tougher, more valuable, and can win instantly by reaching center.", COLOR_P2))
+	content_grid.add_child(_section("Minimax", "Searches deeply through tactical futures and usually feels strongest in direct calculation-heavy positions.", COLOR_P1))
+	content_grid.add_child(_section("MCTS", "Explores many simulated futures and becomes more dangerous when the map is larger or noisier.", COLOR_GOLD))
 
-	sections.add_child(_section("Objective", "Win by doing either of these:\n- Destroy the enemy Ktank\n- Move your own Ktank onto the center hex"))
-	sections.add_child(_section("Unit Roles", "Qtank:\n- controls straight lines with a laser\n- can reposition quickly\n- excels at tactical pressure\n\nKtank:\n- tougher and more important to protect\n- attacks adjacent hexes with a blast\n- can win instantly by reaching center"))
-	sections.add_child(_section("Turn Structure", "Each turn usually allows one action:\n- Move\n- Attack\n- Pass\n\nThe main exception is Bonus Move, which grants an extra action for that turn."))
-	sections.add_child(_section("AI Personalities", "Minimax:\n- deeper tactical lookahead\n- usually stronger in direct calculation-heavy positions\n\nMCTS:\n- broader exploration through many simulated futures\n- often more flexible on larger or more open maps"))
-	sections.add_child(_section("Suggested First Checks", "1. Start with Standard or Labyrinth.\n2. Run Minimax vs MCTS with Auto enabled.\n3. Watch center pressure, Ktank safety, and power pickups.\n4. Use Replay Viewer after the match to review the action history."))
-	sections.add_child(_section("Accessibility", "In Settings you can now adjust:\n- UI Scale\n- Reduced Motion\n- High Contrast Highlights\n- Music / SFX / UI volume"))
+	var footer_panel := _make_panel_card(COLOR_BORDER.lightened(0.12), COLOR_SURFACE)
+	root_layout.add_child(footer_panel)
+	var footer_margin := _wrap_panel_content(footer_panel, 24, 20)
+	var footer_layout := VBoxContainer.new()
+	footer_layout.add_theme_constant_override("separation", 12)
+	footer_margin.add_child(footer_layout)
+	footer_layout.add_child(_make_section_heading("Suggested First Checks"))
+
+	var checklist := Label.new()
+	checklist.text = "1. Start a Standard match and watch center pressure.\n2. Switch to Labyrinth to feel the heavier tactical optimization.\n3. Open Replay Viewer after the match and review damage, control, and AI timing.\n4. Use Settings if you want bigger UI, reduced motion, or stronger contrast."
+	checklist.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	checklist.add_theme_font_override("font", FONT_MEDIUM)
+	checklist.add_theme_font_size_override("font_size", 15)
+	footer_layout.add_child(checklist)
 
 	var button_row := HBoxContainer.new()
 	button_row.add_theme_constant_override("separation", 12)
-	layout.add_child(button_row)
+	root_layout.add_child(button_row)
+	button_row.add_child(_make_button("Start Match", _on_start_match_pressed, COLOR_GOLD))
+	button_row.add_child(_make_button("Open Settings", _on_settings_pressed, COLOR_P1))
+	button_row.add_child(_make_button("Back To Menu", _on_back_pressed, COLOR_P2, true))
 
-	button_row.add_child(_make_button("Start Match", _on_start_match_pressed))
-	button_row.add_child(_make_button("Open Settings", _on_settings_pressed))
-	button_row.add_child(_make_button("Back To Menu", _on_back_pressed, true))
+
+func _build_theme() -> Theme:
+	var theme_data := Theme.new()
+	theme_data.default_font = FONT_REGULAR
+	theme_data.default_font_size = 16
+	theme_data.set_font("font", "Label", FONT_REGULAR)
+	theme_data.set_font("font", "Button", FONT_SEMIBOLD)
+	theme_data.set_color("font_color", "Label", COLOR_TEXT)
+	theme_data.set_color("font_color", "Button", COLOR_TEXT)
+	theme_data.set_color("font_hover_color", "Button", Color.WHITE)
+	theme_data.set_color("font_pressed_color", "Button", Color.WHITE)
+	theme_data.set_color("font_disabled_color", "Button", COLOR_TEXT_MUTED)
+	return theme_data
 
 
-func _section(title_text: String, body_text: String) -> Control:
-	var panel := PanelContainer.new()
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_top", 14)
-	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_bottom", 14)
-	panel.add_child(margin)
-
+func _section(title_text: String, body_text: String, accent_color: Color) -> Control:
+	var panel := _make_panel_card(accent_color, COLOR_SURFACE)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var margin := _wrap_panel_content(panel, 18, 16)
 	var layout := VBoxContainer.new()
 	layout.add_theme_constant_override("separation", 8)
 	margin.add_child(layout)
 
 	var title := Label.new()
 	title.text = title_text
+	title.add_theme_font_override("font", FONT_BOLD)
 	title.add_theme_font_size_override("font_size", 22)
 	layout.add_child(title)
 
 	var body := Label.new()
 	body.text = body_text
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_theme_font_override("font", FONT_MEDIUM)
+	body.add_theme_font_size_override("font_size", 15)
+	body.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	layout.add_child(body)
 
 	return panel
 
 
-func _make_button(text: String, callback: Callable, use_back_sound: bool = false) -> Button:
+func _make_button(text: String, callback: Callable, accent_color: Color, use_back_sound: bool = false) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(180, 48)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.focus_mode = Control.FOCUS_NONE
+	button.add_theme_stylebox_override("normal", _button_style(accent_color, 0.10))
+	button.add_theme_stylebox_override("hover", _button_style(accent_color, 0.18))
+	button.add_theme_stylebox_override("pressed", _button_style(accent_color, 0.24))
+	button.add_theme_stylebox_override("disabled", _button_style(COLOR_BORDER, 0.04))
+	button.add_theme_font_override("font", FONT_SEMIBOLD)
+	button.add_theme_font_size_override("font_size", 15)
+	button.add_theme_color_override("font_color", Color.WHITE)
 	button.mouse_entered.connect(AudioManager.play_ui_hover)
-	if use_back_sound:
-		button.pressed.connect(AudioManager.play_ui_back)
-	else:
-		button.pressed.connect(AudioManager.play_ui_click)
-	button.pressed.connect(callback)
+	button.pressed.connect(func() -> void:
+		if use_back_sound:
+			AudioManager.play_ui_back()
+		else:
+			AudioManager.play_ui_click()
+		callback.call()
+	)
 	return button
+
+
+func _make_panel_card(accent_color: Color, fill_color: Color) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style(accent_color, fill_color))
+	return panel
+
+
+func _wrap_panel_content(panel: PanelContainer, horizontal_margin: int, vertical_margin: int) -> MarginContainer:
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", horizontal_margin)
+	margin.add_theme_constant_override("margin_top", vertical_margin)
+	margin.add_theme_constant_override("margin_right", horizontal_margin)
+	margin.add_theme_constant_override("margin_bottom", vertical_margin)
+	panel.add_child(margin)
+	return margin
+
+
+func _panel_style(accent_color: Color, fill_color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill_color
+	style.corner_radius_top_left = 16
+	style.corner_radius_top_right = 16
+	style.corner_radius_bottom_left = 16
+	style.corner_radius_bottom_right = 16
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = accent_color.lerp(COLOR_BORDER, 0.58)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.24)
+	style.shadow_size = 10
+	return style
+
+
+func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(accent_color.r, accent_color.g, accent_color.b, fill_alpha)
+	style.corner_radius_top_left = 12
+	style.corner_radius_top_right = 12
+	style.corner_radius_bottom_left = 12
+	style.corner_radius_bottom_right = 12
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = accent_color
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.16)
+	style.shadow_size = 5
+	style.content_margin_left = 14.0
+	style.content_margin_top = 8.0
+	style.content_margin_right = 14.0
+	style.content_margin_bottom = 8.0
+	return style
+
+
+func _make_section_heading(text: String) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_override("font", FONT_SEMIBOLD)
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	return label
 
 
 func _on_start_match_pressed() -> void:

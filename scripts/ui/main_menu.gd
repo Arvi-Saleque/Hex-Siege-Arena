@@ -549,12 +549,12 @@ func _refresh_summary() -> void:
 		_replay_button.disabled = AppState.current_replay.turns.is_empty()
 
 	_summary_label.text = "[right][b]Build[/b] %s[/right]\n" % AppState.build_label.replace("-", " ")
-	_summary_label.text += "[right]P1 [color=#77b8ff]%s[/color]  •  P2 [color=#ff8a76]%s[/color][/right]\n" % [
+	_summary_label.text += "[right]P1 [color=#77b8ff]%s[/color]  |  P2 [color=#ff8a76]%s[/color][/right]\n" % [
 		_controller_label(config.player_one_ai.controller_type),
 		_controller_label(config.player_two_ai.controller_type),
 	]
-	_summary_label.text += "[right]Map [color=#f0c05e]%s[/color]  •  Replay %s[/right]\n" % [config.map_id.capitalize(), replay_ready]
-	_summary_label.text += "[right]UI %.2fx  •  Motion %s  •  Contrast %s[/right]" % [
+	_summary_label.text += "[right]Map [color=#f0c05e]%s[/color]  |  Replay %s[/right]\n" % [config.map_id.capitalize(), replay_ready]
+	_summary_label.text += "[right]UI %.2fx  |  Motion %s  |  Contrast %s[/right]" % [
 		AppState.ui_scale,
 		"Reduced" if AppState.reduced_motion else "Standard",
 		"High" if AppState.high_contrast_mode else "Standard",

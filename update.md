@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 16: Match scene professional HUD and hierarchy pass
+- Phase 17: Final cleanup and premium shell polish
 
 ## Completed Items
 
@@ -298,6 +298,11 @@
   - let the arena surface fill the available board frame
   - reduced the board’s internal safety padding so it scales up more aggressively
   - trimmed the right rail width so the battlefield gets more horizontal space
+- Rebuilt the remaining shell scenes into the same premium visual language:
+  - Settings now uses a hero header, grouped accessibility/audio cards, and stronger action buttons
+  - Quick Start Guide now uses structured learning cards instead of a plain text page
+  - Replay Viewer now uses a cleaner hero summary, polished controls, larger board preview, and safer detail scrolling
+- Promoted the project shell to Phase 17 / final cleanup and premium polish
   - redesigned the match HUD into a more product-style tactics layout with a hero header, cleaner card hierarchy, and a dedicated command deck
   - added a four-unit roster strip beneath the board so all four distinct tanks are visible in the main game scene
   - added a larger selected-unit showcase card that tracks the currently selected or active tank
@@ -457,6 +462,9 @@
 - Confirm the selected-unit panel wording now reads more like a finished game HUD than a debug tool
 - Confirm the board now fills more of the match screen in fullscreen
 - Confirm the arena frame has much less wasted empty space around the hex grid
+- Confirm Settings now matches the menu/match visual language
+- Confirm Quick Start Guide feels more like a finished product page than a plain text scene
+- Confirm Replay Viewer feels polished, readable, and uses a larger board preview
 
 ## Resources Needed Soon
 
