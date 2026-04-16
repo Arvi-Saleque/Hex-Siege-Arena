@@ -356,6 +356,11 @@
   - cleaned the Objective card into a shorter primary-goal block
   - rewrote Recent Events into shorter player-facing combat lines instead of raw technical phrasing
   - increased top-bar emphasis on turn, active side, and score while keeping counters quieter
+- Applied a Step 2B follow-up correction:
+  - made MOVE, ATTACK, and ABILITY visually stronger instead of leaving most emphasis on only END TURN
+  - removed turn-code prefixes and generic system wording from Recent Events
+  - rewrote combat lines into shorter battlefield language such as damage, movement, captures, and destruction
+  - increased selected-unit stat value emphasis so values stand out more clearly than labels
 
 ## Next Items
 
@@ -519,6 +524,12 @@
   - the Objective card reads as a short primary goal instead of a dense block
   - Recent Events no longer shows raw technical-looking text
   - the top bar makes turn, active side, and score stand out more clearly
+- Confirm the Step 2B follow-up correction works:
+  - MOVE, ATTACK, and ABILITY feel as intentional as END TURN
+  - active button states are obvious at a glance
+  - Recent Events does not show turn-code prefixes like `T5 P2`
+  - Recent Events does not show generic filler like `Battlefield state updated`
+  - Selected Unit values stand out more strongly than their labels
 
 ## Resources Needed Soon
 

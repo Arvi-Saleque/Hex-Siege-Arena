@@ -571,12 +571,18 @@ func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 
 
 func _apply_button_visual_state(button: Button, accent_color: Color, active: bool) -> void:
-	var normal_fill: float = 0.18 if not active else 0.32
-	var hover_fill: float = 0.28 if not active else 0.38
-	var pressed_fill: float = 0.36 if not active else 0.44
+	var normal_fill: float = 0.26 if not active else 0.40
+	var hover_fill: float = 0.36 if not active else 0.48
+	var pressed_fill: float = 0.44 if not active else 0.56
 	var normal_style := _button_style(accent_color, normal_fill)
 	var hover_style := _button_style(accent_color, hover_fill)
 	var pressed_style := _button_style(accent_color, pressed_fill)
+	normal_style.border_color = accent_color.lerp(Color.WHITE, 0.14)
+	hover_style.border_color = accent_color.lerp(Color.WHITE, 0.24)
+	pressed_style.border_color = accent_color.lerp(Color.WHITE, 0.32)
+	normal_style.shadow_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.18)
+	hover_style.shadow_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.24)
+	pressed_style.shadow_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.28)
 	if active:
 		normal_style.border_color = accent_color
 		hover_style.border_color = accent_color.lightened(0.08)
@@ -584,6 +590,12 @@ func _apply_button_visual_state(button: Button, accent_color: Color, active: boo
 		normal_style.shadow_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.22)
 		hover_style.shadow_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.26)
 		pressed_style.shadow_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.3)
+	button.add_theme_color_override("font_color", accent_color.lerp(Color.WHITE, 0.28))
+	button.add_theme_color_override("font_hover_color", accent_color.lerp(Color.WHITE, 0.6))
+	button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	if active:
+		button.add_theme_color_override("font_color", Color.WHITE)
+		button.add_theme_color_override("font_hover_color", Color.WHITE)
 	var disabled_style := _button_style(COLOR_BORDER, 0.04)
 	disabled_style.border_color = COLOR_BORDER.darkened(0.12)
 	button.add_theme_stylebox_override("normal", normal_style)
@@ -759,9 +771,12 @@ func _refresh_event_log() -> void:
 		var player_color: String = "77b8ff" if player_id == 1 else "ff8a76"
 		var events: Array = turn_data.get("events", [])
 		for event_line: Variant in events:
-			lines.append("[color=#5d6f88]T%d[/color] [color=#%s]%s[/color]" % [turn_data.get("turn", 0), player_color, str(event_line)])
-	if lines.size() > 6:
-		lines = lines.slice(lines.size() - 6, lines.size())
+			var clean_line: String = str(event_line).strip_edges()
+			if clean_line == "":
+				continue
+			lines.append("[color=#%s]%s[/color]" % [player_color, clean_line])
+	if lines.size() > 5:
+		lines = lines.slice(lines.size() - 5, lines.size())
 
 	_event_log.text = "\n".join(lines)
 
@@ -771,12 +786,12 @@ func _refresh_selected_unit_panel() -> void:
 	if focus_tank == null:
 		_selected_model_name_label.text = "No active selection"
 		_selected_model_role_label.text = "Select a unit to inspect combat and movement details."
-		_status_label.text = "[color=#9db0cc]Integrity[/color]  [b]-[/b]\n[color=#9db0cc]Mobility[/color]  [b]-[/b]\n[color=#9db0cc]Strike[/color]  [b]-[/b]\n[color=#9db0cc]Status[/color]  [b]-[/b]"
+		_status_label.text = "[color=#9db0cc][font_size=12]Integrity[/font_size][/color]\n[font_size=18][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Mobility[/font_size][/color]\n[font_size=18][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Strike[/font_size][/color]\n[font_size=18][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Status[/font_size][/color]\n[font_size=18][b]-[/b][/font_size]"
 		return
 
 	_selected_model_name_label.text = _unit_card_name(focus_tank)
 	_selected_model_role_label.text = _unit_role_text(focus_tank)
-	_status_label.text = "[color=#9db0cc]Integrity[/color]  [b]%d/%d[/b]\n[color=#9db0cc]Mobility[/color]  [b]%d hexes[/b]\n[color=#9db0cc]Strike[/color]  [b]%d dmg[/b]\n[color=#9db0cc]Status[/color]  [b]%s[/b]" % [
+	_status_label.text = "[color=#9db0cc][font_size=12]Integrity[/font_size][/color]\n[font_size=18][b]%d / %d[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Mobility[/font_size][/color]\n[font_size=18][b]%d hexes[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Strike[/font_size][/color]\n[font_size=18][b]%d damage[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Status[/font_size][/color]\n[font_size=18][b]%s[/b][/font_size]" % [
 		focus_tank.hp,
 		focus_tank.max_hp,
 		focus_tank.get_move_range(),
@@ -799,38 +814,38 @@ func _refresh_debug_panel() -> void:
 func _format_event(event_item: GameEvent) -> String:
 	match event_item.event_name:
 		"move":
-			return "%s moved into position" % _actor_label(str(event_item.payload.get("actor_id", "")))
+			return "%s moved to cover" % _actor_short_label(str(event_item.payload.get("actor_id", "")))
 		"attack":
-			return "%s launched an attack" % _actor_label(str(event_item.payload.get("actor_id", "")))
+			return "%s opened fire" % _actor_short_label(str(event_item.payload.get("actor_id", "")))
 		"hit_tank":
-			return "%s took %s damage" % [_actor_label(str(event_item.payload.get("target", ""))), event_item.payload.get("damage", 0)]
+			return "%s took %s damage" % [_actor_short_label(str(event_item.payload.get("target", ""))), event_item.payload.get("damage", 0)]
 		"hit_cell":
 			if bool(event_item.payload.get("destroyed", false)):
 				var revealed_type: int = int(event_item.payload.get("revealed_type", -1))
 				if revealed_type != -1:
-					return "A hidden %s was revealed" % _cell_type_label(revealed_type).capitalize()
-				return "A block was destroyed"
-			return "Terrain absorbed the blast"
+					return "%s revealed" % _cell_type_label(revealed_type).capitalize()
+				return "A block broke apart"
+			return ""
 		"power_up":
-			return "%s gained %s" % [_actor_label(str(event_item.payload.get("actor_id", ""))), str(event_item.payload.get("buff", "")).capitalize()]
+			return "%s gained %s" % [_actor_short_label(str(event_item.payload.get("actor_id", ""))), str(event_item.payload.get("buff", "")).capitalize()]
 		"extra_action_granted":
-			return "Bonus action granted to Player %s" % event_item.payload.get("player", 0)
+			return "%s gained a bonus action" % ("Blue" if int(event_item.payload.get("player", 0)) == 1 else "Red")
 		"tank_destroyed":
-			return "%s was destroyed" % _actor_label(str(event_item.payload.get("target", "")))
+			return "%s was destroyed" % _actor_short_label(str(event_item.payload.get("target", "")))
 		"win_center":
-			return "Player %s captured the center" % event_item.payload.get("winner", 0)
+			return "%s captured the center" % ("Blue" if int(event_item.payload.get("winner", 0)) == 1 else "Red")
 		"win_ktank_destroyed":
-			return "Player %s destroyed the enemy Ktank" % event_item.payload.get("winner", 0)
+			return "%s eliminated the enemy Ktank" % ("Blue" if int(event_item.payload.get("winner", 0)) == 1 else "Red")
 		"draw_turn_limit":
-			return "Draw declared at the turn limit"
+			return "Turn limit reached"
 		"draw_repetition":
-			return "Draw declared by repetition"
+			return "Repeated state detected"
 		"pass":
-			return "Player %s ended the turn" % event_item.payload.get("player", 0)
+			return "%s turn ended" % ("Blue" if int(event_item.payload.get("player", 0)) == 1 else "Red")
 		"invalid_action":
-			return "Action was not allowed"
+			return ""
 		_:
-			return "Battlefield state updated"
+			return ""
 
 
 func _update_button_state() -> void:
@@ -1012,6 +1027,17 @@ func _actor_label(actor_id: String) -> String:
 		return actor_id
 	var tank_name: String = "Qtank" if tank.tank_type == GameTypes.TankType.QTANK else "Ktank"
 	return "P%d %s (%s HP)" % [tank.owner_id, tank_name, tank.hp]
+
+
+func _actor_short_label(actor_id: String) -> String:
+	if actor_id == "":
+		return "Unit"
+	var tank: TankData = _game_state.get_tank(actor_id)
+	if tank == null:
+		return actor_id
+	var side_name: String = "Blue" if tank.owner_id == 1 else "Red"
+	var tank_name: String = "Qtank" if tank.tank_type == GameTypes.TankType.QTANK else "Ktank"
+	return "%s %s" % [side_name, tank_name]
 
 
 func _on_back_pressed() -> void:
