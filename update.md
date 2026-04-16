@@ -6,6 +6,11 @@
 
 ## Completed Items
 
+- Added Step 4D destroy feedback polish:
+  - kills now trigger a stronger elimination burst than a normal hit
+  - destroyed units spawn a brief smoke-and-spark follow-through
+  - destroyed tanks now fade/collapse out instead of disappearing instantly
+  - destroy moments now layer a heavier sound than regular impact feedback
 - Created the initial Godot 4 project skeleton
 - Added root scene flow:
   - Boot
@@ -628,6 +633,12 @@
   - movement feels smoother and less abrupt in transit
   - destination arrival has a noticeable but subtle landing moment
   - movement still feels responsive and not too slow
+- Confirm the Step 4D destroy-feedback correction works:
+  - destroyed units do not disappear quietly or instantly
+  - kill moments show a stronger burst than a regular hit
+  - smoke and spark follow-through are visible on destruction
+  - the destroyed unit fades/collapses out cleanly
+  - destroy sound reads stronger than a normal impact
 
 ## Resources Needed Soon
 

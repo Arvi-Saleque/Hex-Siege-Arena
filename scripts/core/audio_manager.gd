@@ -199,6 +199,7 @@ func _play_event(previous_state: GameState, current_state: GameState, action: Ac
 			_play_sfx("extra_action", sfx_volume_db - 2.0)
 		"tank_destroyed":
 			_play_sfx("tank_destroyed", sfx_volume_db + 1.0)
+			_play_sfx("explosion_small", sfx_volume_db - 2.0, 0.88)
 		"win_center", "win_ktank_destroyed":
 			play_objective_feedback()
 			_play_match_result(int(event_item.payload.get("winner", 0)))
