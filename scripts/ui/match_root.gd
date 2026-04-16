@@ -7,24 +7,18 @@ const FONT_REGULAR := preload("res://assets/ui/fonts/inter-regular.ttf")
 const FONT_MEDIUM := preload("res://assets/ui/fonts/inter-medium.ttf")
 const FONT_SEMIBOLD := preload("res://assets/ui/fonts/rajdhani-semibold.ttf")
 const FONT_BOLD := preload("res://assets/ui/fonts/rajdhani-bold.ttf")
-const TEXTURE_PANEL_MAIN := preload("res://assets/ui/exported/panel_main.png")
-const TEXTURE_BUTTON_PRIMARY := preload("res://assets/ui/exported/button_primary.png")
-const TEXTURE_BUTTON_PRIMARY_HOVER := preload("res://assets/ui/exported/button_primary_hover.png")
-const TEXTURE_BUTTON_PRIMARY_PRESSED := preload("res://assets/ui/exported/button_primary_pressed.png")
-const TEXTURE_BUTTON_EMPHASIS := preload("res://assets/ui/exported/button_emphasis.png")
-const TEXTURE_BUTTON_DISABLED := preload("res://assets/ui/exported/button_disabled.png")
-const TEXTURE_BADGE_SMALL := preload("res://assets/ui/exported/badge_small.png")
-const TEXTURE_DIVIDER := preload("res://assets/ui/exported/divider.png")
-const COLOR_BG := Color("09111c")
-const COLOR_SURFACE := Color("111c2b")
-const COLOR_SURFACE_ALT := Color("162335")
-const COLOR_BORDER := Color("2c3f59")
-const COLOR_TEXT := Color("edf4ff")
-const COLOR_TEXT_MUTED := Color("98adc7")
-const COLOR_GOLD := Color("f0c05e")
-const COLOR_GREEN := Color("69dd8e")
-const COLOR_ATTACK := Color("ff9272")
-const COLOR_P1 := Color("77b8ff")
+const COLOR_BG := Color("0b1220")
+const COLOR_SURFACE := Color("141c2b")
+const COLOR_SURFACE_ALT := Color("1a2436")
+const COLOR_SURFACE_DEEP := Color("0f1725")
+const COLOR_BORDER := Color("334766")
+const COLOR_TEXT := Color("eaf2ff")
+const COLOR_TEXT_MUTED := Color("9db0cc")
+const COLOR_ACCENT := Color("6bc7ff")
+const COLOR_GOLD := Color("f0c94a")
+const COLOR_GREEN := Color("6bc7ff")
+const COLOR_ATTACK := Color("ff9a66")
+const COLOR_P1 := Color("6bc7ff")
 const COLOR_P2 := Color("ff8a76")
 var _game_state: GameState
 var _board_view: BoardDebugView
@@ -108,7 +102,7 @@ func _build_layout() -> void:
 	root_layout.add_theme_constant_override("separation", 12)
 	root_margin.add_child(root_layout)
 
-	var top_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
+	var top_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
 	top_panel.custom_minimum_size = Vector2(0, 80)
 	root_layout.add_child(top_panel)
 	var top_margin := _wrap_panel_content(top_panel, 18, 12)
@@ -138,7 +132,7 @@ func _build_layout() -> void:
 	_score_label.custom_minimum_size = Vector2(180, 0)
 	_score_label.add_theme_font_override("font", FONT_SEMIBOLD)
 	_score_label.add_theme_font_size_override("font_size", 20)
-	_score_label.add_theme_color_override("font_color", Color("d7d3c6"))
+	_score_label.add_theme_color_override("font_color", COLOR_GOLD)
 	top_bar.add_child(_score_label)
 
 	var top_right := VBoxContainer.new()
@@ -166,7 +160,7 @@ func _build_layout() -> void:
 	content.add_theme_constant_override("separation", 12)
 	root_layout.add_child(content)
 
-	var board_frame := _make_panel_card(COLOR_BORDER, Color("101927"))
+	var board_frame := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_DEEP)
 	board_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(board_frame)
@@ -227,7 +221,7 @@ func _build_layout() -> void:
 	_status_label = _make_body_label()
 	info_layout.add_child(_status_label)
 
-	var objective_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
+	var objective_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
 	side_rail.add_child(objective_panel)
 	var objective_margin := _wrap_panel_content(objective_panel, 14, 12)
 	var objective_layout := VBoxContainer.new()
@@ -238,7 +232,7 @@ func _build_layout() -> void:
 	_preview_label = _make_body_label()
 	objective_layout.add_child(_preview_label)
 
-	var log_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
+	var log_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
 	log_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_rail.add_child(log_panel)
 	var log_margin := _wrap_panel_content(log_panel, 14, 12)
@@ -278,7 +272,7 @@ func _build_layout() -> void:
 	overlay_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	overlay_row.add_child(overlay_spacer)
 
-	_debug_panel = _make_panel_card(COLOR_GOLD.darkened(0.28), COLOR_SURFACE)
+	_debug_panel = _make_panel_card(COLOR_GOLD.darkened(0.28), COLOR_SURFACE_ALT)
 	_debug_panel.visible = false
 	_debug_panel.custom_minimum_size = Vector2(320, 0)
 	overlay_row.add_child(_debug_panel)
@@ -364,7 +358,7 @@ func _build_layout() -> void:
 	_mini_board_view.set_game_state(_game_state)
 	_mini_board_holder.add_child(_mini_board_view)
 
-	var bottom_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
+	var bottom_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
 	bottom_panel.custom_minimum_size = Vector2(0, 84)
 	root_layout.add_child(bottom_panel)
 	var bottom_margin := _wrap_panel_content(bottom_panel, 16, 14)
@@ -439,14 +433,15 @@ func _build_match_theme() -> Theme:
 	match_theme.set_color("default_color", "RichTextLabel", COLOR_TEXT)
 	match_theme.set_color("font_color", "RichTextLabel", COLOR_TEXT)
 
-	var item_list_style := _panel_style(COLOR_BORDER, COLOR_SURFACE) as StyleBoxTexture
+	var item_list_style := _panel_style(COLOR_BORDER, COLOR_SURFACE)
 	item_list_style.content_margin_left = 10.0
 	item_list_style.content_margin_top = 8.0
 	item_list_style.content_margin_right = 10.0
 	item_list_style.content_margin_bottom = 8.0
 	match_theme.set_stylebox("panel", "ItemList", item_list_style)
 
-	var item_focus: StyleBoxTexture = item_list_style.duplicate() as StyleBoxTexture
+	var item_focus: StyleBoxFlat = item_list_style.duplicate() as StyleBoxFlat
+	item_focus.border_color = COLOR_ACCENT
 	match_theme.set_stylebox("focus", "ItemList", item_focus)
 
 	return match_theme
@@ -468,36 +463,40 @@ func _wrap_panel_content(panel: PanelContainer, horizontal_margin: int, vertical
 	return margin
 
 
-func _panel_style(_accent_color: Color, _fill_color: Color = COLOR_SURFACE) -> StyleBoxTexture:
-	var style := StyleBoxTexture.new()
-	style.texture = TEXTURE_PANEL_MAIN
-	style.texture_margin_left = 26.0
-	style.texture_margin_top = 24.0
-	style.texture_margin_right = 26.0
-	style.texture_margin_bottom = 24.0
-	style.content_margin_left = 4.0
-	style.content_margin_top = 4.0
-	style.content_margin_right = 4.0
-	style.content_margin_bottom = 4.0
+func _panel_style(accent_color: Color, fill_color: Color = COLOR_SURFACE) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill_color
+	style.corner_radius_top_left = 12
+	style.corner_radius_top_right = 12
+	style.corner_radius_bottom_left = 12
+	style.corner_radius_bottom_right = 12
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = accent_color
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.28)
+	style.shadow_size = 7
+	style.content_margin_left = 2.0
+	style.content_margin_top = 2.0
+	style.content_margin_right = 2.0
+	style.content_margin_bottom = 2.0
 	return style
 
 
 func _make_section_title(title_text: String) -> Label:
 	var label := Label.new()
 	label.text = title_text.to_upper()
-	label.add_theme_font_override("font", FONT_SEMIBOLD)
-	label.add_theme_font_size_override("font_size", 15)
-	label.add_theme_color_override("font_color", Color("9ec8ff"))
+	label.add_theme_font_override("font", FONT_BOLD)
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", COLOR_TEXT)
 	return label
 
 
-func _make_section_divider() -> TextureRect:
-	var divider := TextureRect.new()
-	divider.texture = TEXTURE_DIVIDER
-	divider.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	divider.stretch_mode = TextureRect.STRETCH_SCALE
-	divider.custom_minimum_size = Vector2(0, 6)
-	divider.modulate = Color(0.72, 0.83, 1.0, 0.34)
+func _make_section_divider() -> ColorRect:
+	var divider := ColorRect.new()
+	divider.color = Color(COLOR_BORDER.r, COLOR_BORDER.g, COLOR_BORDER.b, 0.9)
+	divider.custom_minimum_size = Vector2(0, 2)
 	return divider
 
 
@@ -512,35 +511,48 @@ func _make_body_label() -> Label:
 
 func _make_action_button(text_value: String, accent_color: Color) -> Button:
 	var button := Button.new()
-	var use_emphasis := text_value == "End Turn"
 	button.text = text_value.to_upper()
 	button.custom_minimum_size = Vector2(0, 40)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_stylebox_override("normal", _button_style(TEXTURE_BUTTON_EMPHASIS if use_emphasis else TEXTURE_BUTTON_PRIMARY))
-	button.add_theme_stylebox_override("hover", _button_style(TEXTURE_BUTTON_PRIMARY_HOVER if not use_emphasis else TEXTURE_BUTTON_EMPHASIS))
-	button.add_theme_stylebox_override("pressed", _button_style(TEXTURE_BUTTON_PRIMARY_PRESSED if not use_emphasis else TEXTURE_BUTTON_EMPHASIS))
-	button.add_theme_stylebox_override("disabled", _button_style(TEXTURE_BUTTON_DISABLED))
+	button.add_theme_stylebox_override("normal", _button_style(accent_color, 0.14))
+	button.add_theme_stylebox_override("hover", _button_style(accent_color, 0.20))
+	button.add_theme_stylebox_override("pressed", _button_style(accent_color, 0.28))
+	button.add_theme_stylebox_override("disabled", _button_style(COLOR_BORDER, 0.06))
 	button.add_theme_font_override("font", FONT_SEMIBOLD)
 	button.add_theme_font_size_override("font_size", 18)
-	button.add_theme_color_override("font_color", accent_color.lightened(0.18) if not use_emphasis else Color("fff5d8"))
+	button.add_theme_color_override("font_color", COLOR_TEXT)
 	button.add_theme_color_override("font_hover_color", Color.WHITE)
 	button.add_theme_color_override("font_pressed_color", Color.WHITE)
 	button.add_theme_color_override("font_disabled_color", COLOR_TEXT_MUTED)
 	return button
 
 
-func _button_style(texture: Texture2D) -> StyleBoxTexture:
-	var style := StyleBoxTexture.new()
-	style.texture = texture
-	style.texture_margin_left = 26.0
-	style.texture_margin_top = 24.0
-	style.texture_margin_right = 26.0
-	style.texture_margin_bottom = 24.0
+func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(COLOR_SURFACE_ALT.r, COLOR_SURFACE_ALT.g, COLOR_SURFACE_ALT.b, 1.0)
+	style.corner_radius_top_left = 12
+	style.corner_radius_top_right = 12
+	style.corner_radius_bottom_left = 12
+	style.corner_radius_bottom_right = 12
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = accent_color.lerp(COLOR_BORDER, 0.35)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.18)
+	style.shadow_size = 4
 	style.content_margin_left = 20.0
 	style.content_margin_top = 10.0
 	style.content_margin_right = 20.0
 	style.content_margin_bottom = 10.0
+	if fill_alpha > 0.0:
+		style.bg_color = Color(
+			lerpf(COLOR_SURFACE_ALT.r, accent_color.r, fill_alpha),
+			lerpf(COLOR_SURFACE_ALT.g, accent_color.g, fill_alpha),
+			lerpf(COLOR_SURFACE_ALT.b, accent_color.b, fill_alpha),
+			1.0
+		)
 	return style
 
 

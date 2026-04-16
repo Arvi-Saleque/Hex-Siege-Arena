@@ -337,7 +337,18 @@
   - copied a curated set of PNG hull, track, and gun assets into `assets/art/tanks2d`
   - replaced the board’s code-drawn tank silhouettes with composited PNG tank sprites rendered directly on the hexes
   - added simple on-board HP bars beneath the tanks for faster readability
-  - removed the separate roster/showcase treatment from the main game scene so the board is the primary visual focus again
+- removed the separate roster/showcase treatment from the main game scene so the board is the primary visual focus again
+- Completed the initial Step 2 HUD skin pass:
+  - created a clean runtime `assets/ui` structure with `kenney_scifi`, `kenney_base`, `fonts`, and `exported`
+  - copied Rajdhani and Inter into `assets/ui/fonts` for the live HUD font system
+  - curated and exported a reusable sci-fi panel/button set into `assets/ui/exported`
+  - applied the new font system to the live match HUD
+- Applied Step 2A theme correction to the match scene:
+  - removed the pale glossy panel treatment from the live match HUD
+  - rebuilt the top HUD, right rail, and bottom bar around one dark tactical panel family
+  - darkened the board surround so the battlefield sits inside the same sci-fi system
+  - raised text contrast across headings, labels, and body copy for faster readability
+  - normalized the button family back into the darker tactical shell while the stronger Step 2B button pass remains pending
 
 ## Next Items
 
@@ -486,13 +497,14 @@
 - Confirm Settings now matches the menu/match visual language
 - Confirm Quick Start Guide feels more like a finished product page than a plain text scene
 - Confirm Replay Viewer feels polished, readable, and uses a larger board preview
-- Confirm the Step 2 HUD skin is applied consistently:
-  - the top HUD uses the new exported sci-fi panel skin
-  - the bottom action bar uses the new skinned button family
-  - the right rail cards use the same panel family and shorter section titles
+- Confirm the Step 2A theme correction is applied consistently:
+  - pale glossy panels are gone from the match scene
+  - the top HUD is dark and readable
+  - the right rail cards are dark and readable
+  - the bottom bar background matches the same dark tactical family
   - Rajdhani is visible on headings, numbers, and action labels
   - Inter is visible on body copy, logs, and descriptive text
-  - the new 9-slice panels and buttons scale cleanly in fullscreen without stretched corners
+  - the board surround is dark enough to match the battlefield instead of fighting it
 
 ## Resources Needed Soon
 
