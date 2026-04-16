@@ -101,13 +101,7 @@ func _draw() -> void:
 	_draw_board_backdrop(active_board)
 	for cell: CellData in _sorted_cells(active_board):
 		var center: Vector2 = _tile_center(cell)
-		var fill: Color = COLOR_BY_TYPE.get(cell.cell_type, Color.DIM_GRAY)
-		if highlighted_keys.has(cell.coord.key()):
-			fill = fill.lerp(highlighted_keys[cell.coord.key()], 0.58 if AppState.high_contrast_mode else 0.45)
-		if cell.coord.key() == hovered_key:
-			fill = fill.lerp(Color.WHITE, 0.18)
-		if cell.coord.key() == selected_key:
-			fill = fill.lerp(_selected_outline_color(), 0.42 if AppState.high_contrast_mode else 0.35)
+		var fill: Color = _tile_fill_color(cell)
 
 		var points: PackedVector2Array = _hex_points(center)
 		var shadow_points: PackedVector2Array = _offset_points(points, Vector2(0, 11 + _tile_depth(cell)))
@@ -122,27 +116,24 @@ func _draw() -> void:
 			draw_circle(center + Vector2(0, 8), hex_size * 0.82, glow_color)
 
 		draw_colored_polygon(points, fill)
+		var inset_points: PackedVector2Array = _scaled_points(points, center, 0.9)
+		draw_colored_polygon(inset_points, fill.lightened(0.05))
 		var outline: PackedVector2Array = points.duplicate()
 		outline.append(points[0])
-		draw_polyline(outline, Color("0f131a"), 2.0, true)
+		draw_polyline(outline, Color("0f131a").lerp(fill, 0.15), 1.8, true)
 		var top_highlight: PackedVector2Array = PackedVector2Array([points[4], points[5], points[0], points[1]])
-		draw_polyline(top_highlight, Color.WHITE.lerp(fill, 0.65), 1.5, true)
+		draw_polyline(top_highlight, Color.WHITE.lerp(fill, 0.58), 1.5, true)
+		var lower_shadow: PackedVector2Array = PackedVector2Array([points[2], points[3], points[4]])
+		draw_polyline(lower_shadow, fill.darkened(0.32), 1.3, true)
 		_draw_tile_material(cell, center, points, fill)
-		if cell.cell_type == GameTypes.CellType.CENTER:
-			var pulse_amplitude: float = 0.03 if AppState.reduced_motion else 0.08
-			var pulse_radius: float = hex_size * (0.52 + pulse_amplitude * sin(_pulse_time * 2.2))
-			draw_circle(center, pulse_radius + 6.0, Color(1.0, 0.92, 0.47, 0.08))
-			draw_arc(center, pulse_radius, 0.0, TAU, 48, Color("fff2a8"), 2.0, true)
-		if highlighted_keys.has(cell.coord.key()) and current_action_mode != "":
-			var preview_outline: PackedVector2Array = points.duplicate()
-			preview_outline.append(points[0])
-			var preview_color: Color = _move_preview_color() if current_action_mode == "move" else _attack_preview_color()
-			draw_polyline(preview_outline, preview_color, 3.0, true)
-		if cell.coord.key() == hovered_key:
-			draw_circle(center + Vector2(0, 2), hex_size * 0.33, Color(1.0, 1.0, 1.0, 0.06))
+		_draw_objective_tile_effects(cell, center, points)
+
+	_draw_range_overlays(active_board)
+	_draw_path_preview(active_board)
 
 	if game_state != null:
 		_draw_tanks()
+	_draw_hover_and_selection_overlays(active_board)
 	_draw_effects()
 
 
@@ -375,7 +366,7 @@ func _sorted_cells(active_board: BoardState) -> Array[CellData]:
 func _tile_center(cell: CellData) -> Vector2:
 	var center: Vector2 = cell.coord.to_world_flat(hex_size)
 	if cell.coord.key() == hovered_key:
-		center.y -= 4.0
+		center.y -= 5.0
 	if cell.coord.key() == selected_key:
 		center.y -= 6.0
 	return center + _shake_offset
@@ -452,6 +443,7 @@ func _draw_board_backdrop(active_board: BoardState) -> void:
 	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.3, used_rect.size.y * 0.28) + _shake_offset, 180.0, Color(0.2, 0.32, 0.48, 0.08))
 	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.72, used_rect.size.y * 0.62) + _shake_offset, 210.0, Color(0.66, 0.55, 0.2, 0.05))
 	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.5, used_rect.size.y * 0.48) + _shake_offset, 290.0, Color(0.08, 0.12, 0.2, 0.25))
+	draw_circle(used_rect.position + used_rect.size * 0.5 + _shake_offset, minf(used_rect.size.x, used_rect.size.y) * 0.28, Color(0.92, 0.81, 0.28, 0.035))
 
 
 func _draw_tanks() -> void:
@@ -466,12 +458,18 @@ func _draw_tanks() -> void:
 		var tank_rotation: float = _tank_draw_rotation(tank)
 		var player_color: Color = _player_primary_color(tank.owner_id)
 		var accent_color: Color = _player_accent_color(tank.owner_id)
-		draw_colored_polygon(_ellipse_points(center + Vector2(0, 16), Vector2(20, 8), 20), Color(0.03, 0.05, 0.08, 0.4))
+		draw_colored_polygon(_ellipse_points(center + Vector2(0, 17), Vector2(21, 8), 20), Color(0.03, 0.05, 0.08, 0.45))
+		draw_arc(center + Vector2(0, 7), 18.0, 0.0, TAU, 40, Color(player_color.r, player_color.g, player_color.b, 0.48), 2.0, true)
 		if tank.owner_id == game_state.current_player:
-			draw_arc(center + Vector2(0, 6), 22.0, 0.0, TAU, 40, player_color.lerp(Color.WHITE, 0.2), 2.5, true)
-		if tank.actor_id() == selected_actor_id:
-			draw_circle(center + Vector2(0, 6), 20.0, player_color.lerp(Color.WHITE, 0.22))
+			draw_arc(center + Vector2(0, 7), 22.0, 0.0, TAU, 40, Color(player_color.r, player_color.g, player_color.b, 0.72), 2.3, true)
 		_draw_tank_sprite(center, tank, tank_rotation)
+		if tank.actor_id() == selected_actor_id:
+			var pulse_radius: float = 24.0 + (1.8 if AppState.reduced_motion else 3.2 * (0.5 + 0.5 * sin(_pulse_time * 2.2)))
+			draw_arc(center + Vector2(0, 5), pulse_radius, 0.0, TAU, 48, player_color.lerp(Color.WHITE, 0.32), 3.0, true)
+			draw_arc(center + Vector2(0, 5), pulse_radius + 5.0, 0.0, TAU, 48, Color(player_color.r, player_color.g, player_color.b, 0.22), 1.6, true)
+		elif current_action_mode == "attack" and _is_tank_targeted(tank):
+			draw_arc(center + Vector2(0, 5), 24.0, 0.0, TAU, 40, Color(_attack_preview_color().r, _attack_preview_color().g, _attack_preview_color().b, 0.9), 2.6, true)
+			draw_arc(center + Vector2(0, 5), 18.0, 0.0, TAU, 40, Color(_attack_preview_color().r, _attack_preview_color().g, _attack_preview_color().b, 0.35), 1.4, true)
 
 		if font != null:
 			draw_string(font, center + Vector2(-10, -27), "%d" % tank.hp, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, Color("f5f7fb"))
@@ -600,6 +598,155 @@ func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2A
 			]), Color("c6ffdb"), 2.2, true)
 		_:
 			pass
+
+
+func _tile_fill_color(cell: CellData) -> Color:
+	var fill: Color = COLOR_BY_TYPE.get(cell.cell_type, Color.DIM_GRAY)
+	var center_bias: float = clampf(1.0 - float(cell.coord.distance_to(HexCoord.new())) / maxf(float(_active_board().rings), 1.0), 0.0, 1.0)
+	fill = fill.lerp(Color.WHITE, 0.025 + center_bias * 0.035)
+	if cell.coord.key() == hovered_key:
+		fill = fill.lerp(Color.WHITE, 0.12)
+	if cell.coord.key() == selected_key:
+		fill = fill.lerp(_selected_outline_color(), 0.22)
+	return fill
+
+
+func _draw_objective_tile_effects(cell: CellData, center: Vector2, points: PackedVector2Array) -> void:
+	if cell.cell_type != GameTypes.CellType.CENTER:
+		return
+	var pulse_amplitude: float = 0.03 if AppState.reduced_motion else 0.08
+	var pulse_radius: float = hex_size * (0.52 + pulse_amplitude * sin(_pulse_time * 2.2))
+	draw_circle(center, pulse_radius + 6.0, Color(1.0, 0.92, 0.47, 0.08))
+	draw_arc(center, pulse_radius, 0.0, TAU, 48, Color("fff2a8"), 2.0, true)
+	var objective_outline: PackedVector2Array = points.duplicate()
+	objective_outline.append(points[0])
+	draw_polyline(objective_outline, Color("f4d96b"), 2.0, true)
+
+
+func _draw_range_overlays(active_board: BoardState) -> void:
+	for key: String in highlighted_keys.keys():
+		var cell: CellData = active_board.cells.get(key)
+		if cell == null:
+			continue
+		var center: Vector2 = _tile_center(cell)
+		var points: PackedVector2Array = _scaled_points(_hex_points(center), center, 0.83)
+		var overlay_color: Color = highlighted_keys[key]
+		var alpha_scale: float = 0.2 if current_action_mode == "move" else 0.18
+		draw_colored_polygon(points, Color(overlay_color.r, overlay_color.g, overlay_color.b, alpha_scale))
+		var outline: PackedVector2Array = _closed_polyline(points)
+		var line_width: float = 2.2
+		if key == hovered_key:
+			line_width = 3.0
+		draw_polyline(outline, Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.95), line_width, true)
+		if current_action_mode == "attack":
+			draw_circle(center, hex_size * 0.14, Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.28))
+
+
+func _draw_path_preview(active_board: BoardState) -> void:
+	var path: Array[HexCoord] = _current_hover_path()
+	if path.is_empty():
+		return
+	var path_color: Color = _move_preview_color()
+	var centers: PackedVector2Array = PackedVector2Array()
+	for coord: HexCoord in path:
+		var cell: CellData = active_board.get_cell(coord)
+		if cell == null:
+			continue
+		var center: Vector2 = _tile_center(cell)
+		centers.append(center)
+		var path_points: PackedVector2Array = _scaled_points(_hex_points(center), center, 0.58)
+		draw_colored_polygon(path_points, Color(path_color.r, path_color.g, path_color.b, 0.18))
+		draw_polyline(_closed_polyline(path_points), Color(path_color.r, path_color.g, path_color.b, 0.85), 1.8, true)
+	if centers.size() >= 2:
+		draw_polyline(centers, Color(path_color.r, path_color.g, path_color.b, 0.95), 3.0, false)
+		var last_center: Vector2 = centers[centers.size() - 1]
+		draw_circle(last_center, hex_size * 0.18, Color(path_color.r, path_color.g, path_color.b, 0.65))
+
+
+func _draw_hover_and_selection_overlays(active_board: BoardState) -> void:
+	if hovered_key != "" and active_board.cells.has(hovered_key):
+		var hovered_cell: CellData = active_board.cells[hovered_key]
+		var center: Vector2 = _tile_center(hovered_cell)
+		var points: PackedVector2Array = _hex_points(center)
+		var outline: PackedVector2Array = points.duplicate()
+		outline.append(points[0])
+		var hover_color: Color = Color("d8efff")
+		if current_action_mode == "attack" and not highlighted_keys.has(hovered_key):
+			hover_color = Color(_attack_preview_color().r, _attack_preview_color().g, _attack_preview_color().b, 0.65)
+		draw_polyline(outline, hover_color, 2.6, true)
+		draw_circle(center + Vector2(0, 2), hex_size * 0.33, Color(hover_color.r, hover_color.g, hover_color.b, 0.08))
+	if selected_key != "" and active_board.cells.has(selected_key):
+		var selected_cell: CellData = active_board.cells[selected_key]
+		var selected_center: Vector2 = _tile_center(selected_cell)
+		var selected_points: PackedVector2Array = _scaled_points(_hex_points(selected_center), selected_center, 1.02)
+		draw_polyline(_closed_polyline(selected_points), _selected_outline_color(), 3.0, true)
+		draw_polyline(_closed_polyline(_scaled_points(selected_points, selected_center, 0.93)), Color(_selected_outline_color().r, _selected_outline_color().g, _selected_outline_color().b, 0.42), 1.6, true)
+	if current_action_mode == "attack":
+		_draw_attack_preview_line(active_board)
+
+
+func _draw_attack_preview_line(active_board: BoardState) -> void:
+	if hovered_key == "" or selected_actor_id == "":
+		return
+	var attacker: TankData = game_state.get_tank(selected_actor_id) if game_state != null else null
+	var hovered_cell: CellData = active_board.cells.get(hovered_key)
+	if attacker == null or hovered_cell == null:
+		return
+	var from_center: Vector2 = _tile_center(active_board.get_cell(attacker.position))
+	var to_center: Vector2 = _tile_center(hovered_cell)
+	var line_color: Color = _attack_preview_color()
+	if highlighted_keys.has(hovered_key):
+		draw_line(from_center, to_center, Color(line_color.r, line_color.g, line_color.b, 0.88), 2.6)
+		draw_circle(to_center, hex_size * 0.2, Color(line_color.r, line_color.g, line_color.b, 0.45))
+	else:
+		_draw_dashed_line(from_center, to_center, Color(line_color.r, line_color.g, line_color.b, 0.42), 2.0, 10.0, 7.0)
+
+
+func _draw_dashed_line(from_point: Vector2, to_point: Vector2, color: Color, width: float, dash_length: float, gap_length: float) -> void:
+	var total_length: float = from_point.distance_to(to_point)
+	if total_length <= 0.001:
+		return
+	var direction: Vector2 = (to_point - from_point).normalized()
+	var cursor: float = 0.0
+	while cursor < total_length:
+		var dash_start: Vector2 = from_point + direction * cursor
+		var dash_end: Vector2 = from_point + direction * minf(cursor + dash_length, total_length)
+		draw_line(dash_start, dash_end, color, width)
+		cursor += dash_length + gap_length
+
+
+func _current_hover_path() -> Array[HexCoord]:
+	var path: Array[HexCoord] = []
+	if current_action_mode != "move" or selected_actor_id == "" or hovered_key == "":
+		return path
+	if not highlighted_keys.has(hovered_key):
+		return path
+	var tank: TankData = game_state.get_tank(selected_actor_id) if game_state != null else null
+	var hovered_coord: HexCoord = HexCoord.from_key(hovered_key)
+	if tank == null:
+		return path
+	for direction in range(HexCoord.DIRECTIONS.size()):
+		var ray: Array[HexCoord] = tank.position.raycast(direction, tank.get_move_range())
+		var candidate_path: Array[HexCoord] = []
+		for step_coord: HexCoord in ray:
+			if not _active_board().has_cell(step_coord):
+				break
+			if not _active_board().is_walkable(step_coord):
+				break
+			if game_state.is_cell_occupied(step_coord):
+				break
+			candidate_path.append(step_coord)
+			if step_coord.equals(hovered_coord):
+				return candidate_path
+			if tank.tank_type == GameTypes.TankType.KTANK and tank.position.distance_to(step_coord) >= tank.get_move_range():
+				break
+	return path
+
+
+func _is_tank_targeted(tank: TankData) -> bool:
+	if highlighted_keys.is_empty():
+		return false
+	return highlighted_keys.has(tank.position.key()) and tank.owner_id != game_state.current_player
 
 
 func _draw_tank_sprite(center: Vector2, tank: TankData, rotation_value: float = 0.0) -> void:

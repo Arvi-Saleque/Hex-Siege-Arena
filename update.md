@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-- Phase 17: Final cleanup and premium shell polish
+- Step 3: Tactical battlefield readability polish
 
 ## Completed Items
 
@@ -361,10 +361,19 @@
   - removed turn-code prefixes and generic system wording from Recent Events
   - rewrote combat lines into shorter battlefield language such as damage, movement, captures, and destruction
   - increased selected-unit stat value emphasis so values stand out more clearly than labels
+- Applied the first Step 3 battlefield readability pass:
+  - strengthened base hex readability with better edge separation and subtle surface variation
+  - added cleaner hover and selected-tile emphasis rules
+  - added faction rings and stronger selected-unit grounding under tanks
+  - added clearer move-range and attack-range overlays with distinct color families
+  - added move path preview for hovered reachable destinations
+  - added attack preview lines with invalid-target feedback
+  - strengthened center-objective presentation and center-focus lighting bias
+  - reordered board presentation so overlays, units, rings, targets, and hover cues stay visually readable
 
 ## Next Items
 
-- Verify the new 3D tank showcase imports and fit inside Godot
+- Verify the Step 3 board readability pass inside Godot
 - Do a final bug-fix and styling sweep based on runtime feedback
 
 ## User Check List
@@ -530,6 +539,16 @@
   - Recent Events does not show turn-code prefixes like `T5 P2`
   - Recent Events does not show generic filler like `Battlefield state updated`
   - Selected Unit values stand out more strongly than their labels
+- Confirm the Step 3 battlefield readability pass works:
+  - hovered tiles are easy to notice without overpowering selection
+  - selected units feel clearly grounded with faction rings and stronger lock-on emphasis
+  - move range uses a readable cyan overlay family
+  - attack range uses a distinct orange-red warning family
+  - hovering a reachable move destination shows a path preview
+  - hovering an attack target shows a readable preview line
+  - invalid attack previews look visibly different from valid ones
+  - the center objective tile stands out even when nothing is selected
+  - the board reads more clearly without looking noisy or muddy
 
 ## Resources Needed Soon
 
@@ -545,7 +564,7 @@
 
 - Godot CLI is not available in this environment, so editor/runtime verification must be done manually inside Godot
 - Autoplay currently assumes both sides are AI-controlled and uses a simple timer loop rather than a full spectator shell
-- The board gameplay pieces are still stylized 2D battlefield markers; the new 3D tank models currently live in the HUD showcase rather than on-hex rendering
+- The battlefield now uses stylized 2D tank sprites on-hex; a future art pass can still refine final silhouette selection and sprite polish
 - The new combat VFX are code-drawn and intentionally lightweight; final particles and authored animation can replace them later
 - The current audio selection is a curated first-pass mix of Kenney and custom files, so some sounds may still be swapped later for stronger cohesion
 - The `open` and `fortress` presets are defined for future use, but the current UI still launches the configured default map only
