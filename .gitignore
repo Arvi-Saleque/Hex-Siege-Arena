@@ -1,2 +1,14 @@
 .godot/
 *.import
+*.uid
+
+# Local source asset drops and references
+PNG/
+Space_Grotesk/
+custom_tanks/
+game-icons.net.svg/
+kenney_input-prompts_1.4/
+kenney_ui-pack/
+
+# Temporary research / extraction artifacts
+tmp_video_frames/
