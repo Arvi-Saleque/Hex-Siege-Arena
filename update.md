@@ -381,6 +381,9 @@
   - human turns now auto-sync to a real selected unit instead of only showing a visual focus unit
   - Move and Attack now recover from empty selection state before trying to enter their modes
   - human button flow should no longer feel dead at the start of a turn
+- Added a mouse-input HUD fix:
+  - the fullscreen debug overlay now ignores mouse input while hidden
+  - visible HUD buttons such as Move, Attack, and End Turn should now be clickable by mouse
 
 ## Next Items
 
@@ -572,6 +575,10 @@
   - Move enters move mode normally
   - Attack enters attack mode normally
   - End Turn still works normally
+- Confirm the HUD mouse-input fix works:
+  - clicking Move works the same way as pressing `M`
+  - clicking Attack works the same way as pressing `A`
+  - clicking End Turn works normally by mouse
 
 ## Resources Needed Soon
 

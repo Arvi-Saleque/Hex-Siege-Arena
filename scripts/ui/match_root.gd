@@ -254,10 +254,12 @@ func _build_layout() -> void:
 
 	var overlay_layer := Control.new()
 	overlay_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root_margin.add_child(overlay_layer)
 
 	var overlay_margin := MarginContainer.new()
 	overlay_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay_margin.add_theme_constant_override("margin_top", 92)
 	overlay_margin.add_theme_constant_override("margin_right", 0)
 	overlay_margin.add_theme_constant_override("margin_bottom", 88)
@@ -266,10 +268,12 @@ func _build_layout() -> void:
 	var overlay_row := HBoxContainer.new()
 	overlay_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	overlay_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	overlay_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay_margin.add_child(overlay_row)
 
 	var overlay_spacer := Control.new()
 	overlay_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	overlay_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay_row.add_child(overlay_spacer)
 
 	_debug_panel = _make_panel_card(COLOR_GOLD.darkened(0.28), COLOR_SURFACE_ALT)
