@@ -283,6 +283,16 @@
 - Added visible exit actions:
   - `Exit Game` button on the main menu
   - `Quit` button in the in-match `F3` debug overlay
+- Rebuilt the main menu into a cleaner fullscreen shell:
+  - hero header with clearer product messaging
+  - polished setup card with grouped match controls
+  - stronger primary and secondary action buttons
+  - slimmer support cards instead of the old release-notes wall
+- Applied a follow-up match HUD polish pass:
+  - right-side gameplay rail now scrolls safely on smaller screens
+  - cards and action buttons use stronger radius, shadow, and spacing treatment
+  - selected-unit copy is more product-styled and less raw/debug-like
+  - objective wording is shorter and cleaner in the live HUD
   - redesigned the match HUD into a more product-style tactics layout with a hero header, cleaner card hierarchy, and a dedicated command deck
   - added a four-unit roster strip beneath the board so all four distinct tanks are visible in the main game scene
   - added a larger selected-unit showcase card that tracks the currently selected or active tank
@@ -433,6 +443,13 @@
 - Confirm pressing `Exit Game` closes the game
 - Confirm pressing `F3` in-match shows a `Quit` button in the debug overlay
 - Confirm pressing `Quit` from the match scene closes the game cleanly
+- Confirm the main menu now feels cleaner and more intentional:
+  - hero header
+  - setup panel
+  - grouped action rows
+  - support cards on the right
+- Confirm the match right rail scrolls cleanly if the window becomes shorter
+- Confirm the selected-unit panel wording now reads more like a finished game HUD than a debug tool
 
 ## Resources Needed Soon
 

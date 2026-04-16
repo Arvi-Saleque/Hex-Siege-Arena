@@ -181,11 +181,17 @@ func _build_layout() -> void:
 	_board_view.cell_clicked.connect(_on_board_cell_clicked)
 	_board_holder.add_child(_board_view)
 
+	var side_scroll := ScrollContainer.new()
+	side_scroll.custom_minimum_size = Vector2(310, 0)
+	side_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	side_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	content.add_child(side_scroll)
+
 	var side_rail := VBoxContainer.new()
 	side_rail.custom_minimum_size = Vector2(300, 0)
 	side_rail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_rail.add_theme_constant_override("separation", 12)
-	content.add_child(side_rail)
+	side_scroll.add_child(side_rail)
 
 	var info_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
 	side_rail.add_child(info_panel)
@@ -465,17 +471,17 @@ func _wrap_panel_content(panel: PanelContainer, horizontal_margin: int, vertical
 func _panel_style(accent_color: Color, fill_color: Color = COLOR_SURFACE) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill_color
-	style.corner_radius_top_left = 10
-	style.corner_radius_top_right = 10
-	style.corner_radius_bottom_left = 10
-	style.corner_radius_bottom_right = 10
+	style.corner_radius_top_left = 14
+	style.corner_radius_top_right = 14
+	style.corner_radius_bottom_left = 14
+	style.corner_radius_bottom_right = 14
 	style.border_width_left = 1
 	style.border_width_top = 1
 	style.border_width_right = 1
 	style.border_width_bottom = 1
-	style.border_color = accent_color.lerp(COLOR_BORDER, 0.68)
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.14)
-	style.shadow_size = 3
+	style.border_color = accent_color.lerp(COLOR_BORDER, 0.56)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.22)
+	style.shadow_size = 8
 	style.content_margin_left = 2.0
 	style.content_margin_top = 2.0
 	style.content_margin_right = 2.0
@@ -521,21 +527,21 @@ func _make_action_button(text_value: String, accent_color: Color) -> Button:
 func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(accent_color.r, accent_color.g, accent_color.b, fill_alpha)
-	style.corner_radius_top_left = 9
-	style.corner_radius_top_right = 9
-	style.corner_radius_bottom_left = 9
-	style.corner_radius_bottom_right = 9
+	style.corner_radius_top_left = 12
+	style.corner_radius_top_right = 12
+	style.corner_radius_bottom_left = 12
+	style.corner_radius_bottom_right = 12
 	style.border_width_left = 1
 	style.border_width_top = 1
 	style.border_width_right = 1
 	style.border_width_bottom = 1
 	style.border_color = accent_color
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.12)
-	style.shadow_size = 2
-	style.content_margin_left = 10.0
-	style.content_margin_top = 6.0
-	style.content_margin_right = 10.0
-	style.content_margin_bottom = 6.0
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.18)
+	style.shadow_size = 4
+	style.content_margin_left = 12.0
+	style.content_margin_top = 7.0
+	style.content_margin_right = 12.0
+	style.content_margin_bottom = 7.0
 	return style
 
 
@@ -718,12 +724,12 @@ func _refresh_selected_unit_panel() -> void:
 	if focus_tank == null:
 		_selected_model_name_label.text = "No active selection"
 		_selected_model_role_label.text = "Select a unit to inspect combat and movement details."
-		_status_label.text = "Health: -\nMove: -\nDamage: -\nStatus: -"
+		_status_label.text = "Integrity  -\nMobility  -\nStrike  -\nStatus  -"
 		return
 
 	_selected_model_name_label.text = _unit_card_name(focus_tank)
 	_selected_model_role_label.text = _unit_role_text(focus_tank)
-	_status_label.text = "Health: %d/%d\nMove: %d hexes\nDamage: %d\nStatus: %s" % [
+	_status_label.text = "Integrity  %d/%d\nMobility  %d hexes\nStrike  %d dmg\nStatus  %s" % [
 		focus_tank.hp,
 		focus_tank.max_hp,
 		focus_tank.get_move_range(),
@@ -1237,7 +1243,7 @@ func _post_match_text() -> String:
 
 
 func _objective_text() -> String:
-	return "Win by destroying the enemy Ktank or forcing your own Ktank onto the center."
+	return "Destroy the enemy Ktank or move your own Ktank onto the center hex."
 
 
 func _player_summary_text(player_id: int) -> String:
