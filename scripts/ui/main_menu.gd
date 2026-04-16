@@ -28,52 +28,66 @@ func _build_layout() -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(scroll)
+
 	var root_margin := MarginContainer.new()
-	root_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root_margin.add_theme_constant_override("margin_left", 24)
-	root_margin.add_theme_constant_override("margin_top", 24)
-	root_margin.add_theme_constant_override("margin_right", 24)
-	root_margin.add_theme_constant_override("margin_bottom", 24)
-	add_child(root_margin)
+	root_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root_margin.add_theme_constant_override("margin_left", 20)
+	root_margin.add_theme_constant_override("margin_top", 20)
+	root_margin.add_theme_constant_override("margin_right", 20)
+	root_margin.add_theme_constant_override("margin_bottom", 20)
+	scroll.add_child(root_margin)
 
 	var layout := HBoxContainer.new()
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	layout.add_theme_constant_override("separation", 20)
 	root_margin.add_child(layout)
 
 	var hero_panel := PanelContainer.new()
 	hero_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hero_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	layout.add_child(hero_panel)
 
 	var hero_margin := MarginContainer.new()
-	hero_margin.add_theme_constant_override("margin_left", 28)
-	hero_margin.add_theme_constant_override("margin_top", 28)
-	hero_margin.add_theme_constant_override("margin_right", 28)
-	hero_margin.add_theme_constant_override("margin_bottom", 28)
+	hero_margin.add_theme_constant_override("margin_left", 22)
+	hero_margin.add_theme_constant_override("margin_top", 22)
+	hero_margin.add_theme_constant_override("margin_right", 22)
+	hero_margin.add_theme_constant_override("margin_bottom", 22)
 	hero_panel.add_child(hero_margin)
 
 	var hero_layout := VBoxContainer.new()
-	hero_layout.add_theme_constant_override("separation", 18)
+	hero_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hero_layout.add_theme_constant_override("separation", 14)
 	hero_margin.add_child(hero_layout)
 
 	var title := Label.new()
 	title.text = "Hex Siege Arena"
-	title.add_theme_font_size_override("font_size", 40)
+	title.add_theme_font_size_override("font_size", 34)
 	hero_layout.add_child(title)
 
 	var subtitle := Label.new()
 	subtitle.text = "Phase %d release-candidate build" % AppState.project_phase
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.modulate = Color(0.74, 0.82, 0.92, 1.0)
 	hero_layout.add_child(subtitle)
 
 	_summary_label = RichTextLabel.new()
 	_summary_label.bbcode_enabled = true
 	_summary_label.fit_content = true
+	_summary_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_summary_label.scroll_active = false
 	hero_layout.add_child(_summary_label)
 
 	var setup_title := Label.new()
 	setup_title.text = "Match Setup"
-	setup_title.add_theme_font_size_override("font_size", 24)
+	setup_title.add_theme_font_size_override("font_size", 22)
 	hero_layout.add_child(setup_title)
 
 	var setup_grid := GridContainer.new()
@@ -123,7 +137,7 @@ func _build_layout() -> void:
 	setup_grid.add_child(_p2_rollout_spin)
 
 	var button_column := VBoxContainer.new()
-	button_column.add_theme_constant_override("separation", 12)
+	button_column.add_theme_constant_override("separation", 10)
 	hero_layout.add_child(button_column)
 
 	button_column.add_child(_make_button("Start Configured Match", _on_open_match_pressed))
@@ -136,23 +150,24 @@ func _build_layout() -> void:
 	button_column.add_child(_make_button("Reset Runtime State", _on_reset_state_pressed))
 
 	var side_panel := PanelContainer.new()
-	side_panel.custom_minimum_size = Vector2(360, 0)
+	side_panel.custom_minimum_size = Vector2(320, 0)
+	side_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	layout.add_child(side_panel)
 
 	var side_margin := MarginContainer.new()
-	side_margin.add_theme_constant_override("margin_left", 24)
-	side_margin.add_theme_constant_override("margin_top", 24)
-	side_margin.add_theme_constant_override("margin_right", 24)
-	side_margin.add_theme_constant_override("margin_bottom", 24)
+	side_margin.add_theme_constant_override("margin_left", 20)
+	side_margin.add_theme_constant_override("margin_top", 20)
+	side_margin.add_theme_constant_override("margin_right", 20)
+	side_margin.add_theme_constant_override("margin_bottom", 20)
 	side_panel.add_child(side_margin)
 
 	var side_layout := VBoxContainer.new()
-	side_layout.add_theme_constant_override("separation", 14)
+	side_layout.add_theme_constant_override("separation", 12)
 	side_margin.add_child(side_layout)
 
 	var side_title := Label.new()
 	side_title.text = "Release Notes"
-	side_title.add_theme_font_size_override("font_size", 24)
+	side_title.add_theme_font_size_override("font_size", 22)
 	side_layout.add_child(side_title)
 
 	var notes := Label.new()
@@ -184,7 +199,7 @@ func _controller_option() -> OptionButton:
 func _make_button(text: String, callback: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(280, 52)
+	button.custom_minimum_size = Vector2(0, 46)
 	button.mouse_entered.connect(AudioManager.play_ui_hover)
 	button.pressed.connect(func() -> void:
 		AudioManager.play_ui_click()
@@ -235,14 +250,14 @@ func _refresh_summary() -> void:
 	var replay_ready: String = "Ready" if not AppState.current_replay.turns.is_empty() else "Empty"
 	if _replay_button != null:
 		_replay_button.disabled = AppState.current_replay.turns.is_empty()
-	_summary_label.text = "[center]AI-vs-AI is the flagship mode.[/center]\n[center]Current build: %s[/center]\n\n[center]P1: %s | P2: %s | Map: %s | Replay: %s[/center]" % [
+	_summary_label.text = "[center]AI-vs-AI is the flagship mode.[/center]\n[center]Build: %s[/center]\n\n[center]P1: %s | P2: %s | Map: %s | Replay: %s[/center]" % [
 		AppState.build_label.replace("-", " "),
 		_controller_label(config.player_one_ai.controller_type),
 		_controller_label(config.player_two_ai.controller_type),
 		config.map_id.capitalize(),
 		replay_ready,
 	]
-	_summary_label.text += "\n\n[center]UI Scale: %.2fx | Reduced Motion: %s | High Contrast: %s[/center]" % [
+	_summary_label.text += "\n[center]UI Scale: %.2fx | Motion: %s | Contrast: %s[/center]" % [
 		AppState.ui_scale,
 		"On" if AppState.reduced_motion else "Off",
 		"On" if AppState.high_contrast_mode else "Off",

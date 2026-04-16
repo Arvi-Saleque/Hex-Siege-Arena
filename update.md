@@ -278,6 +278,8 @@
 - Moved the `F3` debug panel into an overlay so it no longer pushes the normal gameplay HUD downward
 - Replaced fragile viewport input handling with direct `accept_event()` key handling in the match scene
 - Wrapped the debug overlay contents in a scroll container so the full debug panel remains reachable on smaller screens
+- Made the main menu fullscreen-safe by wrapping the page in a scroll container
+- Tightened menu spacing, titles, side panel width, and button sizing so the full menu remains readable without clipping
   - redesigned the match HUD into a more product-style tactics layout with a hero header, cleaner card hierarchy, and a dedicated command deck
   - added a four-unit roster strip beneath the board so all four distinct tanks are visible in the main game scene
   - added a larger selected-unit showcase card that tracks the currently selected or active tank
