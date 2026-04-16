@@ -114,6 +114,19 @@ func play_objective_feedback() -> void:
 	_play_sfx("pickup_bonus_move", sfx_volume_db - 4.0, 1.04)
 
 
+func play_move_confirm(tank_type: int) -> void:
+	var move_key: String = "move_light" if tank_type == GameTypes.TankType.QTANK else "move_heavy"
+	var pitch: float = 1.08 if tank_type == GameTypes.TankType.QTANK else 0.96
+	_play_sfx(move_key, sfx_volume_db - 4.0, pitch)
+
+
+func play_move_arrival(tank_type: int, delay: float) -> void:
+	var move_key: String = "move_light" if tank_type == GameTypes.TankType.QTANK else "move_heavy"
+	var pitch: float = 1.18 if tank_type == GameTypes.TankType.QTANK else 0.9
+	_play_sfx_delayed(move_key, sfx_volume_db - 7.0, delay, pitch)
+	_play_sfx_delayed("ui_confirm", ui_volume_db - 7.0, delay + 0.02, 1.02)
+
+
 func play_action_feedback(previous_state: GameState, current_state: GameState, action: ActionData, events: Array[GameEvent]) -> void:
 	if previous_state == null or current_state == null:
 		return
@@ -122,8 +135,13 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 		GameTypes.ActionType.MOVE:
 			var moving_tank: TankData = previous_state.get_tank(action.actor_id)
 			if moving_tank != null:
-				var move_key: String = "move_light" if moving_tank.tank_type == GameTypes.TankType.QTANK else "move_heavy"
-				_play_sfx(move_key, sfx_volume_db)
+				play_move_confirm(moving_tank.tank_type)
+				var travel_seconds: float = clampf(
+					moving_tank.position.to_world_flat(34.0).distance_to(action.target_coord.to_world_flat(34.0)) / 220.0,
+					0.32,
+					0.8
+				)
+				play_move_arrival(moving_tank.tank_type, travel_seconds * 0.82)
 		GameTypes.ActionType.ATTACK:
 			var attacking_tank: TankData = previous_state.get_tank(action.actor_id)
 			if attacking_tank != null:

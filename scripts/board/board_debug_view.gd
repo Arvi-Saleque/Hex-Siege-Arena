@@ -296,28 +296,41 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 				var start_center: Vector2 = moved_tank.position.to_world_flat(hex_size)
 				var end_center: Vector2 = action.target_coord.to_world_flat(hex_size)
 				var travel_duration: float = clampf(start_center.distance_to(end_center) / 220.0, 0.32, 0.8)
+				var travel_dir: Vector2 = (end_center - start_center).normalized()
+				if travel_dir == Vector2.ZERO:
+					travel_dir = Vector2.UP
+				var settle_offset: Vector2 = travel_dir * 6.0
 				_tank_motion_overrides[action.actor_id] = {
-					"start": start_center,
+					"start": start_center - travel_dir * 4.0,
 					"end": end_center,
-					"start_angle": moved_tank.facing_angle,
+					"start_angle": moved_tank.facing_angle - 0.05,
 					"end_angle": current_tank.facing_angle if current_tank != null else moved_tank.facing_angle,
 					"time_left": travel_duration,
 					"duration": travel_duration,
+					"settle_offset": settle_offset,
 				}
 				_ring_effects.append({
 					"center": start_center,
 					"color": Color("8ed9ff"),
-					"radius": 20.0,
-					"time_left": 0.24,
-					"duration": 0.24,
+					"radius": 18.0,
+					"time_left": 0.18,
+					"duration": 0.18,
 					"filled": false,
+				})
+				_ring_effects.append({
+					"center": start_center,
+					"color": Color(0.62, 0.88, 1.0, 0.18),
+					"radius": 14.0,
+					"time_left": 0.12,
+					"duration": 0.12,
+					"filled": true,
 				})
 				_flash_effects.append({
 					"center": start_center,
 					"color": Color("9ec9ff"),
-					"radius": 12.0,
-					"time_left": 0.18,
-					"duration": 0.18,
+					"radius": 14.0,
+					"time_left": 0.14,
+					"duration": 0.14,
 				})
 				var path_cells: Array[HexCoord] = _movement_preview_path(moved_tank, action.target_coord)
 				for index in range(path_cells.size()):
@@ -325,31 +338,41 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 					_sprite_effects.append({
 						"texture": EFFECT_TRACE,
 						"center": path_center,
-						"color": Color(0.54, 0.87, 1.0, 0.16),
-						"scale_start": 0.18 + float(index) * 0.02,
-						"scale_end": 0.28 + float(index) * 0.02,
+						"color": Color(0.54, 0.87, 1.0, 0.22),
+						"scale_start": 0.2 + float(index) * 0.02,
+						"scale_end": 0.32 + float(index) * 0.02,
 						"rotation": moved_tank.facing_angle,
-						"time_left": 0.26 + float(index) * 0.04,
-						"duration": 0.26 + float(index) * 0.04,
-						"drift": Vector2(0, -4),
+						"time_left": travel_duration * 0.82 + float(index) * 0.02,
+						"duration": travel_duration * 0.82 + float(index) * 0.02,
+						"drift": travel_dir * 10.0,
 					})
 				_ring_effects.append({
 					"center": end_center,
 					"color": Color("7be0ff"),
 					"radius": 26.0,
-					"time_left": 0.44,
-					"duration": 0.44,
+					"time_left": 0.5,
+					"duration": 0.5,
+					"delay": travel_duration * 0.78,
 					"filled": false,
 				})
 				_sprite_effects.append({
 					"texture": EFFECT_SMOKE,
 					"center": end_center,
-					"color": Color(0.72, 0.9, 1.0, 0.32),
-					"scale_start": 0.12,
-					"scale_end": 0.28,
-					"time_left": 0.4,
-					"duration": 0.4,
-					"drift": Vector2(0, -8),
+					"color": Color(0.72, 0.9, 1.0, 0.4),
+					"scale_start": 0.16,
+					"scale_end": 0.34,
+					"time_left": 0.44,
+					"duration": 0.44,
+					"delay": travel_duration * 0.78,
+					"drift": Vector2(0, -10),
+				})
+				_flash_effects.append({
+					"center": end_center,
+					"color": Color(0.84, 0.97, 1.0, 0.22),
+					"radius": 18.0,
+					"time_left": 0.22,
+					"duration": 0.22,
+					"delay": travel_duration * 0.8,
 				})
 				_trigger_shake(0.22)
 		GameTypes.ActionType.ATTACK:
@@ -1082,8 +1105,19 @@ func _motion_override_center(actor_id: String, fallback_center: Vector2) -> Vect
 	var duration: float = maxf(_effect_float(motion, "duration", 1.0), 0.001)
 	var time_left: float = clampf(_effect_float(motion, "time_left", 0.0), 0.0, duration)
 	var progress: float = 1.0 - (time_left / duration)
-	var eased_progress: float = 1.0 - pow(1.0 - progress, 2.2)
-	return _effect_vec2(motion, "start", fallback_center).lerp(_effect_vec2(motion, "end", fallback_center), eased_progress)
+	var start_center: Vector2 = _effect_vec2(motion, "start", fallback_center)
+	var end_center: Vector2 = _effect_vec2(motion, "end", fallback_center)
+	var settle_offset: Vector2 = _effect_vec2(motion, "settle_offset", Vector2.ZERO)
+	if settle_offset == Vector2.ZERO:
+		var eased_progress: float = 1.0 - pow(1.0 - progress, 2.2)
+		return start_center.lerp(end_center, eased_progress)
+	if progress < 0.82:
+		var travel_progress: float = progress / 0.82
+		var eased_travel: float = 1.0 - pow(1.0 - travel_progress, 2.2)
+		return start_center.lerp(end_center + settle_offset, eased_travel)
+	var settle_progress: float = (progress - 0.82) / 0.18
+	var eased_settle: float = 1.0 - pow(1.0 - settle_progress, 2.6)
+	return (end_center + settle_offset).lerp(end_center, eased_settle)
 
 
 func _motion_override_angle(actor_id: String, fallback_angle: float) -> float:

@@ -402,6 +402,12 @@
   - target recoil is stronger and lasts slightly longer
   - impact burst and hit ring are easier to read
   - damage numbers are larger and easier to notice over the battlefield
+- Applied a focused Step 4C movement-feel correction:
+  - move confirmation now has a clearer start pulse
+  - travel traces persist more clearly during movement
+  - movement now includes a subtle settle on arrival instead of ending too abruptly
+  - destination arrival uses a clearer landing puff and flash
+  - movement audio now reads more like start plus arrival instead of one flat cue
 
 ## Next Items
 
@@ -616,6 +622,12 @@
   - hit targets recoil visibly before settling back
   - impact spark/burst reads clearly on contact
   - damage numbers stand out immediately when damage lands
+- Confirm the Step 4C movement-feel correction works:
+  - movement starts with a clearer confirmation pulse
+  - path remains visible while the unit is traveling
+  - movement feels smoother and less abrupt in transit
+  - destination arrival has a noticeable but subtle landing moment
+  - movement still feels responsive and not too slow
 
 ## Resources Needed Soon
 
