@@ -2,17 +2,23 @@
 
 ## Current Phase
 
-- Step 5: World atmosphere, lighting, and presentation depth
+- Step 5: World atmosphere, lighting, and presentation depth complete
 
 ## Completed Items
 
-- Started the Step 5 world-building pass:
+- Completed the Step 5 world-building pass:
   - added a darker layered battlefield backdrop behind the board
   - introduced a single consistent light direction for board presentation
   - improved unit grounding with stronger directional shadows
   - added subtle edge atmosphere using curated smoke and light-mask assets
   - made the board center feel more important through restrained local glow and focus
   - added distant sci-fi silhouette shapes so the match no longer feels like empty void space
+  - extended the atmosphere pass to the full match screen so the HUD and board sit inside one world
+  - added restrained screen-level glow, silhouette, and haze layers behind the gameplay shell
+  - improved board-surface lighting so the center contest zone pulls the eye more naturally
+  - refined directional shadow strength and tile light bias so the battlefield feels more intentionally lit
+  - added a softer camera/framing bias by nudging the board upward slightly inside the arena frame
+  - completed a final color-harmony pass across HUD, board, and world layers
 - Tightened the last Step 4 readability blockers:
   - damage popups are now larger, brighter, and easier to read against the board
   - movement arrival now has a stronger landing pulse, puff, and settle cue
@@ -436,7 +442,7 @@
 
 ## Next Items
 
-- Verify the Step 3 board readability pass inside Godot
+- Verify the completed Step 5 world-atmosphere pass inside Godot
 - Do a final bug-fix and styling sweep based on runtime feedback
 
 ## User Check List
@@ -678,6 +684,13 @@
   - unit shadows feel more intentional and dimensional
   - center tension draws the eye naturally without overpowering gameplay
   - the added atmosphere stays behind the tactics information
+- Confirm the Step 5 completion pass works:
+  - the whole match screen feels like one dark sci-fi command arena, not just the board panel
+  - the HUD sits inside the same world tone as the battlefield
+  - lighting direction feels intentional across tiles, units, and shadows
+  - the board is framed slightly upward and more deliberately in the center space
+  - background haze, light masks, and silhouettes add depth without stealing attention
+  - the world layer feels premium even when nothing is moving
 
 ## Resources Needed Soon
 

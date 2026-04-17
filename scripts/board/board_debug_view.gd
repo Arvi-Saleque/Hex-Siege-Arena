@@ -580,11 +580,13 @@ func _draw_board_backdrop(active_board: BoardState) -> void:
 			max_y = maxf(max_y, center.y)
 		used_rect = Rect2(Vector2(min_x - 28.0, min_y - 28.0), Vector2((max_x - min_x) + 56.0, (max_y - min_y) + 72.0))
 
-	var backdrop_rect: Rect2 = used_rect.grow_individual(64.0, 54.0, 64.0, 62.0)
+	var backdrop_rect: Rect2 = used_rect.grow_individual(56.0, 48.0, 56.0, 54.0)
 	var board_center: Vector2 = used_rect.position + used_rect.size * 0.5 + _shake_offset
 	var center_glow_alpha: float = 0.08 + 0.02 * sin(_pulse_time * 1.7)
 	draw_rect(backdrop_rect, Color("0c1320"))
 	draw_rect(used_rect, Color("111927"))
+	draw_circle(board_center + Vector2(-used_rect.size.x * 0.12, -used_rect.size.y * 0.16), used_rect.size.x * 0.42, Color(0.32, 0.46, 0.68, 0.05))
+	draw_circle(board_center + Vector2(used_rect.size.x * 0.18, used_rect.size.y * 0.12), used_rect.size.x * 0.34, Color(0.18, 0.16, 0.12, 0.07))
 	_draw_backdrop_texture(
 		WORLD_LIGHT_CONE,
 		used_rect.position + Vector2(used_rect.size.x * 0.22, used_rect.size.y * 0.18) + _shake_offset,
@@ -601,8 +603,8 @@ func _draw_board_backdrop(active_board: BoardState) -> void:
 	_draw_backdrop_texture(
 		WORLD_WHITE_PUFF,
 		board_center + Vector2(0, 8),
-		Vector2(1.45, 1.15),
-		Color(1.0, 0.84, 0.42, 0.06 + 0.02 * sin(_pulse_time * 2.2))
+		Vector2(1.55, 1.2),
+		Color(1.0, 0.84, 0.42, 0.07 + 0.02 * sin(_pulse_time * 2.2))
 	)
 	_draw_backdrop_texture(
 		WORLD_WINDOW_CORNER,
@@ -649,6 +651,8 @@ func _draw_board_backdrop(active_board: BoardState) -> void:
 	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.72, used_rect.size.y * 0.62) + _shake_offset, 210.0, Color(0.66, 0.55, 0.2, 0.05))
 	draw_circle(board_center, 290.0, Color(0.08, 0.12, 0.2, 0.24))
 	draw_circle(board_center, minf(used_rect.size.x, used_rect.size.y) * 0.28, Color(0.92, 0.81, 0.28, 0.035))
+	draw_arc(board_center, 212.0, 0.0, TAU, 72, Color(0.84, 0.94, 1.0, 0.06), 2.0, true)
+	draw_arc(board_center, 134.0, 0.0, TAU, 72, Color(1.0, 0.9, 0.56, 0.05), 1.4, true)
 	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.08, used_rect.size.y * 0.12) + _shake_offset, 140.0, Color(0.02, 0.03, 0.06, 0.32))
 	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.95, used_rect.size.y * 0.12) + _shake_offset, 132.0, Color(0.02, 0.03, 0.06, 0.28))
 	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.06, used_rect.size.y * 0.9) + _shake_offset, 170.0, Color(0.02, 0.03, 0.06, 0.24))
@@ -673,9 +677,9 @@ func _draw_tanks() -> void:
 		var fade_alpha: float = _tank_fade_alpha(tank.actor_id())
 		var render_alpha: float = 1.0 - fade_alpha
 		var shadow_size: Vector2 = Vector2(22, 8.5) if not is_selected else Vector2(25, 9.5)
-		var shadow_center: Vector2 = center + (-WORLD_LIGHT_DIR.normalized() * 12.5) + Vector2(0, 7)
-		draw_colored_polygon(_ellipse_points(shadow_center, shadow_size, 20), Color(0.03, 0.05, 0.08, (0.52 if not is_selected else 0.64) * render_alpha))
-		draw_colored_polygon(_ellipse_points(center + Vector2(2, 13), Vector2(16, 6), 18), Color(0.12, 0.18, 0.26, (0.16 if not is_selected else 0.24) * render_alpha))
+		var shadow_center: Vector2 = center + (-WORLD_LIGHT_DIR.normalized() * 13.5) + Vector2(0, 8)
+		draw_colored_polygon(_ellipse_points(shadow_center, shadow_size, 20), Color(0.03, 0.05, 0.08, (0.56 if not is_selected else 0.7) * render_alpha))
+		draw_colored_polygon(_ellipse_points(center + Vector2(2, 13), Vector2(17, 6.4), 18), Color(0.12, 0.18, 0.26, (0.18 if not is_selected else 0.28) * render_alpha))
 		draw_circle(center + Vector2(0, 7), 14.0, Color(player_color.r, player_color.g, player_color.b, (0.08 if not is_selected else 0.16) * render_alpha))
 		draw_arc(center + Vector2(0, 7), 18.0, 0.0, TAU, 40, Color(player_color.r, player_color.g, player_color.b, 0.54 * render_alpha), 2.2, true)
 		if tank.owner_id == game_state.current_player:
@@ -690,6 +694,7 @@ func _draw_tanks() -> void:
 			draw_arc(center + Vector2(0, 5), pulse_radius, 0.0, TAU, 48, player_color.lerp(Color.WHITE, 0.45), 3.4, true)
 			draw_arc(center + Vector2(0, 5), pulse_radius + 5.0, 0.0, TAU, 48, Color(player_color.r, player_color.g, player_color.b, 0.28), 1.8, true)
 			draw_arc(center + Vector2(0, 5), 16.5, 0.0, TAU, 32, Color(player_color.r, player_color.g, player_color.b, 0.92), 2.0, true)
+			draw_circle(center + Vector2(0, 5), 26.0, Color(player_color.r, player_color.g, player_color.b, 0.05))
 		elif current_action_mode == "attack" and _is_tank_targeted(tank):
 			draw_circle(center + Vector2(0, 5), 16.0, Color(_attack_preview_color().r, _attack_preview_color().g, _attack_preview_color().b, 0.08))
 			draw_arc(center + Vector2(0, 5), 24.0, 0.0, TAU, 40, Color(_attack_preview_color().r, _attack_preview_color().g, _attack_preview_color().b, 0.94), 2.8, true)
@@ -891,8 +896,11 @@ func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2A
 func _tile_fill_color(cell: CellData) -> Color:
 	var fill: Color = COLOR_BY_TYPE.get(cell.cell_type, Color.DIM_GRAY)
 	var center_bias: float = clampf(1.0 - float(cell.coord.distance_to(HexCoord.new())) / maxf(float(_active_board().rings), 1.0), 0.0, 1.0)
+	var world_center: Vector2 = cell.coord.to_world_flat(hex_size)
+	var light_bias: float = clampf(((world_center.normalized().dot(-WORLD_LIGHT_DIR.normalized())) + 1.0) * 0.5, 0.0, 1.0)
 	fill = fill.lerp(Color("7fbaff"), 0.014)
-	fill = fill.lerp(Color.WHITE, 0.03 + center_bias * 0.038)
+	fill = fill.lerp(Color("d8ebff"), 0.02 + light_bias * 0.022)
+	fill = fill.lerp(Color.WHITE, 0.024 + center_bias * 0.042)
 	if cell.coord.key() == hovered_key:
 		var hover_mix: Color = Color("d7ebff")
 		if current_action_mode == "move":
@@ -912,6 +920,7 @@ func _draw_objective_tile_effects(cell: CellData, center: Vector2, points: Packe
 	var pulse_radius: float = hex_size * (0.52 + pulse_amplitude * sin(_pulse_time * 2.2))
 	var reaction_strength: float = _objective_reaction_strength(cell.coord.key())
 	draw_circle(center, pulse_radius + 6.0, Color(1.0, 0.92, 0.47, 0.08))
+	draw_circle(center, pulse_radius + 14.0, Color(1.0, 0.9, 0.56, 0.045))
 	draw_arc(center, pulse_radius, 0.0, TAU, 48, Color(1.0, 0.95, 0.66, 0.82 + reaction_strength * 0.18), 2.0 + reaction_strength * 0.7, true)
 	var objective_outline: PackedVector2Array = points.duplicate()
 	objective_outline.append(points[0])

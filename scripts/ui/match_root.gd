@@ -7,6 +7,12 @@ const FONT_REGULAR := preload("res://assets/ui/fonts/inter-regular.ttf")
 const FONT_MEDIUM := preload("res://assets/ui/fonts/inter-medium.ttf")
 const FONT_SEMIBOLD := preload("res://assets/ui/fonts/rajdhani-semibold.ttf")
 const FONT_BOLD := preload("res://assets/ui/fonts/rajdhani-bold.ttf")
+const WORLD_LIGHT_CIRCLE := preload("res://assets/world/masks/light_circle.png")
+const WORLD_LIGHT_CONE := preload("res://assets/world/masks/light_cone.png")
+const WORLD_EDGE_SMOKE := preload("res://assets/world/smoke/edge_smoke.png")
+const WORLD_WINDOW_CORNER := preload("res://assets/world/silhouettes/window_corner.png")
+const WORLD_CORRIDOR_CROSS := preload("res://assets/world/silhouettes/corridor_cross.png")
+const WORLD_CHIMNEY := preload("res://assets/world/silhouettes/chimney.png")
 const COLOR_BG := Color("0b1220")
 const COLOR_SURFACE := Color("141c2b")
 const COLOR_SURFACE_ALT := Color("1a2436")
@@ -90,6 +96,12 @@ func _build_layout() -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
+	var world_backdrop := Control.new()
+	world_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	world_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(world_backdrop)
+	_build_world_backdrop(world_backdrop)
+
 	var root_margin := MarginContainer.new()
 	root_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root_margin.add_theme_constant_override("margin_left", 16)
@@ -170,7 +182,9 @@ func _build_layout() -> void:
 	var board_surface := Control.new()
 	board_surface.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_surface.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	board_surface.clip_contents = true
 	board_margin.add_child(board_surface)
+	_build_board_world_layer(board_surface)
 
 	_board_holder = Control.new()
 	_board_holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -418,6 +432,155 @@ func _build_layout() -> void:
 	call_deferred("_recenter_mini_board")
 
 
+func _build_world_backdrop(parent: Control) -> void:
+	var far_glow := TextureRect.new()
+	far_glow.texture = WORLD_LIGHT_CIRCLE
+	far_glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	far_glow.modulate = Color(0.32, 0.52, 0.82, 0.08)
+	far_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	far_glow.anchor_left = 0.14
+	far_glow.anchor_top = 0.08
+	far_glow.anchor_right = 0.84
+	far_glow.anchor_bottom = 0.9
+	parent.add_child(far_glow)
+
+	var upper_left_cone := TextureRect.new()
+	upper_left_cone.texture = WORLD_LIGHT_CONE
+	upper_left_cone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	upper_left_cone.modulate = Color(0.44, 0.68, 1.0, 0.06)
+	upper_left_cone.rotation = deg_to_rad(12.0)
+	upper_left_cone.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	upper_left_cone.anchor_left = -0.02
+	upper_left_cone.anchor_top = -0.08
+	upper_left_cone.anchor_right = 0.56
+	upper_left_cone.anchor_bottom = 0.52
+	parent.add_child(upper_left_cone)
+
+	var lower_right_cone := TextureRect.new()
+	lower_right_cone.texture = WORLD_LIGHT_CONE
+	lower_right_cone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	lower_right_cone.modulate = Color(0.85, 0.72, 0.38, 0.04)
+	lower_right_cone.rotation = deg_to_rad(188.0)
+	lower_right_cone.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lower_right_cone.anchor_left = 0.52
+	lower_right_cone.anchor_top = 0.42
+	lower_right_cone.anchor_right = 1.04
+	lower_right_cone.anchor_bottom = 1.06
+	parent.add_child(lower_right_cone)
+
+	var left_silhouette := TextureRect.new()
+	left_silhouette.texture = WORLD_WINDOW_CORNER
+	left_silhouette.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	left_silhouette.modulate = Color(0.54, 0.66, 0.84, 0.06)
+	left_silhouette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left_silhouette.anchor_left = -0.02
+	left_silhouette.anchor_top = 0.12
+	left_silhouette.anchor_right = 0.22
+	left_silhouette.anchor_bottom = 0.48
+	parent.add_child(left_silhouette)
+
+	var right_silhouette := TextureRect.new()
+	right_silhouette.texture = WORLD_CORRIDOR_CROSS
+	right_silhouette.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	right_silhouette.modulate = Color(0.46, 0.58, 0.74, 0.055)
+	right_silhouette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right_silhouette.anchor_left = 0.82
+	right_silhouette.anchor_top = 0.14
+	right_silhouette.anchor_right = 1.02
+	right_silhouette.anchor_bottom = 0.44
+	parent.add_child(right_silhouette)
+
+	var lower_left_stack := TextureRect.new()
+	lower_left_stack.texture = WORLD_CHIMNEY
+	lower_left_stack.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	lower_left_stack.modulate = Color(0.42, 0.52, 0.66, 0.045)
+	lower_left_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lower_left_stack.anchor_left = 0.02
+	lower_left_stack.anchor_top = 0.72
+	lower_left_stack.anchor_right = 0.18
+	lower_left_stack.anchor_bottom = 0.98
+	parent.add_child(lower_left_stack)
+
+	var edge_smoke_left := TextureRect.new()
+	edge_smoke_left.texture = WORLD_EDGE_SMOKE
+	edge_smoke_left.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	edge_smoke_left.modulate = Color(0.56, 0.68, 0.88, 0.05)
+	edge_smoke_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	edge_smoke_left.rotation = deg_to_rad(90.0)
+	edge_smoke_left.anchor_left = -0.02
+	edge_smoke_left.anchor_top = 0.28
+	edge_smoke_left.anchor_right = 0.26
+	edge_smoke_left.anchor_bottom = 0.96
+	parent.add_child(edge_smoke_left)
+
+	var edge_smoke_right := TextureRect.new()
+	edge_smoke_right.texture = WORLD_EDGE_SMOKE
+	edge_smoke_right.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	edge_smoke_right.modulate = Color(0.76, 0.68, 0.54, 0.04)
+	edge_smoke_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	edge_smoke_right.rotation = deg_to_rad(-90.0)
+	edge_smoke_right.anchor_left = 0.78
+	edge_smoke_right.anchor_top = 0.32
+	edge_smoke_right.anchor_right = 1.02
+	edge_smoke_right.anchor_bottom = 0.98
+	parent.add_child(edge_smoke_right)
+
+	var vignette := ColorRect.new()
+	vignette.color = Color(0.02, 0.03, 0.05, 0.18)
+	vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(vignette)
+
+
+func _build_board_world_layer(parent: Control) -> void:
+	var local_cone := TextureRect.new()
+	local_cone.texture = WORLD_LIGHT_CONE
+	local_cone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	local_cone.modulate = Color(0.46, 0.7, 1.0, 0.08)
+	local_cone.rotation = deg_to_rad(14.0)
+	local_cone.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	local_cone.anchor_left = -0.08
+	local_cone.anchor_top = -0.08
+	local_cone.anchor_right = 0.58
+	local_cone.anchor_bottom = 0.52
+	parent.add_child(local_cone)
+
+	var center_glow := TextureRect.new()
+	center_glow.texture = WORLD_LIGHT_CIRCLE
+	center_glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	center_glow.modulate = Color(0.98, 0.86, 0.46, 0.09)
+	center_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center_glow.anchor_left = 0.22
+	center_glow.anchor_top = 0.12
+	center_glow.anchor_right = 0.78
+	center_glow.anchor_bottom = 0.9
+	parent.add_child(center_glow)
+
+	var board_smoke_left := TextureRect.new()
+	board_smoke_left.texture = WORLD_EDGE_SMOKE
+	board_smoke_left.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	board_smoke_left.modulate = Color(0.58, 0.72, 0.9, 0.05)
+	board_smoke_left.rotation = deg_to_rad(90.0)
+	board_smoke_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board_smoke_left.anchor_left = -0.04
+	board_smoke_left.anchor_top = 0.16
+	board_smoke_left.anchor_right = 0.2
+	board_smoke_left.anchor_bottom = 0.94
+	parent.add_child(board_smoke_left)
+
+	var board_smoke_right := TextureRect.new()
+	board_smoke_right.texture = WORLD_EDGE_SMOKE
+	board_smoke_right.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	board_smoke_right.modulate = Color(0.72, 0.62, 0.48, 0.035)
+	board_smoke_right.rotation = deg_to_rad(-90.0)
+	board_smoke_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board_smoke_right.anchor_left = 0.8
+	board_smoke_right.anchor_top = 0.2
+	board_smoke_right.anchor_right = 1.04
+	board_smoke_right.anchor_bottom = 0.98
+	parent.add_child(board_smoke_right)
+
+
 func _build_match_theme() -> Theme:
 	var match_theme := Theme.new()
 	match_theme.default_font = FONT_REGULAR
@@ -481,8 +644,9 @@ func _panel_style(accent_color: Color, fill_color: Color = COLOR_SURFACE) -> Sty
 	style.border_width_right = 1
 	style.border_width_bottom = 1
 	style.border_color = accent_color
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.28)
-	style.shadow_size = 7
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.32)
+	style.shadow_size = 9
+	style.shadow_offset = Vector2(0, 2)
 	style.content_margin_left = 2.0
 	style.content_margin_top = 2.0
 	style.content_margin_right = 2.0
@@ -1521,9 +1685,9 @@ func _recenter_board_view() -> void:
 	var visual_size: Vector2 = _board_view.get_board_visual_size()
 	var width_scale: float = holder_size.x / maxf(visual_size.x, 1.0)
 	var height_scale: float = holder_size.y / maxf(visual_size.y, 1.0)
-	var scale_factor: float = clampf(minf(width_scale, height_scale), 1.0, 2.15)
+	var scale_factor: float = clampf(minf(width_scale, height_scale), 1.0, 2.18)
 	_board_view.scale = Vector2.ONE * scale_factor
-	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.5)
+	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.492)
 
 
 func _reset_sidebar_scroll() -> void:
