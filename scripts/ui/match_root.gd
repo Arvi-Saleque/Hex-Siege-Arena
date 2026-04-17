@@ -227,7 +227,7 @@ func _build_layout() -> void:
 	var side_rail := VBoxContainer.new()
 	side_rail.custom_minimum_size = Vector2(228, 0)
 	side_rail.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	side_rail.add_theme_constant_override("separation", 10)
+	side_rail.add_theme_constant_override("separation", 8)
 	side_scroll.add_child(side_rail)
 
 	_selected_unit_panel = _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
@@ -249,12 +249,12 @@ func _build_layout() -> void:
 	_selected_model_role_label = Label.new()
 	_selected_model_role_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_selected_model_role_label.add_theme_font_override("font", FONT_MEDIUM)
-	_selected_model_role_label.add_theme_font_size_override("font_size", 13)
+	_selected_model_role_label.add_theme_font_size_override("font_size", 12)
 	_selected_model_role_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	info_layout.add_child(_selected_model_role_label)
 
 	_selected_accent_strip = ColorRect.new()
-	_selected_accent_strip.custom_minimum_size = Vector2(0, 4)
+	_selected_accent_strip.custom_minimum_size = Vector2(0, 3)
 	_selected_accent_strip.color = COLOR_BORDER
 	info_layout.add_child(_selected_accent_strip)
 
@@ -295,6 +295,7 @@ func _build_layout() -> void:
 	var overlay_layer := Control.new()
 	overlay_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay_layer.z_index = 20
 	root_margin.add_child(overlay_layer)
 
 	var overlay_margin := MarginContainer.new()
@@ -319,6 +320,7 @@ func _build_layout() -> void:
 	_debug_panel = _make_panel_card(COLOR_GOLD.darkened(0.28), COLOR_SURFACE_ALT)
 	_debug_panel.visible = false
 	_debug_panel.custom_minimum_size = Vector2(320, 0)
+	_debug_panel.z_index = 40
 	overlay_row.add_child(_debug_panel)
 	var debug_scroll := ScrollContainer.new()
 	debug_scroll.custom_minimum_size = Vector2(0, 360)
@@ -1228,7 +1230,7 @@ func _refresh_selected_unit_panel() -> void:
 		_selected_model_role_label.text = "Select a unit to inspect battlefield status."
 		_selected_model_role_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 		_selected_accent_strip.color = COLOR_BORDER
-		_status_label.text = "[color=#9db0cc][font_size=12]Faction[/font_size][/color]\n[font_size=18][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Integrity[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Mobility[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Strike[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Range[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Status[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]"
+		_status_label.text = "[color=#9db0cc][font_size=11]Faction[/font_size][/color] [font_size=17][b]-[/b][/font_size]\n[color=#9db0cc][font_size=11]Integrity[/font_size][/color] [font_size=18][b]-[/b][/font_size]\n[color=#9db0cc][font_size=11]Mobility[/font_size][/color] [font_size=17][b]-[/b][/font_size]\n[color=#9db0cc][font_size=11]Strike[/font_size][/color] [font_size=17][b]-[/b][/font_size]\n[color=#9db0cc][font_size=11]Range[/font_size][/color] [font_size=17][b]-[/b][/font_size]\n[color=#9db0cc][font_size=11]Status[/font_size][/color] [font_size=17][b]-[/b][/font_size]"
 		return
 
 	var faction_color: Color = _faction_color(focus_tank.owner_id)
@@ -1239,7 +1241,7 @@ func _refresh_selected_unit_panel() -> void:
 	_selected_model_name_label.text = _unit_card_name(focus_tank)
 	_selected_model_role_label.text = _unit_role_text(focus_tank)
 	_selected_accent_strip.color = faction_color
-	_status_label.text = "[color=#9db0cc][font_size=12]Faction[/font_size][/color]\n[font_size=20][b]%s[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Integrity[/font_size][/color]\n[font_size=22][b]%d / %d[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Mobility[/font_size][/color]\n[font_size=20][b]%d hexes[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Strike[/font_size][/color]\n[font_size=20][b]%d damage[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Range[/font_size][/color]\n[font_size=20][b]%s[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Status[/font_size][/color]\n[font_size=20][b]%s[/b][/font_size]" % [
+	_status_label.text = "[color=#9db0cc][font_size=11]Faction[/font_size][/color] [font_size=18][b]%s[/b][/font_size]\n[color=#9db0cc][font_size=11]Integrity[/font_size][/color] [font_size=19][b]%d / %d[/b][/font_size]\n[color=#9db0cc][font_size=11]Mobility[/font_size][/color] [font_size=18][b]%d hexes[/b][/font_size]\n[color=#9db0cc][font_size=11]Strike[/font_size][/color] [font_size=18][b]%d damage[/b][/font_size]\n[color=#9db0cc][font_size=11]Range[/font_size][/color] [font_size=18][b]%s[/b][/font_size]\n[color=#9db0cc][font_size=11]Status[/font_size][/color] [font_size=18][b]%s[/b][/font_size]" % [
 		_faction_label(focus_tank.owner_id),
 		focus_tank.hp,
 		focus_tank.max_hp,
@@ -2131,6 +2133,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_H:
 			_transition_to(HELP_SCENE)
 			accept_event()
+
+
+func _input(event: InputEvent) -> void:
+	if event is not InputEventKey or not event.pressed or event.echo:
+		return
+	var key_event := event as InputEventKey
+	var is_f3: bool = key_event.keycode == KEY_F3 or key_event.physical_keycode == KEY_F3
+	if not is_f3:
+		return
+	_debug_visible = not _debug_visible
+	_refresh_view()
+	accept_event()
 
 
 func _wire_button_audio(button: Button, use_back_sound: bool = false) -> void:

@@ -10,6 +10,8 @@
   - assigned the right-side match rail scroll container correctly so the sidebar resets and behaves more reliably
   - trimmed the right rail and top/bottom shell sizing slightly so hidden content fits more cleanly on screen
   - changed the debug toggle hint and input handling so `F3` now reliably opens the debug overlay instead of depending on `Shift+F3`
+  - compacted the Selected Unit card into a tighter stat layout so lower right-rail content is no longer pushed out as aggressively
+  - raised the debug overlay draw priority and added a direct `_input` hook for `F3` so the debug panel can still open even when other controls consume input first
 - Completed the Step 7 product-flow pass:
   - polished the main menu into a more confident front-end with stronger hero copy, session snapshot, arena preview, rules preview, version text, and consistent scene transitions
   - improved the pre-match setup flow so arena choice, rules, and match identity are easier to understand before launching a battle
