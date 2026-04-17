@@ -1155,9 +1155,9 @@ func _draw_tank_sprite(center: Vector2, tank: TankData, rotation_value: float = 
 	var gun_texture: Texture2D = sprite_set.get("gun", null) as Texture2D
 	var primary_color: Color = _player_primary_color(tank.owner_id)
 	var accent_color: Color = _player_accent_color(tank.owner_id)
-	var track_modulate: Color = Color(0.33, 0.37, 0.44, alpha)
-	var hull_modulate: Color = (Color(0.66, 0.76, 0.86, alpha) if tank.owner_id == 1 else Color(0.66, 0.58, 0.54, alpha))
-	var gun_modulate: Color = accent_color.lerp(Color.WHITE, 0.2)
+	var track_modulate: Color = Color(0.28, 0.31, 0.38, alpha)
+	var hull_modulate: Color = (Color(0.7, 0.8, 0.9, alpha) if tank.owner_id == 1 else Color(0.7, 0.6, 0.56, alpha))
+	var gun_modulate: Color = accent_color.lerp(Color.WHITE, 0.26)
 	gun_modulate.a = alpha
 	var faction_shade: Color = primary_color.darkened(0.18)
 	faction_shade.a = alpha * 0.48
@@ -1168,23 +1168,33 @@ func _draw_tank_sprite(center: Vector2, tank: TankData, rotation_value: float = 
 	var top_panel_center: Vector2 = center + _rotated_offset(Vector2(0, -6), rotation_value)
 	var chassis_panel_center: Vector2 = center + _rotated_offset(Vector2(0, 5), rotation_value)
 	var rear_center: Vector2 = center + _rotated_offset(Vector2(0, 11), rotation_value)
+	var hull_center: Vector2 = center + Vector2(0, 1)
+	var gun_center: Vector2 = center + Vector2(0, (-3 if is_qtank else -2))
 	var front_chevron_color: Color = Color(primary_color.r, primary_color.g, primary_color.b, 0.86 * alpha)
-	var armor_edge_color: Color = Color(0.92, 0.96, 1.0, (0.34 if is_qtank else 0.24) * alpha)
-	var recess_color: Color = Color(0.04, 0.06, 0.1, 0.34 * alpha)
-	var plate_color: Color = Color(primary_color.r, primary_color.g, primary_color.b, (0.16 if is_qtank else 0.22) * alpha)
+	var armor_edge_color: Color = Color(0.92, 0.96, 1.0, (0.38 if is_qtank else 0.28) * alpha)
+	var recess_color: Color = Color(0.03, 0.05, 0.09, 0.42 * alpha)
+	var plate_color: Color = Color(primary_color.r, primary_color.g, primary_color.b, (0.14 if is_qtank else 0.26) * alpha)
+	var front_edge_color: Color = Color(accent_color.r, accent_color.g, accent_color.b, (0.76 if is_qtank else 0.88) * alpha)
+	var rear_quiet_color: Color = Color(0.02, 0.03, 0.06, 0.24 * alpha)
 
 	if track_texture != null:
-		_draw_centered_texture(track_texture, center + Vector2(0, 4), scale_value, rotation_value, track_modulate)
+		_draw_centered_texture(track_texture, center + Vector2(0, 4), (scale_value * (0.96 if is_qtank else 1.08)), rotation_value, track_modulate)
 	if hull_texture != null:
-		_draw_centered_texture(hull_texture, center + Vector2(0, 1), scale_value, rotation_value, hull_modulate)
+		_draw_centered_texture(hull_texture, hull_center, (scale_value * (0.95 if is_qtank else 1.07)), rotation_value, hull_modulate)
 	if gun_texture != null:
-		_draw_centered_texture(gun_texture, center + Vector2(0, (-3 if is_qtank else -2)), scale_value, rotation_value, gun_modulate)
+		_draw_centered_texture(gun_texture, gun_center, (scale_value * (0.9 if is_qtank else 1.14)), rotation_value, gun_modulate)
 
 	draw_circle(center + rear_shadow_offset + Vector2(0, 1), (7.0 if is_qtank else 10.2), Color(0.04, 0.05, 0.08, 0.22 * alpha))
 	draw_circle(rear_center, (4.8 if is_qtank else 6.4), Color(0.03, 0.04, 0.07, 0.22 * alpha))
 	draw_line(center + _rotated_offset(Vector2(-9, -1), rotation_value), center + _rotated_offset(Vector2(9, -1), rotation_value), faction_shade, 3.0)
 	draw_line(center + _rotated_offset(Vector2(-7, -8), rotation_value), center + _rotated_offset(Vector2(7, -8), rotation_value), Color(primary_color.r, primary_color.g, primary_color.b, 0.72 * alpha), 1.9)
 	draw_line(center + _rotated_offset(Vector2(-6, 8), rotation_value), center + _rotated_offset(Vector2(6, 8), rotation_value), recess_color, 2.2)
+	draw_colored_polygon(PackedVector2Array([
+		center + _rotated_offset(Vector2((-6 if is_qtank else -8), 7), rotation_value),
+		center + _rotated_offset(Vector2((6 if is_qtank else 8), 7), rotation_value),
+		center + _rotated_offset(Vector2((4 if is_qtank else 6), 12), rotation_value),
+		center + _rotated_offset(Vector2((-4 if is_qtank else -6), 12), rotation_value),
+	]), rear_quiet_color)
 	draw_colored_polygon(PackedVector2Array([
 		center + _rotated_offset(Vector2((-7 if is_qtank else -9), -3), rotation_value),
 		center + _rotated_offset(Vector2((7 if is_qtank else 9), -3), rotation_value),
@@ -1200,7 +1210,9 @@ func _draw_tank_sprite(center: Vector2, tank: TankData, rotation_value: float = 
 			center + _rotated_offset(Vector2(7, -10), rotation_value),
 		]), front_chevron_color, 2.2, false)
 		draw_line(center + _rotated_offset(Vector2(0, -13), rotation_value), center + _rotated_offset(Vector2(0, -25), rotation_value), Color(accent_color.r, accent_color.g, accent_color.b, 0.95 * alpha), 1.7)
-		draw_line(center + _rotated_offset(Vector2(-10, 4), rotation_value), center + _rotated_offset(Vector2(10, 4), rotation_value), armor_edge_color, 1.8)
+		draw_line(center + _rotated_offset(Vector2(-10, 4), rotation_value), center + _rotated_offset(Vector2(10, 4), rotation_value), armor_edge_color, 1.9)
+		draw_line(center + _rotated_offset(Vector2(-6, -13), rotation_value), center + _rotated_offset(Vector2(6, -13), rotation_value), front_edge_color, 1.5)
+		draw_line(center + _rotated_offset(Vector2(-5, -16), rotation_value), center + _rotated_offset(Vector2(5, -16), rotation_value), Color(1.0, 1.0, 1.0, 0.22 * alpha), 1.0)
 		draw_polyline(PackedVector2Array([
 			center + _rotated_offset(Vector2(-10, 7), rotation_value),
 			center + _rotated_offset(Vector2(0, 2), rotation_value),
@@ -1218,12 +1230,14 @@ func _draw_tank_sprite(center: Vector2, tank: TankData, rotation_value: float = 
 			center + _rotated_offset(Vector2(0, -16), rotation_value),
 			center + _rotated_offset(Vector2(8, -10), rotation_value),
 		]), front_chevron_color, 2.5, false)
-		draw_line(center + _rotated_offset(Vector2(-12, 3), rotation_value), center + _rotated_offset(Vector2(12, 3), rotation_value), Color(0.76, 0.8, 0.88, 0.2 * alpha), 2.4)
+		draw_line(center + _rotated_offset(Vector2(-12, 3), rotation_value), center + _rotated_offset(Vector2(12, 3), rotation_value), Color(0.76, 0.8, 0.88, 0.2 * alpha), 2.6)
 		draw_line(center + _rotated_offset(Vector2(0, -10), rotation_value), center + _rotated_offset(Vector2(0, -22), rotation_value), Color(accent_color.r, accent_color.g, accent_color.b, 0.94 * alpha), 2.4)
 		draw_line(center + _rotated_offset(Vector2(-4, -9), rotation_value), center + _rotated_offset(Vector2(-4, -21), rotation_value), Color(accent_color.r, accent_color.g, accent_color.b, 0.58 * alpha), 1.2)
 		draw_line(center + _rotated_offset(Vector2(4, -9), rotation_value), center + _rotated_offset(Vector2(4, -21), rotation_value), Color(accent_color.r, accent_color.g, accent_color.b, 0.58 * alpha), 1.2)
+		draw_line(center + _rotated_offset(Vector2(-8, -14), rotation_value), center + _rotated_offset(Vector2(8, -14), rotation_value), front_edge_color, 1.9)
+		draw_line(center + _rotated_offset(Vector2(-6, -17), rotation_value), center + _rotated_offset(Vector2(6, -17), rotation_value), Color(1.0, 1.0, 1.0, 0.2 * alpha), 1.2)
 	draw_circle(center + front_offset, (3.0 if is_qtank else 3.6), Color(accent_color.r, accent_color.g, accent_color.b, 0.97 * alpha))
-	draw_circle(center + front_offset, 1.5, Color.WHITE.lerp(accent_color, 0.32))
+	draw_circle(center + front_offset, 1.7, Color.WHITE.lerp(accent_color, 0.24))
 	draw_circle(top_panel_center, 2.8, Color(0.07, 0.1, 0.14, 0.42 * alpha))
 	draw_circle(top_panel_center, 1.4, Color(primary_color.r, primary_color.g, primary_color.b, 0.7 * alpha))
 	if tank.owner_id == 1:

@@ -21,6 +21,9 @@
   - deepened material zoning so armor, recess, and tech accents read more distinctly at gameplay zoom
   - made front-facing readability more immediate through brighter nose lights, stronger front chevrons, and darker rear treatment
   - pushed Qtank and Ktank farther apart again with slimmer Qtank barrel language and broader Ktank frontal massing
+  - completed a final Step 6 silhouette push with stronger hull-width separation, thicker Ktank barrel weight, and a more precise Qtank front cut
+  - strengthened the shared front-language system with clearer front-edge highlights and quieter rear treatment
+  - pushed armor/recess/tech contrast slightly further using value separation rather than louder colors
 - Completed the Step 5 world-building pass:
   - added a darker layered battlefield backdrop behind the board
   - introduced a single consistent light direction for board presentation
