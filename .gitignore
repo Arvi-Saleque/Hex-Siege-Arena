@@ -10,11 +10,15 @@ game-icons.net.svg/
 kenney_input-prompts_1.4/
 kenney_ui-pack/
 kenney_ui-pack-space-expansion/
+kenney_light-masks-1.0/
+kenney_smoke-particles/
+kenney_space-kit/
 kenney_interface-sounds/
 kenney_particle-pack/
 kenney_sci-fi-sounds/
 fonts/
 audiio/
+*.exr
 
 # Temporary research / extraction artifacts
 tmp_video_frames/

@@ -10,6 +10,13 @@ const EFFECT_MUZZLE := preload("res://assets/effects/muzzle_03.png")
 const EFFECT_SPARK := preload("res://assets/effects/spark_06.png")
 const EFFECT_SMOKE := preload("res://assets/effects/smoke_03.png")
 const EFFECT_TRACE := preload("res://assets/effects/trace_04.png")
+const WORLD_LIGHT_CIRCLE := preload("res://assets/world/masks/light_circle.png")
+const WORLD_LIGHT_CONE := preload("res://assets/world/masks/light_cone.png")
+const WORLD_EDGE_SMOKE := preload("res://assets/world/smoke/edge_smoke.png")
+const WORLD_WHITE_PUFF := preload("res://assets/world/smoke/white_puff.png")
+const WORLD_WINDOW_CORNER := preload("res://assets/world/silhouettes/window_corner.png")
+const WORLD_CORRIDOR_CROSS := preload("res://assets/world/silhouettes/corridor_cross.png")
+const WORLD_CHIMNEY := preload("res://assets/world/silhouettes/chimney.png")
 const TANK_SPRITES := {
 	"1_0": {
 		"track": preload("res://assets/art/tanks2d/p1_qtrack.png"),
@@ -56,6 +63,7 @@ const PLAYER_ACCENT := {
 	1: Color("d7ebff"),
 	2: Color("ffe1d7"),
 }
+const WORLD_LIGHT_DIR := Vector2(-0.68, -1.0)
 
 var hex_size: float = 34.0
 var board_state: BoardState = BoardState.new()
@@ -543,6 +551,20 @@ func _attack_preview_color() -> Color:
 	return Color("ffb347") if AppState.high_contrast_mode else Color("ff7a86")
 
 
+func _draw_backdrop_texture(
+	texture: Texture2D,
+	center: Vector2,
+	scale_value: Vector2,
+	modulate_color: Color,
+	rotation_value: float = 0.0
+) -> void:
+	if texture == null:
+		return
+	draw_set_transform(center, rotation_value, scale_value)
+	draw_texture(texture, -texture.get_size() * 0.5, modulate_color)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
 func _draw_board_backdrop(active_board: BoardState) -> void:
 	var used_rect: Rect2 = Rect2(Vector2(-420, -320), Vector2(840, 700))
 	if not active_board.cells.is_empty():
@@ -558,11 +580,79 @@ func _draw_board_backdrop(active_board: BoardState) -> void:
 			max_y = maxf(max_y, center.y)
 		used_rect = Rect2(Vector2(min_x - 28.0, min_y - 28.0), Vector2((max_x - min_x) + 56.0, (max_y - min_y) + 72.0))
 
-	draw_rect(used_rect, Color("121722"))
+	var backdrop_rect: Rect2 = used_rect.grow_individual(64.0, 54.0, 64.0, 62.0)
+	var board_center: Vector2 = used_rect.position + used_rect.size * 0.5 + _shake_offset
+	var center_glow_alpha: float = 0.08 + 0.02 * sin(_pulse_time * 1.7)
+	draw_rect(backdrop_rect, Color("0c1320"))
+	draw_rect(used_rect, Color("111927"))
+	_draw_backdrop_texture(
+		WORLD_LIGHT_CONE,
+		used_rect.position + Vector2(used_rect.size.x * 0.22, used_rect.size.y * 0.18) + _shake_offset,
+		Vector2(2.0, 1.55),
+		Color(0.46, 0.73, 1.0, 0.09),
+		deg_to_rad(18.0)
+	)
+	_draw_backdrop_texture(
+		WORLD_LIGHT_CIRCLE,
+		board_center,
+		Vector2(1.25, 1.25),
+		Color(1.0, 0.9, 0.48, center_glow_alpha)
+	)
+	_draw_backdrop_texture(
+		WORLD_WHITE_PUFF,
+		board_center + Vector2(0, 8),
+		Vector2(1.45, 1.15),
+		Color(1.0, 0.84, 0.42, 0.06 + 0.02 * sin(_pulse_time * 2.2))
+	)
+	_draw_backdrop_texture(
+		WORLD_WINDOW_CORNER,
+		used_rect.position + Vector2(70, 72) + _shake_offset,
+		Vector2(0.9, 0.9),
+		Color(0.45, 0.6, 0.78, 0.08),
+		deg_to_rad(-6.0)
+	)
+	_draw_backdrop_texture(
+		WORLD_CORRIDOR_CROSS,
+		used_rect.position + Vector2(used_rect.size.x - 82, 88) + _shake_offset,
+		Vector2(0.92, 0.92),
+		Color(0.42, 0.54, 0.7, 0.07),
+		deg_to_rad(6.0)
+	)
+	_draw_backdrop_texture(
+		WORLD_CHIMNEY,
+		used_rect.position + Vector2(used_rect.size.x * 0.12, used_rect.size.y - 74) + _shake_offset,
+		Vector2(0.9, 0.9),
+		Color(0.36, 0.46, 0.6, 0.06),
+		deg_to_rad(-4.0)
+	)
+	_draw_backdrop_texture(
+		WORLD_EDGE_SMOKE,
+		used_rect.position + Vector2(58, used_rect.size.y * 0.58) + _shake_offset,
+		Vector2(1.1, 1.35),
+		Color(0.46, 0.58, 0.78, 0.045),
+		deg_to_rad(90.0)
+	)
+	_draw_backdrop_texture(
+		WORLD_EDGE_SMOKE,
+		used_rect.position + Vector2(used_rect.size.x - 56, used_rect.size.y * 0.64) + _shake_offset,
+		Vector2(1.05, 1.25),
+		Color(0.62, 0.56, 0.42, 0.04),
+		deg_to_rad(-88.0)
+	)
+	_draw_backdrop_texture(
+		WORLD_EDGE_SMOKE,
+		used_rect.position + Vector2(used_rect.size.x * 0.5, used_rect.size.y - 28) + _shake_offset,
+		Vector2(1.55, 0.82),
+		Color(0.38, 0.46, 0.58, 0.032)
+	)
 	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.3, used_rect.size.y * 0.28) + _shake_offset, 180.0, Color(0.2, 0.32, 0.48, 0.08))
 	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.72, used_rect.size.y * 0.62) + _shake_offset, 210.0, Color(0.66, 0.55, 0.2, 0.05))
-	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.5, used_rect.size.y * 0.48) + _shake_offset, 290.0, Color(0.08, 0.12, 0.2, 0.25))
-	draw_circle(used_rect.position + used_rect.size * 0.5 + _shake_offset, minf(used_rect.size.x, used_rect.size.y) * 0.28, Color(0.92, 0.81, 0.28, 0.035))
+	draw_circle(board_center, 290.0, Color(0.08, 0.12, 0.2, 0.24))
+	draw_circle(board_center, minf(used_rect.size.x, used_rect.size.y) * 0.28, Color(0.92, 0.81, 0.28, 0.035))
+	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.08, used_rect.size.y * 0.12) + _shake_offset, 140.0, Color(0.02, 0.03, 0.06, 0.32))
+	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.95, used_rect.size.y * 0.12) + _shake_offset, 132.0, Color(0.02, 0.03, 0.06, 0.28))
+	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.06, used_rect.size.y * 0.9) + _shake_offset, 170.0, Color(0.02, 0.03, 0.06, 0.24))
+	draw_circle(used_rect.position + Vector2(used_rect.size.x * 0.95, used_rect.size.y * 0.9) + _shake_offset, 190.0, Color(0.02, 0.03, 0.06, 0.26))
 
 
 func _draw_tanks() -> void:
@@ -582,8 +672,10 @@ func _draw_tanks() -> void:
 		var hit_flash_alpha: float = _tank_hit_flash_alpha(tank.actor_id())
 		var fade_alpha: float = _tank_fade_alpha(tank.actor_id())
 		var render_alpha: float = 1.0 - fade_alpha
-		var shadow_size: Vector2 = Vector2(21, 8) if not is_selected else Vector2(24, 9)
-		draw_colored_polygon(_ellipse_points(center + Vector2(0, 17), shadow_size, 20), Color(0.03, 0.05, 0.08, (0.45 if not is_selected else 0.58) * render_alpha))
+		var shadow_size: Vector2 = Vector2(22, 8.5) if not is_selected else Vector2(25, 9.5)
+		var shadow_center: Vector2 = center + (-WORLD_LIGHT_DIR.normalized() * 12.5) + Vector2(0, 7)
+		draw_colored_polygon(_ellipse_points(shadow_center, shadow_size, 20), Color(0.03, 0.05, 0.08, (0.52 if not is_selected else 0.64) * render_alpha))
+		draw_colored_polygon(_ellipse_points(center + Vector2(2, 13), Vector2(16, 6), 18), Color(0.12, 0.18, 0.26, (0.16 if not is_selected else 0.24) * render_alpha))
 		draw_circle(center + Vector2(0, 7), 14.0, Color(player_color.r, player_color.g, player_color.b, (0.08 if not is_selected else 0.16) * render_alpha))
 		draw_arc(center + Vector2(0, 7), 18.0, 0.0, TAU, 40, Color(player_color.r, player_color.g, player_color.b, 0.54 * render_alpha), 2.2, true)
 		if tank.owner_id == game_state.current_player:
@@ -799,7 +891,8 @@ func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2A
 func _tile_fill_color(cell: CellData) -> Color:
 	var fill: Color = COLOR_BY_TYPE.get(cell.cell_type, Color.DIM_GRAY)
 	var center_bias: float = clampf(1.0 - float(cell.coord.distance_to(HexCoord.new())) / maxf(float(_active_board().rings), 1.0), 0.0, 1.0)
-	fill = fill.lerp(Color.WHITE, 0.025 + center_bias * 0.035)
+	fill = fill.lerp(Color("7fbaff"), 0.014)
+	fill = fill.lerp(Color.WHITE, 0.03 + center_bias * 0.038)
 	if cell.coord.key() == hovered_key:
 		var hover_mix: Color = Color("d7ebff")
 		if current_action_mode == "move":

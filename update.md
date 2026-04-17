@@ -2,10 +2,17 @@
 
 ## Current Phase
 
-- Step 4: Responsive feedback and readable combat feel
+- Step 5: World atmosphere, lighting, and presentation depth
 
 ## Completed Items
 
+- Started the Step 5 world-building pass:
+  - added a darker layered battlefield backdrop behind the board
+  - introduced a single consistent light direction for board presentation
+  - improved unit grounding with stronger directional shadows
+  - added subtle edge atmosphere using curated smoke and light-mask assets
+  - made the board center feel more important through restrained local glow and focus
+  - added distant sci-fi silhouette shapes so the match no longer feels like empty void space
 - Tightened the last Step 4 readability blockers:
   - damage popups are now larger, brighter, and easier to read against the board
   - movement arrival now has a stronger landing pulse, puff, and settle cue
@@ -665,6 +672,12 @@
 - Confirm the final Step 4 readability pass works:
   - `-2` / `-3` style damage popups are easy to read at normal speed
   - movement arrival visibly resolves at the destination instead of feeling abrupt
+- Confirm the Step 5 world pass works:
+  - the board no longer feels like it floats in empty darkness
+  - the backdrop feels like a dark sci-fi arena instead of a flat void
+  - unit shadows feel more intentional and dimensional
+  - center tension draws the eye naturally without overpowering gameplay
+  - the added atmosphere stays behind the tactics information
 
 ## Resources Needed Soon
 
