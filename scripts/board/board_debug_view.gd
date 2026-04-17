@@ -676,9 +676,10 @@ func _draw_tanks() -> void:
 		var hit_flash_alpha: float = _tank_hit_flash_alpha(tank.actor_id())
 		var fade_alpha: float = _tank_fade_alpha(tank.actor_id())
 		var render_alpha: float = 1.0 - fade_alpha
+		var health_ratio: float = float(tank.hp) / maxf(float(tank.max_hp), 1.0)
 		var shadow_size: Vector2 = Vector2(22, 8.5) if not is_selected else Vector2(25, 9.5)
-		var shadow_center: Vector2 = center + (-WORLD_LIGHT_DIR.normalized() * 13.5) + Vector2(0, 8)
-		draw_colored_polygon(_ellipse_points(shadow_center, shadow_size, 20), Color(0.03, 0.05, 0.08, (0.56 if not is_selected else 0.7) * render_alpha))
+		var shadow_center: Vector2 = center + (-WORLD_LIGHT_DIR.normalized() * 13.5) + Vector2(0, 8.5)
+		draw_colored_polygon(_ellipse_points(shadow_center, shadow_size, 20), Color(0.03, 0.05, 0.08, (0.56 if not is_selected else 0.78) * render_alpha))
 		draw_colored_polygon(_ellipse_points(center + Vector2(2, 13), Vector2(17, 6.4), 18), Color(0.12, 0.18, 0.26, (0.18 if not is_selected else 0.28) * render_alpha))
 		draw_circle(center + Vector2(0, 7), 14.0, Color(player_color.r, player_color.g, player_color.b, (0.08 if not is_selected else 0.16) * render_alpha))
 		draw_arc(center + Vector2(0, 7), 18.0, 0.0, TAU, 40, Color(player_color.r, player_color.g, player_color.b, 0.54 * render_alpha), 2.2, true)
@@ -690,11 +691,11 @@ func _draw_tanks() -> void:
 		_draw_tank_sprite(center, tank, tank_rotation, render_alpha)
 		if is_selected:
 			var pulse_radius: float = 25.0 + (1.8 if AppState.reduced_motion else 3.8 * (0.5 + 0.5 * sin(_pulse_time * 2.2)))
-			draw_circle(center + Vector2(0, 5), 17.0, Color(player_color.r, player_color.g, player_color.b, 0.13))
-			draw_arc(center + Vector2(0, 5), pulse_radius, 0.0, TAU, 48, player_color.lerp(Color.WHITE, 0.45), 3.4, true)
+			draw_circle(center + Vector2(0, 5), 18.0, Color(player_color.r, player_color.g, player_color.b, 0.16))
+			draw_arc(center + Vector2(0, 5), pulse_radius, 0.0, TAU, 48, player_color.lerp(Color.WHITE, 0.52), 4.0, true)
 			draw_arc(center + Vector2(0, 5), pulse_radius + 5.0, 0.0, TAU, 48, Color(player_color.r, player_color.g, player_color.b, 0.28), 1.8, true)
-			draw_arc(center + Vector2(0, 5), 16.5, 0.0, TAU, 32, Color(player_color.r, player_color.g, player_color.b, 0.92), 2.0, true)
-			draw_circle(center + Vector2(0, 5), 26.0, Color(player_color.r, player_color.g, player_color.b, 0.05))
+			draw_arc(center + Vector2(0, 5), 16.5, 0.0, TAU, 32, Color(player_color.r, player_color.g, player_color.b, 0.98), 2.6, true)
+			draw_circle(center + Vector2(0, 5), 28.0, Color(player_color.r, player_color.g, player_color.b, 0.07))
 		elif current_action_mode == "attack" and _is_tank_targeted(tank):
 			draw_circle(center + Vector2(0, 5), 16.0, Color(_attack_preview_color().r, _attack_preview_color().g, _attack_preview_color().b, 0.08))
 			draw_arc(center + Vector2(0, 5), 24.0, 0.0, TAU, 40, Color(_attack_preview_color().r, _attack_preview_color().g, _attack_preview_color().b, 0.94), 2.8, true)
@@ -712,7 +713,18 @@ func _draw_tanks() -> void:
 		var bar_width: float = 34.0
 		var bar_origin: Vector2 = center + Vector2(-bar_width * 0.5, 24)
 		draw_rect(Rect2(bar_origin, Vector2(bar_width, 5)), Color(0.05, 0.08, 0.12, 0.85))
-		draw_rect(Rect2(bar_origin + Vector2.ONE, Vector2((bar_width - 2.0) * float(tank.hp) / maxf(float(tank.max_hp), 1.0), 3)), Color("70df6e"))
+		draw_rect(Rect2(bar_origin + Vector2.ONE, Vector2((bar_width - 2.0) * health_ratio, 3)), _health_display_color(health_ratio))
+		if health_ratio <= 0.45:
+			var smoke_alpha: float = clampf((0.48 - health_ratio) * 1.7, 0.0, 0.24) * render_alpha
+			_draw_backdrop_texture(
+				EFFECT_SMOKE,
+				center + _rotated_offset(Vector2(0, -15), tank_rotation),
+				Vector2(0.34, 0.34),
+				Color(0.84, 0.86, 0.9, smoke_alpha),
+				tank_rotation * 0.35
+			)
+			if health_ratio <= 0.25:
+				draw_circle(center + _rotated_offset(Vector2(8, -6), tank_rotation), 2.0, Color(1.0, 0.76, 0.45, 0.8 * render_alpha))
 
 
 func _draw_tank_fadeouts(font: Font) -> void:
@@ -1109,6 +1121,18 @@ func _is_tank_targeted(tank: TankData) -> bool:
 	return highlighted_keys.has(tank.position.key()) and tank.owner_id != game_state.current_player
 
 
+func _health_display_color(health_ratio: float) -> Color:
+	if health_ratio <= 0.3:
+		return Color("ff6673")
+	if health_ratio <= 0.6:
+		return Color("ffcb62")
+	return Color("70df6e")
+
+
+func _rotated_offset(offset: Vector2, rotation_value: float) -> Vector2:
+	return offset.rotated(rotation_value)
+
+
 func _draw_tank_sprite(center: Vector2, tank: TankData, rotation_value: float = 0.0, alpha: float = 1.0) -> void:
 	var sprite_set: Dictionary = TANK_SPRITES.get(tank.actor_id(), {})
 	if sprite_set.is_empty():
@@ -1124,13 +1148,39 @@ func _draw_tank_sprite(center: Vector2, tank: TankData, rotation_value: float = 
 	var track_texture: Texture2D = sprite_set.get("track", null) as Texture2D
 	var hull_texture: Texture2D = sprite_set.get("hull", null) as Texture2D
 	var gun_texture: Texture2D = sprite_set.get("gun", null) as Texture2D
+	var primary_color: Color = _player_primary_color(tank.owner_id)
+	var accent_color: Color = _player_accent_color(tank.owner_id)
+	var track_modulate: Color = Color(0.72, 0.75, 0.8, alpha)
+	var hull_modulate: Color = (Color(0.92, 0.95, 1.0, alpha) if tank.owner_id == 1 else Color(0.86, 0.82, 0.78, alpha))
+	var gun_modulate: Color = accent_color.lerp(Color.WHITE, 0.2)
+	gun_modulate.a = alpha
+	var faction_shade: Color = primary_color.darkened(0.18)
+	faction_shade.a = alpha * 0.48
+	var front_offset: Vector2 = _rotated_offset(Vector2(0, -14), rotation_value)
+	var side_offset: Vector2 = _rotated_offset(Vector2(10, 0), rotation_value)
+	var rear_shadow_offset: Vector2 = _rotated_offset(Vector2(0, 10), rotation_value)
 
 	if track_texture != null:
-		_draw_centered_texture(track_texture, center + Vector2(0, 4), scale_value, rotation_value, Color(1.0, 1.0, 1.0, alpha))
+		_draw_centered_texture(track_texture, center + Vector2(0, 4), scale_value, rotation_value, track_modulate)
 	if hull_texture != null:
-		_draw_centered_texture(hull_texture, center + Vector2(0, 1), scale_value, rotation_value, Color(1.0, 1.0, 1.0, alpha))
+		_draw_centered_texture(hull_texture, center + Vector2(0, 1), scale_value, rotation_value, hull_modulate)
 	if gun_texture != null:
-		_draw_centered_texture(gun_texture, center + Vector2(0, -2), scale_value, rotation_value, Color(1.0, 1.0, 1.0, alpha))
+		_draw_centered_texture(gun_texture, center + Vector2(0, -2), scale_value, rotation_value, gun_modulate)
+
+	draw_circle(center + rear_shadow_offset + Vector2(0, 1), 8.5, Color(0.04, 0.05, 0.08, 0.14 * alpha))
+	draw_line(center + _rotated_offset(Vector2(-9, -1), rotation_value), center + _rotated_offset(Vector2(9, -1), rotation_value), faction_shade, 2.6)
+	draw_line(center + _rotated_offset(Vector2(-7, -8), rotation_value), center + _rotated_offset(Vector2(7, -8), rotation_value), Color(primary_color.r, primary_color.g, primary_color.b, 0.56 * alpha), 1.5)
+	draw_circle(center + front_offset, 3.2, Color(accent_color.r, accent_color.g, accent_color.b, 0.95 * alpha))
+	draw_circle(center + front_offset, 1.4, Color.WHITE.lerp(accent_color, 0.35))
+	if tank.owner_id == 1:
+		draw_line(center + _rotated_offset(Vector2(-8, 7), rotation_value), center + _rotated_offset(Vector2(8, 7), rotation_value), Color(primary_color.r, primary_color.g, primary_color.b, 0.48 * alpha), 1.8)
+	else:
+		draw_polyline(PackedVector2Array([
+			center + _rotated_offset(Vector2(-7, 6), rotation_value),
+			center + _rotated_offset(Vector2(-1, 2), rotation_value),
+			center + _rotated_offset(Vector2(5, 6), rotation_value),
+		]), Color(primary_color.r, primary_color.g, primary_color.b, 0.55 * alpha), 1.8, false)
+	draw_circle(center + side_offset, 2.0, Color(primary_color.r, primary_color.g, primary_color.b, 0.42 * alpha))
 
 
 func _draw_centered_texture(texture: Texture2D, center: Vector2, scale_value: float, rotation_value: float = 0.0, modulate_color: Color = Color.WHITE) -> void:

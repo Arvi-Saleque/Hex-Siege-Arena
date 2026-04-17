@@ -40,6 +40,7 @@ var _hp_summary_label: Label
 var _units_label: Label
 var _control_strip_label: Label
 var _status_label: RichTextLabel
+var _selected_accent_strip: ColorRect
 var _mode_label: Label
 var _selected_actor_label: Label
 var _map_label: Label
@@ -233,6 +234,11 @@ func _build_layout() -> void:
 	_selected_model_role_label.add_theme_font_size_override("font_size", 13)
 	_selected_model_role_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	info_layout.add_child(_selected_model_role_label)
+
+	_selected_accent_strip = ColorRect.new()
+	_selected_accent_strip.custom_minimum_size = Vector2(0, 4)
+	_selected_accent_strip.color = COLOR_BORDER
+	info_layout.add_child(_selected_accent_strip)
 
 	_status_label = _make_rich_body_label()
 	info_layout.add_child(_status_label)
@@ -1081,18 +1087,28 @@ func _refresh_event_log() -> void:
 func _refresh_selected_unit_panel() -> void:
 	var focus_tank: TankData = _current_focus_tank()
 	if focus_tank == null:
+		_selected_unit_panel.add_theme_stylebox_override("panel", _panel_style(COLOR_BORDER, COLOR_SURFACE_ALT))
 		_selected_model_name_label.text = "No active selection"
-		_selected_model_role_label.text = "Select a unit to inspect combat and movement details."
-		_status_label.text = "[color=#9db0cc][font_size=12]Integrity[/font_size][/color]\n[font_size=18][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Mobility[/font_size][/color]\n[font_size=18][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Strike[/font_size][/color]\n[font_size=18][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Status[/font_size][/color]\n[font_size=18][b]-[/b][/font_size]"
+		_selected_model_name_label.add_theme_color_override("font_color", COLOR_TEXT)
+		_selected_model_role_label.text = "Select a unit to inspect battlefield status."
+		_selected_accent_strip.color = COLOR_BORDER
+		_status_label.text = "[color=#9db0cc][font_size=12]Faction[/font_size][/color]\n[font_size=18][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Integrity[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Mobility[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Strike[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Range[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Status[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]"
 		return
 
+	var faction_color: Color = _faction_color(focus_tank.owner_id)
+	var panel_fill: Color = COLOR_SURFACE_ALT.lerp(faction_color, 0.08)
+	_selected_unit_panel.add_theme_stylebox_override("panel", _panel_style(faction_color, panel_fill))
+	_selected_model_name_label.add_theme_color_override("font_color", faction_color.lerp(Color.WHITE, 0.28))
 	_selected_model_name_label.text = _unit_card_name(focus_tank)
 	_selected_model_role_label.text = _unit_role_text(focus_tank)
-	_status_label.text = "[color=#9db0cc][font_size=12]Integrity[/font_size][/color]\n[font_size=18][b]%d / %d[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Mobility[/font_size][/color]\n[font_size=18][b]%d hexes[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Strike[/font_size][/color]\n[font_size=18][b]%d damage[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Status[/font_size][/color]\n[font_size=18][b]%s[/b][/font_size]" % [
+	_selected_accent_strip.color = faction_color
+	_status_label.text = "[color=#9db0cc][font_size=12]Faction[/font_size][/color]\n[font_size=20][b]%s[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Integrity[/font_size][/color]\n[font_size=22][b]%d / %d[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Mobility[/font_size][/color]\n[font_size=20][b]%d hexes[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Strike[/font_size][/color]\n[font_size=20][b]%d damage[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Range[/font_size][/color]\n[font_size=20][b]%s[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Status[/font_size][/color]\n[font_size=20][b]%s[/b][/font_size]" % [
+		_faction_label(focus_tank.owner_id),
 		focus_tank.hp,
 		focus_tank.max_hp,
 		focus_tank.get_move_range(),
 		focus_tank.get_attack_damage(),
+		_unit_range_text(focus_tank),
 		_buff_label(focus_tank.active_buff),
 	]
 
@@ -1744,13 +1760,27 @@ func _current_focus_tank() -> TankData:
 
 func _unit_card_name(tank: TankData) -> String:
 	var unit_name: String = "Qtank" if tank.tank_type == GameTypes.TankType.QTANK else "Ktank"
-	return "Player %d %s" % [tank.owner_id, unit_name]
+	return "%s %s" % [_faction_label(tank.owner_id), unit_name]
 
 
 func _unit_role_text(tank: TankData) -> String:
 	if tank.tank_type == GameTypes.TankType.QTANK:
-		return "Long-range control tank. Strongest on clean lanes."
-	return "Heavy objective tank. Breaks space and threatens center wins."
+		return "Control Chassis  |  Clean-lane striker"
+	return "Siege Vanguard  |  Center-pressure brawler"
+
+
+func _faction_color(player_id: int) -> Color:
+	return COLOR_P1 if player_id == 1 else COLOR_P2
+
+
+func _faction_label(player_id: int) -> String:
+	return "Blue Command" if player_id == 1 else "Red Command"
+
+
+func _unit_range_text(tank: TankData) -> String:
+	if tank.tank_type == GameTypes.TankType.QTANK:
+		return "Long lane"
+	return "Blast radius 1"
 
 
 func _find_tank(player_id: int, tank_type: int) -> TankData:

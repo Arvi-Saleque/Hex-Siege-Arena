@@ -2,10 +2,18 @@
 
 ## Current Phase
 
-- Step 5: World atmosphere, lighting, and presentation depth complete
+- Step 6: Unit identity, faction readability, and selected-card cohesion in progress
 
 ## Completed Items
 
+- Started the Step 6 unit identity pass:
+  - strengthened faction distinction on-board with cooler P1 accents and warmer P2 accents
+  - added compact faction markings and clearer forward-facing lens cues on tank sprites
+  - introduced stronger material separation between tracks, hulls, guns, and tech accents
+  - improved selected-unit emphasis with a stronger selected ring and deeper grounding shadow
+  - added low-health readability on the board through health-color shifts and subtle smoke/spark damage cues
+  - connected the Selected Unit card to the on-board piece with faction-colored card framing and accent strip
+  - upgraded the Selected Unit card to include faction, range, and tighter role naming so it feels engineered rather than generic
 - Completed the Step 5 world-building pass:
   - added a darker layered battlefield backdrop behind the board
   - introduced a single consistent light direction for board presentation
@@ -445,11 +453,15 @@
 
 ## Next Items
 
-- Verify the completed Step 5 world-atmosphere pass inside Godot
-- Do a final bug-fix and styling sweep based on runtime feedback
+- Review the Step 6 unit identity pass inside Godot
+- Tighten faction readability, low-health clarity, and selected-card cohesion based on runtime feedback
 
 ## User Check List
 
+- Confirm Blue and Red units feel distinct while still belonging to the same world
+- Confirm each unit's facing is easier to understand at gameplay zoom
+- Confirm damaged units are readable on the board without relying only on the right panel
+- Confirm the Selected Unit card feels visually connected to the selected tank
 - Open the project in Godot 4
 - Confirm it imports without parse errors
 - Run the project
