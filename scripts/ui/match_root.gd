@@ -436,13 +436,24 @@ func _build_world_backdrop(parent: Control) -> void:
 	var far_glow := TextureRect.new()
 	far_glow.texture = WORLD_LIGHT_CIRCLE
 	far_glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	far_glow.modulate = Color(0.32, 0.52, 0.82, 0.08)
+	far_glow.modulate = Color(0.3, 0.5, 0.78, 0.06)
 	far_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	far_glow.anchor_left = 0.14
 	far_glow.anchor_top = 0.08
 	far_glow.anchor_right = 0.84
 	far_glow.anchor_bottom = 0.9
 	parent.add_child(far_glow)
+
+	var center_spot := TextureRect.new()
+	center_spot.texture = WORLD_LIGHT_CIRCLE
+	center_spot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	center_spot.modulate = Color(1.0, 0.88, 0.52, 0.03)
+	center_spot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center_spot.anchor_left = 0.26
+	center_spot.anchor_top = 0.12
+	center_spot.anchor_right = 0.74
+	center_spot.anchor_bottom = 0.94
+	parent.add_child(center_spot)
 
 	var upper_left_cone := TextureRect.new()
 	upper_left_cone.texture = WORLD_LIGHT_CONE
@@ -468,10 +479,32 @@ func _build_world_backdrop(parent: Control) -> void:
 	lower_right_cone.anchor_bottom = 1.06
 	parent.add_child(lower_right_cone)
 
+	var left_plate := TextureRect.new()
+	left_plate.texture = WORLD_LIGHT_CIRCLE
+	left_plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	left_plate.modulate = Color(0.0, 0.0, 0.0, 0.16)
+	left_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left_plate.anchor_left = -0.08
+	left_plate.anchor_top = 0.06
+	left_plate.anchor_right = 0.26
+	left_plate.anchor_bottom = 1.02
+	parent.add_child(left_plate)
+
+	var right_plate := TextureRect.new()
+	right_plate.texture = WORLD_LIGHT_CIRCLE
+	right_plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	right_plate.modulate = Color(0.0, 0.0, 0.0, 0.15)
+	right_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right_plate.anchor_left = 0.74
+	right_plate.anchor_top = 0.08
+	right_plate.anchor_right = 1.08
+	right_plate.anchor_bottom = 1.0
+	parent.add_child(right_plate)
+
 	var left_silhouette := TextureRect.new()
 	left_silhouette.texture = WORLD_WINDOW_CORNER
 	left_silhouette.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	left_silhouette.modulate = Color(0.54, 0.66, 0.84, 0.06)
+	left_silhouette.modulate = Color(0.54, 0.66, 0.84, 0.05)
 	left_silhouette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	left_silhouette.anchor_left = -0.02
 	left_silhouette.anchor_top = 0.12
@@ -501,10 +534,36 @@ func _build_world_backdrop(parent: Control) -> void:
 	lower_left_stack.anchor_bottom = 0.98
 	parent.add_child(lower_left_stack)
 
+	var upper_right_stack := TextureRect.new()
+	upper_right_stack.texture = WORLD_CHIMNEY
+	upper_right_stack.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	upper_right_stack.modulate = Color(0.36, 0.48, 0.66, 0.04)
+	upper_right_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	upper_right_stack.rotation = deg_to_rad(6.0)
+	upper_right_stack.anchor_left = 0.84
+	upper_right_stack.anchor_top = 0.02
+	upper_right_stack.anchor_right = 0.98
+	upper_right_stack.anchor_bottom = 0.28
+	parent.add_child(upper_right_stack)
+
+	parent.add_child(_make_world_rib(0.035, 0.16, 0.05, 0.88, 0.1))
+	parent.add_child(_make_world_rib(0.135, 0.12, 0.035, 0.8, 0.08))
+	parent.add_child(_make_world_rib(0.83, 0.16, 0.05, 0.84, 0.1))
+	parent.add_child(_make_world_rib(0.915, 0.18, 0.03, 0.78, 0.08))
+
+	var top_beam := ColorRect.new()
+	top_beam.color = Color(0.34, 0.44, 0.6, 0.07)
+	top_beam.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_beam.anchor_left = 0.08
+	top_beam.anchor_top = 0.035
+	top_beam.anchor_right = 0.92
+	top_beam.anchor_bottom = 0.045
+	parent.add_child(top_beam)
+
 	var edge_smoke_left := TextureRect.new()
 	edge_smoke_left.texture = WORLD_EDGE_SMOKE
 	edge_smoke_left.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	edge_smoke_left.modulate = Color(0.56, 0.68, 0.88, 0.05)
+	edge_smoke_left.modulate = Color(0.56, 0.68, 0.88, 0.038)
 	edge_smoke_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	edge_smoke_left.rotation = deg_to_rad(90.0)
 	edge_smoke_left.anchor_left = -0.02
@@ -516,7 +575,7 @@ func _build_world_backdrop(parent: Control) -> void:
 	var edge_smoke_right := TextureRect.new()
 	edge_smoke_right.texture = WORLD_EDGE_SMOKE
 	edge_smoke_right.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	edge_smoke_right.modulate = Color(0.76, 0.68, 0.54, 0.04)
+	edge_smoke_right.modulate = Color(0.76, 0.68, 0.54, 0.032)
 	edge_smoke_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	edge_smoke_right.rotation = deg_to_rad(-90.0)
 	edge_smoke_right.anchor_left = 0.78
@@ -526,13 +585,24 @@ func _build_world_backdrop(parent: Control) -> void:
 	parent.add_child(edge_smoke_right)
 
 	var vignette := ColorRect.new()
-	vignette.color = Color(0.02, 0.03, 0.05, 0.18)
+	vignette.color = Color(0.02, 0.03, 0.05, 0.22)
 	vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(vignette)
 
 
 func _build_board_world_layer(parent: Control) -> void:
+	var board_plate := TextureRect.new()
+	board_plate.texture = WORLD_LIGHT_CIRCLE
+	board_plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	board_plate.modulate = Color(0.0, 0.0, 0.0, 0.18)
+	board_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board_plate.anchor_left = 0.06
+	board_plate.anchor_top = 0.08
+	board_plate.anchor_right = 0.94
+	board_plate.anchor_bottom = 1.04
+	parent.add_child(board_plate)
+
 	var local_cone := TextureRect.new()
 	local_cone.texture = WORLD_LIGHT_CONE
 	local_cone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -548,7 +618,7 @@ func _build_board_world_layer(parent: Control) -> void:
 	var center_glow := TextureRect.new()
 	center_glow.texture = WORLD_LIGHT_CIRCLE
 	center_glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	center_glow.modulate = Color(0.98, 0.86, 0.46, 0.09)
+	center_glow.modulate = Color(0.98, 0.86, 0.46, 0.08)
 	center_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center_glow.anchor_left = 0.22
 	center_glow.anchor_top = 0.12
@@ -579,6 +649,46 @@ func _build_board_world_layer(parent: Control) -> void:
 	board_smoke_right.anchor_right = 1.04
 	board_smoke_right.anchor_bottom = 0.98
 	parent.add_child(board_smoke_right)
+
+	var center_floor_glow := TextureRect.new()
+	center_floor_glow.texture = WORLD_LIGHT_CIRCLE
+	center_floor_glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	center_floor_glow.modulate = Color(0.84, 0.92, 1.0, 0.035)
+	center_floor_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center_floor_glow.anchor_left = 0.28
+	center_floor_glow.anchor_top = 0.22
+	center_floor_glow.anchor_right = 0.72
+	center_floor_glow.anchor_bottom = 0.86
+	parent.add_child(center_floor_glow)
+
+	parent.add_child(_make_world_rib(0.02, 0.08, 0.022, 0.92, 0.06))
+	parent.add_child(_make_world_rib(0.958, 0.1, 0.02, 0.9, 0.06))
+
+
+func _make_world_rib(anchor_left_value: float, anchor_top_value: float, width_value: float, height_value: float, alpha_value: float) -> Control:
+	var rib := Control.new()
+	rib.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rib.anchor_left = anchor_left_value
+	rib.anchor_top = anchor_top_value
+	rib.anchor_right = anchor_left_value + width_value
+	rib.anchor_bottom = anchor_top_value + height_value
+
+	var body := ColorRect.new()
+	body.color = Color(0.24, 0.32, 0.44, alpha_value)
+	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rib.add_child(body)
+
+	var edge := ColorRect.new()
+	edge.color = Color(0.56, 0.72, 0.94, alpha_value * 0.55)
+	edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	edge.anchor_left = 0.0
+	edge.anchor_top = 0.0
+	edge.anchor_right = 0.08
+	edge.anchor_bottom = 1.0
+	rib.add_child(edge)
+
+	return rib
 
 
 func _build_match_theme() -> Theme:

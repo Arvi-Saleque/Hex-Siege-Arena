@@ -19,6 +19,9 @@
   - refined directional shadow strength and tile light bias so the battlefield feels more intentionally lit
   - added a softer camera/framing bias by nudging the board upward slightly inside the arena frame
   - completed a final color-harmony pass across HUD, board, and world layers
+  - added darker structural ribs and chamber-like framing so the background reads more like implied architecture than abstract glow
+  - pushed the atmosphere farther back from the board so it reads as environmental depth instead of a decorative overlay
+  - strengthened the board anchoring plate and outer falloff so the battlefield feels seated inside the scene
 - Tightened the last Step 4 readability blockers:
   - damage popups are now larger, brighter, and easier to read against the board
   - movement arrival now has a stronger landing pulse, puff, and settle cue
@@ -691,6 +694,9 @@
   - the board is framed slightly upward and more deliberately in the center space
   - background haze, light masks, and silhouettes add depth without stealing attention
   - the world layer feels premium even when nothing is moving
+  - the background now reads like implied arena architecture instead of abstract wallpaper
+  - units feel better planted to the battlefield through stronger contact shadows
+  - outer corners feel quieter so the eye returns to the center combat zone
 
 ## Resources Needed Soon
 
