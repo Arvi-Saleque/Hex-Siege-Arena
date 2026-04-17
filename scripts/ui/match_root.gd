@@ -1091,6 +1091,7 @@ func _refresh_selected_unit_panel() -> void:
 		_selected_model_name_label.text = "No active selection"
 		_selected_model_name_label.add_theme_color_override("font_color", COLOR_TEXT)
 		_selected_model_role_label.text = "Select a unit to inspect battlefield status."
+		_selected_model_role_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 		_selected_accent_strip.color = COLOR_BORDER
 		_status_label.text = "[color=#9db0cc][font_size=12]Faction[/font_size][/color]\n[font_size=18][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Integrity[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Mobility[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Strike[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Range[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]\n\n[color=#9db0cc][font_size=12]Status[/font_size][/color]\n[font_size=20][b]-[/b][/font_size]"
 		return
@@ -1099,6 +1100,7 @@ func _refresh_selected_unit_panel() -> void:
 	var panel_fill: Color = COLOR_SURFACE_ALT.lerp(faction_color, 0.08)
 	_selected_unit_panel.add_theme_stylebox_override("panel", _panel_style(faction_color, panel_fill))
 	_selected_model_name_label.add_theme_color_override("font_color", faction_color.lerp(Color.WHITE, 0.28))
+	_selected_model_role_label.add_theme_color_override("font_color", faction_color.lerp(COLOR_TEXT_MUTED, 0.42))
 	_selected_model_name_label.text = _unit_card_name(focus_tank)
 	_selected_model_role_label.text = _unit_role_text(focus_tank)
 	_selected_accent_strip.color = faction_color
@@ -1759,14 +1761,15 @@ func _current_focus_tank() -> TankData:
 
 
 func _unit_card_name(tank: TankData) -> String:
+	var unit_symbol: String = "[Q]" if tank.tank_type == GameTypes.TankType.QTANK else "[K]"
 	var unit_name: String = "Qtank" if tank.tank_type == GameTypes.TankType.QTANK else "Ktank"
-	return "%s %s" % [_faction_label(tank.owner_id), unit_name]
+	return "%s %s %s" % [_faction_label(tank.owner_id), unit_symbol, unit_name]
 
 
 func _unit_role_text(tank: TankData) -> String:
 	if tank.tank_type == GameTypes.TankType.QTANK:
-		return "Control Chassis  |  Clean-lane striker"
-	return "Siege Vanguard  |  Center-pressure brawler"
+		return "Control Chassis  |  Long-lane striker"
+	return "Siege Vanguard  |  Armored center breaker"
 
 
 func _faction_color(player_id: int) -> Color:

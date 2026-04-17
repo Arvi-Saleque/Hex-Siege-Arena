@@ -14,6 +14,10 @@
   - added low-health readability on the board through health-color shifts and subtle smoke/spark damage cues
   - connected the Selected Unit card to the on-board piece with faction-colored card framing and accent strip
   - upgraded the Selected Unit card to include faction, range, and tighter role naming so it feels engineered rather than generic
+  - strengthened model-side faction language with clearer front stripes, top-panel markings, and side-panel accents
+  - pushed Qtank and Ktank farther apart through cleaner Qtank nose/cannon cues and heavier Ktank front plating
+  - improved board-level damage readability through ring warning tinting and stronger low-health cues
+  - strengthened the Selected Unit card bridge with clearer faction-accented naming and role tinting
 - Completed the Step 5 world-building pass:
   - added a darker layered battlefield backdrop behind the board
   - introduced a single consistent light direction for board presentation
