@@ -302,7 +302,7 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 				var travel_dir: Vector2 = (end_center - start_center).normalized()
 				if travel_dir == Vector2.ZERO:
 					travel_dir = Vector2.UP
-				var settle_offset: Vector2 = travel_dir * 8.0
+				var settle_offset: Vector2 = travel_dir * 10.0
 				_tank_motion_overrides[action.actor_id] = {
 					"start": start_center - travel_dir * 4.0,
 					"end": end_center,
@@ -352,52 +352,61 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 				_ring_effects.append({
 					"center": end_center,
 					"color": Color("7be0ff"),
-					"radius": 30.0,
-					"time_left": 0.62,
-					"duration": 0.62,
+					"radius": 34.0,
+					"time_left": 0.72,
+					"duration": 0.72,
 					"delay": travel_duration * 0.78,
 					"filled": false,
 				})
 				_ring_effects.append({
 					"center": end_center,
 					"color": Color(0.66, 0.92, 1.0, 0.18),
-					"radius": 18.0,
-					"time_left": 0.36,
-					"duration": 0.36,
+					"radius": 20.0,
+					"time_left": 0.42,
+					"duration": 0.42,
 					"delay": travel_duration * 0.8,
+					"filled": true,
+				})
+				_ring_effects.append({
+					"center": end_center,
+					"color": Color(0.78, 0.96, 1.0, 0.24),
+					"radius": 14.0,
+					"time_left": 0.22,
+					"duration": 0.22,
+					"delay": travel_duration * 0.82,
 					"filled": true,
 				})
 				_sprite_effects.append({
 					"texture": EFFECT_SMOKE,
 					"center": end_center,
-					"color": Color(0.72, 0.9, 1.0, 0.48),
-					"scale_start": 0.2,
-					"scale_end": 0.4,
-					"time_left": 0.52,
-					"duration": 0.52,
+					"color": Color(0.72, 0.9, 1.0, 0.56),
+					"scale_start": 0.24,
+					"scale_end": 0.46,
+					"time_left": 0.58,
+					"duration": 0.58,
 					"delay": travel_duration * 0.78,
-					"drift": Vector2(0, -12),
+					"drift": Vector2(0, -14),
 				})
 				_sprite_effects.append({
 					"texture": EFFECT_SPARK,
 					"center": end_center,
-					"color": Color(0.9, 0.98, 1.0, 0.56),
-					"scale_start": 0.18,
-					"scale_end": 0.34,
-					"time_left": 0.28,
-					"duration": 0.28,
+					"color": Color(0.9, 0.98, 1.0, 0.62),
+					"scale_start": 0.22,
+					"scale_end": 0.38,
+					"time_left": 0.34,
+					"duration": 0.34,
 					"delay": travel_duration * 0.81,
 					"drift": Vector2(0, -6),
 				})
 				_flash_effects.append({
 					"center": end_center,
-					"color": Color(0.84, 0.97, 1.0, 0.28),
-					"radius": 24.0,
-					"time_left": 0.28,
-					"duration": 0.28,
+					"color": Color(0.84, 0.97, 1.0, 0.34),
+					"radius": 28.0,
+					"time_left": 0.34,
+					"duration": 0.34,
 					"delay": travel_duration * 0.8,
 				})
-				_trigger_shake(0.26)
+				_trigger_shake(0.3)
 		GameTypes.ActionType.ATTACK:
 			_play_attack_effect(previous_state, action)
 		GameTypes.ActionType.PASS:
@@ -701,7 +710,13 @@ func _draw_effects() -> void:
 			var text_size: Vector2 = font.get_string_size(text_value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size)
 			var position: Vector2 = _effect_vec2(floater, "center", Vector2.ZERO) + Vector2(-text_size.x * 0.5, -20 - drift) + _shake_offset
 			var shadow_color: Color = Color(0.04, 0.06, 0.1, text_color.a * 0.9)
+			var backdrop_center: Vector2 = position + Vector2(text_size.x * 0.5, -font_size * 0.15)
+			var backdrop_radius: float = maxf(text_size.x * 0.46, 14.0)
+			draw_circle(backdrop_center, backdrop_radius, Color(0.03, 0.05, 0.09, text_color.a * 0.18))
+			draw_circle(backdrop_center, backdrop_radius * 0.72, Color(1.0, 0.95, 0.82, text_color.a * 0.07))
 			draw_string(font, position + Vector2(2, 3), text_value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, shadow_color)
+			draw_string(font, position + Vector2(-1, 1), text_value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, shadow_color)
+			draw_string(font, position + Vector2(1, -1), text_value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, shadow_color)
 			draw_string(font, position, text_value, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, text_color)
 
 
@@ -1296,12 +1311,12 @@ func _apply_event_feedback(previous_state: GameState, current_state: GameState, 
 			_floating_texts.append({
 				"center": hit_center,
 				"text": "-%d" % damage,
-				"color": Color("fff6df"),
-				"time_left": 0.78,
-				"duration": 0.78,
-				"font_size": 30,
-				"delay": 0.03,
-				"drift_distance": 26.0,
+				"color": Color("fff7e6"),
+				"time_left": 0.66,
+				"duration": 0.66,
+				"font_size": 36,
+				"delay": 0.02,
+				"drift_distance": 30.0,
 			})
 			var target_tank: TankData = current_state.get_tank(target_id)
 			if target_tank != null:

@@ -6,6 +6,9 @@
 
 ## Completed Items
 
+- Tightened the last Step 4 readability blockers:
+  - damage popups are now larger, brighter, and easier to read against the board
+  - movement arrival now has a stronger landing pulse, puff, and settle cue
 - Tightened the Step 4 combat readability pass:
   - damage numbers are now larger, centered better, and easier to read
   - attacker fire cues are stronger before target impact
@@ -659,6 +662,9 @@
   - attacker fire cue is obvious before the target impact
   - movement landing feels more resolved at the destination
   - at least one destruction moment reads clearly stronger than a normal hit
+- Confirm the final Step 4 readability pass works:
+  - `-2` / `-3` style damage popups are easy to read at normal speed
+  - movement arrival visibly resolves at the destination instead of feeling abrupt
 
 ## Resources Needed Soon
 
