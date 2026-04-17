@@ -6,6 +6,10 @@
 
 ## Completed Items
 
+- Applied a Step 7 UI hotfix:
+  - assigned the right-side match rail scroll container correctly so the sidebar resets and behaves more reliably
+  - trimmed the right rail and top/bottom shell sizing slightly so hidden content fits more cleanly on screen
+  - changed the debug toggle hint and input handling so `F3` now reliably opens the debug overlay instead of depending on `Shift+F3`
 - Completed the Step 7 product-flow pass:
   - polished the main menu into a more confident front-end with stronger hero copy, session snapshot, arena preview, rules preview, version text, and consistent scene transitions
   - improved the pre-match setup flow so arena choice, rules, and match identity are easier to understand before launching a battle

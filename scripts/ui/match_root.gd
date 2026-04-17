@@ -134,7 +134,7 @@ func _build_layout() -> void:
 	root_margin.add_child(root_layout)
 
 	_top_panel = _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
-	_top_panel.custom_minimum_size = Vector2(0, 80)
+	_top_panel.custom_minimum_size = Vector2(0, 74)
 	root_layout.add_child(_top_panel)
 	var top_margin := _wrap_panel_content(_top_panel, 18, 12)
 	var top_bar := HBoxContainer.new()
@@ -217,22 +217,24 @@ func _build_layout() -> void:
 	_board_holder.add_child(_board_view)
 
 	var side_scroll := ScrollContainer.new()
-	side_scroll.custom_minimum_size = Vector2(248, 0)
+	side_scroll.custom_minimum_size = Vector2(236, 0)
 	side_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	side_scroll.size_flags_horizontal = Control.SIZE_SHRINK_END
 	side_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	content.add_child(side_scroll)
+	_sidebar_scroll = side_scroll
 
 	var side_rail := VBoxContainer.new()
-	side_rail.custom_minimum_size = Vector2(238, 0)
+	side_rail.custom_minimum_size = Vector2(228, 0)
 	side_rail.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	side_rail.add_theme_constant_override("separation", 12)
+	side_rail.add_theme_constant_override("separation", 10)
 	side_scroll.add_child(side_rail)
 
 	_selected_unit_panel = _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
 	side_rail.add_child(_selected_unit_panel)
-	var info_margin := _wrap_panel_content(_selected_unit_panel, 14, 14)
+	var info_margin := _wrap_panel_content(_selected_unit_panel, 12, 12)
 	var info_layout := VBoxContainer.new()
-	info_layout.add_theme_constant_override("separation", 10)
+	info_layout.add_theme_constant_override("separation", 8)
 	info_margin.add_child(info_layout)
 
 	var selected_title := _make_section_title("Selected Unit")
@@ -241,7 +243,7 @@ func _build_layout() -> void:
 
 	_selected_model_name_label = Label.new()
 	_selected_model_name_label.add_theme_font_override("font", FONT_BOLD)
-	_selected_model_name_label.add_theme_font_size_override("font_size", 22)
+	_selected_model_name_label.add_theme_font_size_override("font_size", 20)
 	info_layout.add_child(_selected_model_name_label)
 
 	_selected_model_role_label = Label.new()
@@ -261,9 +263,9 @@ func _build_layout() -> void:
 
 	var objective_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
 	side_rail.add_child(objective_panel)
-	var objective_margin := _wrap_panel_content(objective_panel, 14, 12)
+	var objective_margin := _wrap_panel_content(objective_panel, 12, 10)
 	var objective_layout := VBoxContainer.new()
-	objective_layout.add_theme_constant_override("separation", 10)
+	objective_layout.add_theme_constant_override("separation", 8)
 	objective_margin.add_child(objective_layout)
 	objective_layout.add_child(_make_section_title("Objective"))
 	objective_layout.add_child(_make_section_divider())
@@ -273,10 +275,10 @@ func _build_layout() -> void:
 	var log_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
 	log_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_rail.add_child(log_panel)
-	var log_margin := _wrap_panel_content(log_panel, 14, 12)
+	var log_margin := _wrap_panel_content(log_panel, 12, 10)
 	var log_layout := VBoxContainer.new()
 	log_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	log_layout.add_theme_constant_override("separation", 10)
+	log_layout.add_theme_constant_override("separation", 8)
 	log_margin.add_child(log_layout)
 	log_layout.add_child(_make_section_title("Recent Events"))
 	log_layout.add_child(_make_section_divider())
@@ -287,7 +289,7 @@ func _build_layout() -> void:
 	_event_log.scroll_following = true
 	_event_log.bbcode_enabled = true
 	_event_log.add_theme_font_override("normal_font", FONT_REGULAR)
-	_event_log.add_theme_font_size_override("normal_font_size", 14)
+	_event_log.add_theme_font_size_override("normal_font_size", 13)
 	log_layout.add_child(_event_log)
 
 	var overlay_layer := Control.new()
@@ -401,7 +403,7 @@ func _build_layout() -> void:
 	_mini_board_holder.add_child(_mini_board_view)
 
 	var bottom_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
-	bottom_panel.custom_minimum_size = Vector2(0, 84)
+	bottom_panel.custom_minimum_size = Vector2(0, 76)
 	root_layout.add_child(bottom_panel)
 	var bottom_margin := _wrap_panel_content(bottom_panel, 16, 14)
 	var bottom_row := HBoxContainer.new()
@@ -509,6 +511,7 @@ func _build_layout() -> void:
 
 	call_deferred("_recenter_board_view")
 	call_deferred("_recenter_mini_board")
+	call_deferred("_reset_sidebar_scroll")
 
 
 func _build_world_backdrop(parent: Control) -> void:
@@ -1079,7 +1082,7 @@ func _refresh_view() -> void:
 	_score_label.text = "Score  P1 %d  :  %d P2" % [_control_score_for_player(1), _control_score_for_player(2)]
 	_hp_summary_label.text = _hp_summary_text()
 	_units_label.text = _remaining_units_text()
-	_map_label.text = "Map: %s\nController: P1 %s | P2 %s\nShift+F3 toggles debug controls." % [
+	_map_label.text = "Map: %s\nController: P1 %s | P2 %s\nF3 toggles debug controls." % [
 		_game_state.board.map_display_name,
 		_controller_label(AppState.current_match_config.player_one_ai.controller_type),
 		_controller_label(AppState.current_match_config.player_two_ai.controller_type),
@@ -2078,6 +2081,8 @@ func _reset_sidebar_scroll() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is not InputEventKey or not event.pressed or event.echo:
 		return
+	var key_event := event as InputEventKey
+	var is_f3: bool = key_event.keycode == KEY_F3 or key_event.physical_keycode == KEY_F3
 	if _onboarding_overlay != null and _onboarding_overlay.visible:
 		if event.keycode == KEY_ESCAPE:
 			_dismiss_onboarding(false)
@@ -2089,12 +2094,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			accept_event()
 		return
 
+	if is_f3:
+		_debug_visible = not _debug_visible
+		_refresh_view()
+		accept_event()
+		return
+
 	match event.keycode:
-		KEY_F3:
-			if event.shift_pressed:
-				_debug_visible = not _debug_visible
-				_refresh_view()
-				accept_event()
 		KEY_ESCAPE:
 			_toggle_pause_overlay(not _pause_visible)
 			accept_event()
