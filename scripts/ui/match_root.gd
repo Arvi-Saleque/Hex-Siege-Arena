@@ -335,7 +335,7 @@ func _build_layout() -> void:
 	var debug_layout := VBoxContainer.new()
 	debug_layout.add_theme_constant_override("separation", 8)
 	debug_margin.add_child(debug_layout)
-	debug_layout.add_child(_make_section_title("Debug Panel (Shift+F3)"))
+	debug_layout.add_child(_make_section_title("Debug Panel (F3)"))
 
 	_debug_label = _make_body_label()
 	debug_layout.add_child(_debug_label)
@@ -451,6 +451,7 @@ func _build_layout() -> void:
 
 	var modal_layer := Control.new()
 	modal_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	modal_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root_margin.add_child(modal_layer)
 
 	_phase_banner_panel = _make_panel_card(COLOR_GOLD, COLOR_SURFACE_ALT)
@@ -2083,8 +2084,6 @@ func _reset_sidebar_scroll() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is not InputEventKey or not event.pressed or event.echo:
 		return
-	var key_event := event as InputEventKey
-	var is_f3: bool = key_event.keycode == KEY_F3 or key_event.physical_keycode == KEY_F3
 	if _onboarding_overlay != null and _onboarding_overlay.visible:
 		if event.keycode == KEY_ESCAPE:
 			_dismiss_onboarding(false)
@@ -2094,12 +2093,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode == KEY_ESCAPE:
 			_hide_result_overlay()
 			accept_event()
-		return
-
-	if is_f3:
-		_debug_visible = not _debug_visible
-		_refresh_view()
-		accept_event()
 		return
 
 	match event.keycode:

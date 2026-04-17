@@ -12,6 +12,8 @@
   - changed the debug toggle hint and input handling so `F3` now reliably opens the debug overlay instead of depending on `Shift+F3`
   - compacted the Selected Unit card into a tighter stat layout so lower right-rail content is no longer pushed out as aggressively
   - raised the debug overlay draw priority and added a direct `_input` hook for `F3` so the debug panel can still open even when other controls consume input first
+  - fixed the full-screen modal layer so it no longer steals mouse input from the live match HUD when pause/result overlays are closed
+  - added a Godot `.gdignore` to the raw `audiio` bundle so unsupported source WAVs stop spamming the importer
 - Completed the Step 7 product-flow pass:
   - polished the main menu into a more confident front-end with stronger hero copy, session snapshot, arena preview, rules preview, version text, and consistent scene transitions
   - improved the pre-match setup flow so arena choice, rules, and match identity are easier to understand before launching a battle
