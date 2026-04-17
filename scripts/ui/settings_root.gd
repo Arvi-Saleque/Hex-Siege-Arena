@@ -26,6 +26,8 @@ var _sfx_value_label: Label
 var _ui_value_label: Label
 var _reduced_motion_check: CheckBox
 var _high_contrast_check: CheckBox
+var _onboarding_check: CheckBox
+var _transition_overlay: ColorRect
 
 
 func _ready() -> void:
@@ -34,6 +36,7 @@ func _ready() -> void:
 	theme = _build_theme()
 	_build_layout()
 	_refresh_labels()
+	call_deferred("_play_intro_transition")
 
 
 func _build_layout() -> void:
@@ -139,6 +142,7 @@ func _build_layout() -> void:
 	visual_layout.add_child(_slider_row("UI Scale", AppState.ui_scale, "_on_scale_changed", 0.85, 1.35, 0.05))
 	visual_layout.add_child(_toggle_row("Reduced Motion", AppState.reduced_motion, "_on_reduced_motion_toggled", "Disables board shake and tones down motion-heavy battlefield presentation."))
 	visual_layout.add_child(_toggle_row("High Contrast Highlights", AppState.high_contrast_mode, "_on_high_contrast_toggled", "Strengthens move, attack, and team color separation for clearer tactical reading."))
+	visual_layout.add_child(_toggle_row("Show Match Briefing", AppState.show_onboarding_hints, "_on_onboarding_toggled", "Shows the lightweight pre-battle onboarding card at match start until you turn it off."))
 
 	var audio_panel := _make_panel_card(COLOR_GREEN, COLOR_SURFACE)
 	left_column.add_child(audio_panel)
@@ -180,6 +184,12 @@ func _build_layout() -> void:
 	button_layout.add_child(_make_section_heading("Actions"))
 	button_layout.add_child(_make_button("Restore Defaults", _on_restore_defaults_pressed, COLOR_GOLD))
 	button_layout.add_child(_make_button("Back To Menu", _on_back_pressed, COLOR_P2, true))
+
+	_transition_overlay = ColorRect.new()
+	_transition_overlay.color = Color(0.03, 0.05, 0.09, 1.0)
+	_transition_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_transition_overlay)
 
 
 func _build_theme() -> Theme:
@@ -273,6 +283,8 @@ func _toggle_row(label_text: String, initial_value: bool, callback_name: String,
 			_reduced_motion_check = check
 		"High Contrast Highlights":
 			_high_contrast_check = check
+		"Show Match Briefing":
+			_onboarding_check = check
 
 	return panel
 
@@ -376,6 +388,29 @@ func _refresh_labels() -> void:
 		_ui_value_label.text = "%.0f dB" % _ui_slider.value
 
 
+func _play_intro_transition() -> void:
+	if _transition_overlay == null:
+		return
+	var tween := create_tween()
+	tween.tween_property(_transition_overlay, "color:a", 0.0, 0.28).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.finished.connect(func() -> void:
+		if _transition_overlay != null:
+			_transition_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	)
+
+
+func _transition_to(scene_path: String) -> void:
+	if _transition_overlay == null:
+		get_tree().change_scene_to_file(scene_path)
+		return
+	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	var tween := create_tween()
+	tween.tween_property(_transition_overlay, "color:a", 1.0, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.finished.connect(func() -> void:
+		get_tree().change_scene_to_file(scene_path)
+	)
+
+
 func _on_scale_changed(value: float) -> void:
 	AppState.ui_scale = value
 	AppState.apply_window_preferences(self)
@@ -416,6 +451,12 @@ func _on_high_contrast_toggled(enabled: bool) -> void:
 	AudioManager.play_ui_confirm()
 
 
+func _on_onboarding_toggled(enabled: bool) -> void:
+	AppState.show_onboarding_hints = enabled
+	AppState.save_preferences()
+	AudioManager.play_ui_confirm()
+
+
 func _on_restore_defaults_pressed() -> void:
 	_scale_slider.value = 1.0
 	_music_slider.value = -16.0
@@ -425,9 +466,12 @@ func _on_restore_defaults_pressed() -> void:
 		_reduced_motion_check.button_pressed = false
 	if _high_contrast_check != null:
 		_high_contrast_check.button_pressed = false
+	if _onboarding_check != null:
+		_onboarding_check.button_pressed = true
 	AppState.ui_scale = _scale_slider.value
 	AppState.reduced_motion = false
 	AppState.high_contrast_mode = false
+	AppState.show_onboarding_hints = true
 	AppState.apply_window_preferences(self)
 	AudioManager.set_music_volume_db(_music_slider.value)
 	AudioManager.set_sfx_volume_db(_sfx_slider.value)
@@ -438,4 +482,4 @@ func _on_restore_defaults_pressed() -> void:
 
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file(MENU_SCENE)
+	_transition_to(MENU_SCENE)

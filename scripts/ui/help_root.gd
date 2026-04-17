@@ -17,6 +17,7 @@ const COLOR_GOLD := Color("f0c05e")
 const COLOR_P1 := Color("77b8ff")
 const COLOR_GREEN := Color("69dd8e")
 const COLOR_P2 := Color("ff8a76")
+var _transition_overlay: ColorRect
 
 
 func _ready() -> void:
@@ -24,6 +25,7 @@ func _ready() -> void:
 	AudioManager.play_menu_music()
 	theme = _build_theme()
 	_build_layout()
+	call_deferred("_play_intro_transition")
 
 
 func _build_layout() -> void:
@@ -131,6 +133,12 @@ func _build_layout() -> void:
 	button_row.add_child(_make_button("Start Match", _on_start_match_pressed, COLOR_GOLD))
 	button_row.add_child(_make_button("Open Settings", _on_settings_pressed, COLOR_P1))
 	button_row.add_child(_make_button("Back To Menu", _on_back_pressed, COLOR_P2, true))
+
+	_transition_overlay = ColorRect.new()
+	_transition_overlay.color = Color(0.03, 0.05, 0.09, 1.0)
+	_transition_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_transition_overlay)
 
 
 func _build_theme() -> Theme:
@@ -259,13 +267,36 @@ func _make_section_heading(text: String) -> Label:
 	return label
 
 
+func _play_intro_transition() -> void:
+	if _transition_overlay == null:
+		return
+	var tween := create_tween()
+	tween.tween_property(_transition_overlay, "color:a", 0.0, 0.28).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.finished.connect(func() -> void:
+		if _transition_overlay != null:
+			_transition_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	)
+
+
+func _transition_to(scene_path: String) -> void:
+	if _transition_overlay == null:
+		get_tree().change_scene_to_file(scene_path)
+		return
+	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	var tween := create_tween()
+	tween.tween_property(_transition_overlay, "color:a", 1.0, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.finished.connect(func() -> void:
+		get_tree().change_scene_to_file(scene_path)
+	)
+
+
 func _on_start_match_pressed() -> void:
-	get_tree().change_scene_to_file(MATCH_SCENE)
+	_transition_to(MATCH_SCENE)
 
 
 func _on_settings_pressed() -> void:
-	get_tree().change_scene_to_file(SETTINGS_SCENE)
+	_transition_to(SETTINGS_SCENE)
 
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file(MENU_SCENE)
+	_transition_to(MENU_SCENE)

@@ -2,10 +2,20 @@
 
 ## Current Phase
 
-- Step 6: Unit identity, faction readability, and selected-card cohesion in progress
+- Step 7: Product flow, screen transitions, match-start clarity, and result resolution completed
 
 ## Completed Items
 
+- Completed the Step 7 product-flow pass:
+  - polished the main menu into a more confident front-end with stronger hero copy, session snapshot, arena preview, rules preview, version text, and consistent scene transitions
+  - improved the pre-match setup flow so arena choice, rules, and match identity are easier to understand before launching a battle
+  - added screen transition polish across menu, settings, help, replay, and match entry so navigation feels connected instead of stitched together
+  - added a proper in-match phase banner for match start, turn changes, resets, and match resolution
+  - replaced the old escape-to-menu behavior with a real pause overlay that includes Resume, Restart Match, Settings, Main Menu, and Quit
+  - added a proper post-match result overlay with victory/defeat state, match summary, rematch, battlefield review, and main-menu exit flow
+  - added a lightweight onboarding/briefing overlay at match start with a persistent “don’t show again” preference
+  - extended preferences so onboarding visibility is saved alongside audio and accessibility settings
+  - polished the settings, help, and replay shells so they match the same visual language and transition behavior as the rest of the game
 - Started the Step 6 unit identity pass:
   - strengthened faction distinction on-board with cooler P1 accents and warmer P2 accents
   - added compact faction markings and clearer forward-facing lens cues on tank sprites
@@ -118,6 +128,16 @@
   - Move / Attack / Pass buttons
   - action highlights
   - event log
+
+## Step 7 Verification
+
+- main menu now feels like the front door of the same game you play in-match
+- starting a skirmish now carries clear arena/rules context before loading into battle
+- match start and turn changes now have a readable phase banner
+- pause/settings now behave like real product screens instead of dev shortcuts
+- winning or losing now ends in a dedicated result screen with closure and next-step buttons
+- onboarding guidance is short, optional, and persistent instead of noisy
+- screen-to-screen flow now uses one clean transition language
 - Added data-driven map content support:
   - `MapPreset`
   - `MapLibrary`

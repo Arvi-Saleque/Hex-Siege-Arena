@@ -27,6 +27,10 @@ var _p1_depth_spin: SpinBox
 var _p2_rollout_spin: SpinBox
 var _replay_button: Button
 var _summary_label: RichTextLabel
+var _arena_preview_label: Label
+var _rules_preview_label: Label
+var _version_label: Label
+var _transition_overlay: ColorRect
 
 
 func _ready() -> void:
@@ -35,6 +39,7 @@ func _ready() -> void:
 	theme = _build_menu_theme()
 	_build_layout()
 	_refresh_summary()
+	call_deferred("_play_intro_transition")
 
 
 func _build_layout() -> void:
@@ -119,12 +124,19 @@ func _build_layout() -> void:
 	hero_left.add_child(subtitle)
 
 	var hero_note := Label.new()
-	hero_note.text = "Professional spectator-style prototype with replay support, analytics, audio, accessibility, and AI-vs-AI as the flagship mode."
+	hero_note.text = "Board-first tactical duel with premium replay flow, readable AI battles, and a product-style fullscreen presentation."
 	hero_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hero_note.add_theme_font_override("font", FONT_REGULAR)
 	hero_note.add_theme_font_size_override("font_size", 15)
 	hero_note.add_theme_color_override("font_color", Color("d7e3f5"))
 	hero_left.add_child(hero_note)
+
+	_version_label = Label.new()
+	_version_label.text = "%s  |  %s" % [AppState.game_version, AppState.build_label.replace("-", " ")]
+	_version_label.add_theme_font_override("font", FONT_MEDIUM)
+	_version_label.add_theme_font_size_override("font_size", 12)
+	_version_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	hero_left.add_child(_version_label)
 
 	var hero_right := _make_panel_card(COLOR_BORDER.lightened(0.15), Color("142033"))
 	hero_right.custom_minimum_size = Vector2(380, 0)
@@ -235,7 +247,7 @@ func _build_layout() -> void:
 	var primary_row := HBoxContainer.new()
 	primary_row.add_theme_constant_override("separation", 12)
 	action_column.add_child(primary_row)
-	primary_row.add_child(_make_button("Start Match", _on_open_match_pressed, COLOR_GOLD, 56))
+	primary_row.add_child(_make_button("Start Skirmish", _on_open_match_pressed, COLOR_GOLD, 58))
 
 	_replay_button = _make_button("Replay Viewer", _on_open_replay_pressed, COLOR_P1, 56)
 	primary_row.add_child(_replay_button)
@@ -250,7 +262,7 @@ func _build_layout() -> void:
 	utility_row.add_theme_constant_override("separation", 12)
 	action_column.add_child(utility_row)
 	utility_row.add_child(_make_button("Reset Runtime State", _on_reset_state_pressed, COLOR_BORDER.lightened(0.10), 44))
-	utility_row.add_child(_make_button("Exit Game", _on_exit_game_pressed, COLOR_P2, 44, true))
+	utility_row.add_child(_make_button("Quit", _on_exit_game_pressed, COLOR_P2, 44, true))
 
 	var side_column := VBoxContainer.new()
 	side_column.custom_minimum_size = Vector2(360, 0)
@@ -263,15 +275,14 @@ func _build_layout() -> void:
 	var brief_layout := VBoxContainer.new()
 	brief_layout.add_theme_constant_override("separation", 12)
 	brief_margin.add_child(brief_layout)
-	brief_layout.add_child(_make_section_heading("Arena Brief"))
+	brief_layout.add_child(_make_section_heading("Arena Preview"))
 
-	var brief_text := Label.new()
-	brief_text.text = "Standard is the cleanest tactical read. Labyrinth adds heavier obstacle pressure and rewards better optimization under uncertainty."
-	brief_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	brief_text.add_theme_font_override("font", FONT_REGULAR)
-	brief_text.add_theme_font_size_override("font_size", 15)
-	brief_text.add_theme_color_override("font_color", COLOR_TEXT)
-	brief_layout.add_child(brief_text)
+	_arena_preview_label = Label.new()
+	_arena_preview_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_arena_preview_label.add_theme_font_override("font", FONT_REGULAR)
+	_arena_preview_label.add_theme_font_size_override("font_size", 15)
+	_arena_preview_label.add_theme_color_override("font_color", COLOR_TEXT)
+	brief_layout.add_child(_arena_preview_label)
 
 	var start_steps := Label.new()
 	start_steps.text = "1. Pick controllers and map.\n2. Launch the match.\n3. Use F3 in-game for extra tools.\n4. Open Replay Viewer after a finished match."
@@ -281,21 +292,20 @@ func _build_layout() -> void:
 	start_steps.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	brief_layout.add_child(start_steps)
 
-	var profile_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
-	side_column.add_child(profile_panel)
-	var profile_margin := _wrap_panel_content(profile_panel, 22, 20)
-	var profile_layout := VBoxContainer.new()
-	profile_layout.add_theme_constant_override("separation", 10)
-	profile_margin.add_child(profile_layout)
-	profile_layout.add_child(_make_section_heading("Saved Profile"))
+	var rules_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
+	side_column.add_child(rules_panel)
+	var rules_margin := _wrap_panel_content(rules_panel, 22, 20)
+	var rules_layout := VBoxContainer.new()
+	rules_layout.add_theme_constant_override("separation", 10)
+	rules_margin.add_child(rules_layout)
+	rules_layout.add_child(_make_section_heading("Match Rules"))
 
-	var profile_text := Label.new()
-	profile_text.text = "Your match setup, accessibility preferences, and audio levels are stored automatically between sessions."
-	profile_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	profile_text.add_theme_font_override("font", FONT_REGULAR)
-	profile_text.add_theme_font_size_override("font_size", 15)
-	profile_text.add_theme_color_override("font_color", COLOR_TEXT)
-	profile_layout.add_child(profile_text)
+	_rules_preview_label = Label.new()
+	_rules_preview_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_rules_preview_label.add_theme_font_override("font", FONT_REGULAR)
+	_rules_preview_label.add_theme_font_size_override("font_size", 15)
+	_rules_preview_label.add_theme_color_override("font_color", COLOR_TEXT)
+	rules_layout.add_child(_rules_preview_label)
 
 	var support_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
 	side_column.add_child(support_panel)
@@ -306,12 +316,18 @@ func _build_layout() -> void:
 	support_layout.add_child(_make_section_heading("Build Focus"))
 
 	var support_text := Label.new()
-	support_text.text = "This version prioritizes a professional board-first match screen, readable AI battles, richer pacing, replay analytics, and a cleaner fullscreen shell."
+	support_text.text = "This release focuses on a cohesive front-end flow: stronger setup clarity, cleaner fullscreen match pacing, replay review, onboarding, and a more intentional launch-to-result loop."
 	support_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	support_text.add_theme_font_override("font", FONT_REGULAR)
 	support_text.add_theme_font_size_override("font_size", 15)
 	support_text.add_theme_color_override("font_color", COLOR_TEXT)
 	support_layout.add_child(support_text)
+
+	_transition_overlay = ColorRect.new()
+	_transition_overlay.color = Color(0.03, 0.05, 0.09, 1.0)
+	_transition_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_transition_overlay)
 
 	_apply_config_to_controls()
 
@@ -559,6 +575,10 @@ func _refresh_summary() -> void:
 		"Reduced" if AppState.reduced_motion else "Standard",
 		"High" if AppState.high_contrast_mode else "Standard",
 	]
+	if _arena_preview_label != null:
+		_arena_preview_label.text = _map_preview_text(config.map_id)
+	if _rules_preview_label != null:
+		_rules_preview_label.text = _match_rules_text(config)
 
 
 func _controller_label(controller_type: int) -> String:
@@ -573,20 +593,66 @@ func _controller_label(controller_type: int) -> String:
 			return "Unknown"
 
 
+func _map_preview_text(map_id: String) -> String:
+	match map_id:
+		"labyrinth":
+			return "Labyrinth Arena\nDense lanes, heavier obstruction pressure, and more tactical route tension. Best for deeper optimization and risk-heavy center fights."
+		"fortress":
+			return "Fortress Arena\nMore defensive structure and tighter engagement corridors. Rewards deliberate heavy-unit pressure."
+		"open":
+			return "Open Arena\nCleaner firing lanes and faster flank pressure. Qtanks gain more room to project control."
+		_:
+			return "Standard Arena\nBalanced central skirmish map with one hidden bonus tile and clear tempo around the center objective."
+
+
+func _match_rules_text(config: MatchConfig) -> String:
+	var p1_label: String = _controller_label(config.player_one_ai.controller_type)
+	var p2_label: String = _controller_label(config.player_two_ai.controller_type)
+	return "Win by destroying the enemy Ktank or occupying the center hex with your own.\nP1: %s  |  P2: %s\nTurn Limit: %d\nMode: %s" % [
+		p1_label,
+		p2_label,
+		config.max_turns,
+		"AI Spectator" if config.ai_vs_ai_mode else "Local Skirmish",
+	]
+
+
+func _play_intro_transition() -> void:
+	if _transition_overlay == null:
+		return
+	var tween := create_tween()
+	tween.tween_property(_transition_overlay, "color:a", 0.0, 0.28).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.finished.connect(func() -> void:
+		if _transition_overlay != null:
+			_transition_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	)
+
+
+func _transition_to(scene_path: String) -> void:
+	if _transition_overlay == null:
+		get_tree().change_scene_to_file(scene_path)
+		return
+	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	var tween := create_tween()
+	tween.tween_property(_transition_overlay, "color:a", 1.0, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.finished.connect(func() -> void:
+		get_tree().change_scene_to_file(scene_path)
+	)
+
+
 func _on_open_match_pressed() -> void:
-	get_tree().change_scene_to_file(MATCH_SCENE)
+	_transition_to(MATCH_SCENE)
 
 
 func _on_open_replay_pressed() -> void:
-	get_tree().change_scene_to_file(REPLAY_SCENE)
+	_transition_to(REPLAY_SCENE)
 
 
 func _on_open_help_pressed() -> void:
-	get_tree().change_scene_to_file(HELP_SCENE)
+	_transition_to(HELP_SCENE)
 
 
 func _on_open_settings_pressed() -> void:
-	get_tree().change_scene_to_file(SETTINGS_SCENE)
+	_transition_to(SETTINGS_SCENE)
 
 
 func _on_reset_state_pressed() -> void:

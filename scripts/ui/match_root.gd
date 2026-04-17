@@ -1,6 +1,8 @@
 extends Control
 
 const MENU_SCENE := "res://scenes/menu/main_menu.tscn"
+const SETTINGS_SCENE := "res://scenes/settings/settings_root.tscn"
+const HELP_SCENE := "res://scenes/help/help_root.tscn"
 const AUTOPLAY_SPEED_LABELS := ["Slow", "Normal", "Fast"]
 const AUTOPLAY_SPEED_SECONDS := [0.9, 0.45, 0.15]
 const FONT_REGULAR := preload("res://assets/ui/fonts/inter-regular.ttf")
@@ -80,6 +82,18 @@ var _presentation_locked: bool = false
 var _debug_visible: bool = false
 var _top_panel: PanelContainer
 var _selected_unit_panel: PanelContainer
+var _phase_banner_panel: PanelContainer
+var _phase_banner_label: Label
+var _pause_overlay: Control
+var _result_overlay: Control
+var _onboarding_overlay: Control
+var _transition_overlay: ColorRect
+var _result_title_label: Label
+var _result_summary_label: RichTextLabel
+var _pause_visible: bool = false
+var _result_visible: bool = false
+var _result_dismissed: bool = false
+var _onboarding_dismissed: bool = false
 
 
 func _ready() -> void:
@@ -89,6 +103,8 @@ func _ready() -> void:
 	theme = _build_match_theme()
 	_build_layout()
 	_refresh_view()
+	call_deferred("_play_intro_transition")
+	call_deferred("_show_phase_banner", "MATCH START")
 
 
 func _build_layout() -> void:
@@ -428,6 +444,63 @@ func _build_layout() -> void:
 	bottom_row.add_child(right_spacer)
 
 	_control_strip_label = null
+
+	var modal_layer := Control.new()
+	modal_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root_margin.add_child(modal_layer)
+
+	_phase_banner_panel = _make_panel_card(COLOR_GOLD, COLOR_SURFACE_ALT)
+	_phase_banner_panel.visible = false
+	_phase_banner_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_phase_banner_panel.anchor_left = 0.5
+	_phase_banner_panel.anchor_top = 0.04
+	_phase_banner_panel.anchor_right = 0.5
+	_phase_banner_panel.anchor_bottom = 0.04
+	_phase_banner_panel.offset_left = -160
+	_phase_banner_panel.offset_top = 0
+	_phase_banner_panel.offset_right = 160
+	_phase_banner_panel.offset_bottom = 64
+	modal_layer.add_child(_phase_banner_panel)
+	var banner_margin := _wrap_panel_content(_phase_banner_panel, 18, 12)
+	_phase_banner_label = Label.new()
+	_phase_banner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_phase_banner_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_phase_banner_label.add_theme_font_override("font", FONT_BOLD)
+	_phase_banner_label.add_theme_font_size_override("font_size", 24)
+	banner_margin.add_child(_phase_banner_label)
+
+	_pause_overlay = _make_modal_overlay(modal_layer, "Paused", COLOR_P1, "Take a breath, adjust settings, or jump back into the arena.")
+	var pause_layout := _pause_overlay.get_meta("content_layout") as VBoxContainer
+	pause_layout.add_child(_make_overlay_button("Resume", _toggle_pause_overlay.bind(false), COLOR_GREEN))
+	pause_layout.add_child(_make_overlay_button("Restart Match", _on_reset_pressed, COLOR_GOLD))
+	pause_layout.add_child(_make_overlay_button("Settings", _open_settings_from_match, COLOR_P1))
+	pause_layout.add_child(_make_overlay_button("Main Menu", _on_back_pressed, COLOR_BORDER.lightened(0.15), true))
+	pause_layout.add_child(_make_overlay_button("Quit", _on_quit_pressed, COLOR_P2, true))
+
+	_result_overlay = _make_modal_overlay(modal_layer, "Victory", COLOR_GOLD, "")
+	var result_layout := _result_overlay.get_meta("content_layout") as VBoxContainer
+	_result_title_label = result_layout.get_node("TitleLabel") as Label
+	_result_summary_label = RichTextLabel.new()
+	_result_summary_label.bbcode_enabled = true
+	_result_summary_label.fit_content = true
+	_result_summary_label.scroll_active = false
+	_result_summary_label.add_theme_font_override("normal_font", FONT_REGULAR)
+	_result_summary_label.add_theme_font_size_override("normal_font_size", 15)
+	result_layout.add_child(_result_summary_label)
+	result_layout.add_child(_make_overlay_button("Rematch", _on_reset_pressed, COLOR_GOLD))
+	result_layout.add_child(_make_overlay_button("Review Battlefield", _hide_result_overlay, COLOR_P1))
+	result_layout.add_child(_make_overlay_button("Main Menu", _on_back_pressed, COLOR_BORDER.lightened(0.15), true))
+
+	_onboarding_overlay = _make_modal_overlay(modal_layer, "Match Briefing", COLOR_P1, "Select a unit to reveal actions. Blue tiles show movement, red tiles show attacks, and the center hex is the fastest path to pressure or victory.")
+	var onboarding_layout := _onboarding_overlay.get_meta("content_layout") as VBoxContainer
+	onboarding_layout.add_child(_make_overlay_button("Got It", _dismiss_onboarding.bind(false), COLOR_GREEN))
+	onboarding_layout.add_child(_make_overlay_button("Don't Show Again", _dismiss_onboarding.bind(true), COLOR_GOLD))
+
+	_transition_overlay = ColorRect.new()
+	_transition_overlay.color = Color(0.03, 0.05, 0.09, 1.0)
+	_transition_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	modal_layer.add_child(_transition_overlay)
 
 	_autoplay_timer = Timer.new()
 	_autoplay_timer.one_shot = true
@@ -827,6 +900,63 @@ func _make_action_button(text_value: String, accent_color: Color) -> Button:
 	return button
 
 
+func _make_modal_overlay(parent: Control, title_text: String, accent_color: Color, body_text: String) -> Control:
+	var overlay := Control.new()
+	overlay.visible = false
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	parent.add_child(overlay)
+
+	var scrim := ColorRect.new()
+	scrim.color = Color(0.02, 0.03, 0.06, 0.72)
+	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(scrim)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+
+	var panel := _make_panel_card(accent_color, COLOR_SURFACE_ALT)
+	panel.custom_minimum_size = Vector2(420, 0)
+	center.add_child(panel)
+
+	var margin := _wrap_panel_content(panel, 22, 20)
+	var layout := VBoxContainer.new()
+	layout.name = "ContentLayout"
+	layout.add_theme_constant_override("separation", 12)
+	margin.add_child(layout)
+
+	var title := Label.new()
+	title.name = "TitleLabel"
+	title.text = title_text
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", FONT_BOLD)
+	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_color_override("font_color", accent_color.lerp(Color.WHITE, 0.2))
+	layout.add_child(title)
+
+	if body_text != "":
+		var body := Label.new()
+		body.text = body_text
+		body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		body.add_theme_font_override("font", FONT_MEDIUM)
+		body.add_theme_font_size_override("font_size", 15)
+		body.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+		layout.add_child(body)
+
+	overlay.set_meta("content_layout", layout)
+	return overlay
+
+
+func _make_overlay_button(text_value: String, callback: Callable, accent_color: Color, use_back_sound: bool = false) -> Button:
+	var button := _make_action_button(text_value, accent_color)
+	button.custom_minimum_size = Vector2(240, 48)
+	button.pressed.connect(callback)
+	_wire_button_audio(button, use_back_sound)
+	return button
+
+
 func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(COLOR_SURFACE_ALT.r, COLOR_SURFACE_ALT.g, COLOR_SURFACE_ALT.b, 1.0)
@@ -955,7 +1085,7 @@ func _refresh_view() -> void:
 		_controller_label(AppState.current_match_config.player_two_ai.controller_type),
 	]
 	if _debug_panel != null:
-		_debug_panel.visible = _debug_visible
+		_debug_panel.visible = _debug_visible and not _pause_visible and not _result_visible
 
 	_preview_label.text = _objective_text()
 
@@ -972,6 +1102,8 @@ func _refresh_view() -> void:
 	_recenter_mini_board()
 	_refresh_event_log()
 	_refresh_debug_panel()
+	_refresh_result_overlay()
+	_refresh_onboarding_overlay()
 	_update_button_state()
 	_autoplay_button.text = "Auto %s" % ("On" if _autoplay_enabled else "Off")
 	_speed_button.text = AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
@@ -1174,14 +1306,15 @@ func _format_event(event_item: GameEvent) -> String:
 
 
 func _update_button_state() -> void:
-	var can_act: bool = not _game_state.game_over and not _autoplay_enabled and not _presentation_locked and _selected_actor_id != ""
+	var onboarding_blocking: bool = _onboarding_overlay != null and _onboarding_overlay.visible
+	var can_act: bool = not _game_state.game_over and not _autoplay_enabled and not _presentation_locked and not _pause_visible and not _result_visible and not onboarding_blocking and _selected_actor_id != ""
 	_move_button.disabled = not can_act
 	_attack_button.disabled = not can_act
 	_ability_button.disabled = true
-	_pass_button.disabled = _game_state.game_over or _autoplay_enabled or _presentation_locked
-	_reset_button.disabled = _presentation_locked
-	_ai_move_button.disabled = _game_state.game_over or _autoplay_enabled or _presentation_locked or _current_player_controller_type() == GameTypes.ControllerType.HUMAN
-	_autoplay_button.disabled = _game_state.game_over or _presentation_locked or not _both_players_are_ai()
+	_pass_button.disabled = _game_state.game_over or _autoplay_enabled or _presentation_locked or _pause_visible or _result_visible or onboarding_blocking
+	_reset_button.disabled = _presentation_locked or _pause_visible
+	_ai_move_button.disabled = _game_state.game_over or _autoplay_enabled or _presentation_locked or _pause_visible or _result_visible or _current_player_controller_type() == GameTypes.ControllerType.HUMAN
+	_autoplay_button.disabled = _game_state.game_over or _presentation_locked or _pause_visible or _result_visible or not _both_players_are_ai()
 	_apply_button_visual_state(_move_button, _move_button.get_meta("accent_color"), _action_mode == "move" and not _move_button.disabled)
 	_apply_button_visual_state(_attack_button, _attack_button.get_meta("accent_color"), _action_mode == "attack" and not _attack_button.disabled)
 	_apply_button_visual_state(_ability_button, _ability_button.get_meta("accent_color"), false)
@@ -1275,6 +1408,7 @@ func _on_reset_pressed() -> void:
 	_disable_autoplay()
 	_reset_match()
 	_refresh_view()
+	_show_phase_banner("MATCH RESET")
 
 
 func _on_ai_move_pressed() -> void:
@@ -1336,6 +1470,10 @@ func _reset_match() -> void:
 	_selected_actor_id = ""
 	_presentation_locked = false
 	_debug_visible = false
+	_pause_visible = false
+	_result_visible = false
+	_result_dismissed = false
+	_onboarding_dismissed = false
 	if _board_view != null:
 		_board_view.clear_transient_effects()
 	AppState.last_action_explanation = ActionExplanation.new()
@@ -1379,7 +1517,7 @@ func _actor_short_label(actor_id: String) -> String:
 
 func _on_back_pressed() -> void:
 	_disable_autoplay()
-	get_tree().change_scene_to_file(MENU_SCENE)
+	_transition_to(MENU_SCENE)
 
 
 func _on_quit_pressed() -> void:
@@ -1420,6 +1558,103 @@ func _play_turn_transition_feedback(next_player: int) -> void:
 		return
 	_pulse_control(_top_panel, 1.012, 0.18)
 	_pulse_label_color(_turn_label, COLOR_P1 if next_player == 1 else COLOR_P2)
+	_show_phase_banner("%s TURN" % ("BLUE" if next_player == 1 else "RED"))
+
+
+func _show_phase_banner(text_value: String) -> void:
+	if _phase_banner_panel == null or _phase_banner_label == null:
+		return
+	_phase_banner_label.text = text_value
+	_phase_banner_panel.visible = true
+	_phase_banner_panel.modulate = Color(1, 1, 1, 0)
+	_phase_banner_panel.scale = Vector2.ONE * 0.96
+	var tween := create_tween()
+	tween.tween_property(_phase_banner_panel, "modulate:a", 1.0, 0.12).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(_phase_banner_panel, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(0.42)
+	tween.tween_property(_phase_banner_panel, "modulate:a", 0.0, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tween.finished.connect(func() -> void:
+		if _phase_banner_panel != null:
+			_phase_banner_panel.visible = false
+	)
+
+
+func _toggle_pause_overlay(force_visible: bool = true) -> void:
+	_pause_visible = force_visible
+	if _pause_visible:
+		_disable_autoplay()
+		_debug_visible = false
+	_refresh_view()
+
+
+func _refresh_onboarding_overlay() -> void:
+	if _onboarding_overlay == null:
+		return
+	_onboarding_overlay.visible = AppState.show_onboarding_hints and not _onboarding_dismissed and not _game_state.game_over and AppState.current_replay.turns.is_empty() and not _pause_visible and not _result_visible
+
+
+func _dismiss_onboarding(disable_forever: bool) -> void:
+	_onboarding_dismissed = true
+	if disable_forever:
+		AppState.show_onboarding_hints = false
+		AppState.save_preferences()
+	if _onboarding_overlay != null:
+		_onboarding_overlay.visible = false
+
+
+func _refresh_result_overlay() -> void:
+	_result_visible = _game_state.game_over and not _result_dismissed
+	if _result_overlay == null:
+		return
+	_result_overlay.visible = _result_visible
+	if not _result_visible:
+		return
+	var winner_id: int = _game_state.winner
+	var accent_color: Color = COLOR_GOLD if winner_id == 0 else (COLOR_P1 if winner_id == 1 else COLOR_P2)
+	var title_text: String = "Draw" if winner_id == 0 else ("%s Victory" % ("Blue Command" if winner_id == 1 else "Red Command"))
+	_result_title_label.text = title_text
+	_result_title_label.add_theme_color_override("font_color", accent_color.lerp(Color.WHITE, 0.18))
+	_result_summary_label.text = "[color=#9db0cc]Match Summary[/color]\n[b]%s[/b]\n\n[color=#9db0cc]Turns Recorded[/color]\n[b]%d[/b]\n\n[color=#9db0cc]Map[/color]\n[b]%s[/b]\n\n%s" % [
+		_winner_label(),
+		AppState.current_replay.turns.size(),
+		_game_state.board.map_display_name,
+		ReplayAnalytics.format_summary_text(ReplayAnalytics.build_summary(AppState.current_replay)),
+	]
+
+
+func _hide_result_overlay() -> void:
+	_result_dismissed = true
+	_result_visible = false
+	if _result_overlay != null:
+		_result_overlay.visible = false
+
+
+func _play_intro_transition() -> void:
+	if _transition_overlay == null:
+		return
+	var tween := create_tween()
+	tween.tween_property(_transition_overlay, "color:a", 0.0, 0.34).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.finished.connect(func() -> void:
+		if _transition_overlay != null:
+			_transition_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	)
+
+
+func _transition_to(scene_path: String) -> void:
+	if _transition_overlay == null:
+		get_tree().change_scene_to_file(scene_path)
+		return
+	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	var tween := create_tween()
+	tween.tween_property(_transition_overlay, "color:a", 1.0, 0.24).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.finished.connect(func() -> void:
+		get_tree().change_scene_to_file(scene_path)
+	)
+
+
+func _open_settings_from_match() -> void:
+	_disable_autoplay()
+	_transition_to(SETTINGS_SCENE)
 
 
 func _pulse_control(control: Control, peak_scale: float, duration: float) -> void:
@@ -1496,9 +1731,11 @@ func _execute_action(action: ActionData, source_label: String, explanation: Acti
 		_play_turn_transition_feedback(_game_state.current_player)
 	var feedback_hold: float = _board_view.get_feedback_hold_seconds(action, previous_state)
 	if _game_state.game_over:
+		_result_dismissed = false
 		_disable_autoplay()
 		AppState.current_replay.winner_label = _winner_label()
 		AppState.current_replay.metadata["winner_label"] = AppState.current_replay.winner_label
+		_show_phase_banner("MATCH RESOLVED")
 	AppState.last_action_explanation = explanation
 	EventBus.action_explanation_updated.emit(explanation)
 	_record_turn_snapshot(acting_turn, acting_player, source_label, action, explanation)
@@ -1841,6 +2078,16 @@ func _reset_sidebar_scroll() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is not InputEventKey or not event.pressed or event.echo:
 		return
+	if _onboarding_overlay != null and _onboarding_overlay.visible:
+		if event.keycode == KEY_ESCAPE:
+			_dismiss_onboarding(false)
+			accept_event()
+		return
+	if _result_visible:
+		if event.keycode == KEY_ESCAPE:
+			_hide_result_overlay()
+			accept_event()
+		return
 
 	match event.keycode:
 		KEY_F3:
@@ -1848,35 +2095,35 @@ func _unhandled_input(event: InputEvent) -> void:
 				_debug_visible = not _debug_visible
 				_refresh_view()
 				accept_event()
+		KEY_ESCAPE:
+			_toggle_pause_overlay(not _pause_visible)
+			accept_event()
 		KEY_M:
-			if not _move_button.disabled:
+			if not _pause_visible and not _move_button.disabled:
 				_on_move_mode_pressed()
 				accept_event()
 		KEY_A:
-			if not _attack_button.disabled:
+			if not _pause_visible and not _attack_button.disabled:
 				_on_attack_mode_pressed()
 				accept_event()
 		KEY_P:
-			if not _pass_button.disabled:
+			if not _pause_visible and not _pass_button.disabled:
 				_on_pass_pressed()
 				accept_event()
 		KEY_SPACE:
-			if not _ai_move_button.disabled:
+			if not _pause_visible and not _ai_move_button.disabled:
 				_on_ai_move_pressed()
 				accept_event()
 		KEY_Z:
-			if not _autoplay_button.disabled:
+			if not _pause_visible and not _autoplay_button.disabled:
 				_on_autoplay_pressed()
 				accept_event()
 		KEY_R:
-			if not _presentation_locked:
+			if not _pause_visible and not _presentation_locked:
 				_on_reset_pressed()
 				accept_event()
 		KEY_H:
-			get_tree().change_scene_to_file(AppState.HELP_SCENE)
-			accept_event()
-		KEY_ESCAPE:
-			get_tree().change_scene_to_file(MENU_SCENE)
+			_transition_to(HELP_SCENE)
 			accept_event()
 
 

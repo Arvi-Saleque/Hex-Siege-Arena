@@ -28,6 +28,7 @@ var _board_holder: Control
 var _timer: Timer
 var _current_index: int = -1
 var _autoplay_enabled: bool = false
+var _transition_overlay: ColorRect
 
 
 func _ready() -> void:
@@ -36,6 +37,7 @@ func _ready() -> void:
 	theme = _build_theme()
 	_build_layout()
 	_refresh_replay()
+	call_deferred("_play_intro_transition")
 
 
 func _build_layout() -> void:
@@ -185,6 +187,12 @@ func _build_layout() -> void:
 	_timer.one_shot = true
 	_timer.timeout.connect(_on_timer_timeout)
 	add_child(_timer)
+
+	_transition_overlay = ColorRect.new()
+	_transition_overlay.color = Color(0.03, 0.05, 0.09, 1.0)
+	_transition_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_transition_overlay)
 
 
 func _build_theme() -> Theme:
@@ -464,5 +472,28 @@ func _recenter_board_view() -> void:
 	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.52)
 
 
+func _play_intro_transition() -> void:
+	if _transition_overlay == null:
+		return
+	var tween := create_tween()
+	tween.tween_property(_transition_overlay, "color:a", 0.0, 0.28).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.finished.connect(func() -> void:
+		if _transition_overlay != null:
+			_transition_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	)
+
+
+func _transition_to(scene_path: String) -> void:
+	if _transition_overlay == null:
+		get_tree().change_scene_to_file(scene_path)
+		return
+	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	var tween := create_tween()
+	tween.tween_property(_transition_overlay, "color:a", 1.0, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.finished.connect(func() -> void:
+		get_tree().change_scene_to_file(scene_path)
+	)
+
+
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file(MENU_SCENE)
+	_transition_to(MENU_SCENE)
