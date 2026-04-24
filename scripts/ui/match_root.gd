@@ -5,10 +5,11 @@ const SETTINGS_SCENE := "res://scenes/settings/settings_root.tscn"
 const HELP_SCENE := "res://scenes/help/help_root.tscn"
 const AUTOPLAY_SPEED_LABELS := ["Slow", "Normal", "Fast"]
 const AUTOPLAY_SPEED_SECONDS := [0.9, 0.45, 0.15]
-const FONT_REGULAR := preload("res://assets/ui/fonts/inter-regular.ttf")
-const FONT_MEDIUM := preload("res://assets/ui/fonts/inter-medium.ttf")
-const FONT_SEMIBOLD := preload("res://assets/ui/fonts/rajdhani-semibold.ttf")
-const FONT_BOLD := preload("res://assets/ui/fonts/rajdhani-bold.ttf")
+const FONT_REGULAR  := preload("res://fonts/Inter/static/Inter_18pt-Regular.ttf")
+const FONT_MEDIUM   := preload("res://fonts/Inter/static/Inter_18pt-Medium.ttf")
+const FONT_SEMIBOLD := preload("res://fonts/Rajdhani/Rajdhani-SemiBold.ttf")
+const FONT_BOLD     := preload("res://fonts/Rajdhani/Rajdhani-Bold.ttf")
+const BOARD_BG      := preload("res://PNG/bg.png")
 const WORLD_LIGHT_CIRCLE := preload("res://assets/world/masks/light_circle.png")
 const WORLD_LIGHT_CONE := preload("res://assets/world/masks/light_cone.png")
 const WORLD_EDGE_SMOKE := preload("res://assets/world/smoke/edge_smoke.png")
@@ -35,7 +36,7 @@ var _selected_model_name_label: Label
 var _selected_model_role_label: Label
 var _hover_label: Label
 var _selected_label: Label
-var _turn_label: Label
+var _turn_label: RichTextLabel
 var _objective_label: Label
 var _score_label: Label
 var _hp_summary_label: Label
@@ -94,6 +95,12 @@ var _pause_visible: bool = false
 var _result_visible: bool = false
 var _result_dismissed: bool = false
 var _onboarding_dismissed: bool = false
+var _startup_hint_panel: PanelContainer
+var _faction_strip: ColorRect
+var _p1_stat_label: Label
+var _p2_stat_label: Label
+var _p1_units_label: Label
+var _p2_units_label: Label
 
 
 func _ready() -> void:
@@ -105,6 +112,7 @@ func _ready() -> void:
 	_refresh_view()
 	call_deferred("_play_intro_transition")
 	call_deferred("_show_phase_banner", "MATCH START")
+	call_deferred("_show_startup_hint")
 
 
 func _build_layout() -> void:
@@ -121,10 +129,10 @@ func _build_layout() -> void:
 
 	var root_margin := MarginContainer.new()
 	root_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root_margin.add_theme_constant_override("margin_left", 16)
-	root_margin.add_theme_constant_override("margin_top", 16)
-	root_margin.add_theme_constant_override("margin_right", 16)
-	root_margin.add_theme_constant_override("margin_bottom", 16)
+	root_margin.add_theme_constant_override("margin_left", 14)
+	root_margin.add_theme_constant_override("margin_top", 14)
+	root_margin.add_theme_constant_override("margin_right", 14)
+	root_margin.add_theme_constant_override("margin_bottom", 14)
 	add_child(root_margin)
 
 	var root_layout := VBoxContainer.new()
@@ -134,56 +142,100 @@ func _build_layout() -> void:
 	root_margin.add_child(root_layout)
 
 	_top_panel = _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
-	_top_panel.custom_minimum_size = Vector2(0, 74)
+	_top_panel.custom_minimum_size = Vector2(0, 86)
 	root_layout.add_child(_top_panel)
-	var top_margin := _wrap_panel_content(_top_panel, 18, 12)
+	var top_margin := _wrap_panel_content(_top_panel, 18, 10)
 	var top_bar := HBoxContainer.new()
 	top_bar.add_theme_constant_override("separation", 16)
+	top_bar.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	top_margin.add_child(top_bar)
 
+	# Left — turn label + phase subtitle + faction color strip
 	var top_left := VBoxContainer.new()
 	top_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_left.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	top_left.add_theme_constant_override("separation", 2)
 	top_bar.add_child(top_left)
 
-	_turn_label = Label.new()
-	_turn_label.add_theme_font_override("font", FONT_BOLD)
-	_turn_label.add_theme_font_size_override("font_size", 28)
+	_turn_label = RichTextLabel.new()
+	_turn_label.bbcode_enabled = true
+	_turn_label.fit_content = true
+	_turn_label.scroll_active = false
+	_turn_label.add_theme_font_override("normal_font", FONT_BOLD)
+	_turn_label.add_theme_font_size_override("normal_font_size", 30)
+	_turn_label.add_theme_color_override("default_color", COLOR_TEXT)
 	top_left.add_child(_turn_label)
 
 	_objective_label = Label.new()
-	_objective_label.add_theme_font_override("font", FONT_MEDIUM)
-	_objective_label.add_theme_font_size_override("font_size", 13)
+	_objective_label.add_theme_font_override("font", FONT_SEMIBOLD)
+	_objective_label.add_theme_font_size_override("font_size", 11)
 	_objective_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	top_left.add_child(_objective_label)
+
+	_faction_strip = ColorRect.new()
+	_faction_strip.custom_minimum_size = Vector2(0, 2)
+	_faction_strip.color = COLOR_P1
+	top_left.add_child(_faction_strip)
+
+	# Center — score eyebrow + large score
+	var score_col := VBoxContainer.new()
+	score_col.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	score_col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	score_col.custom_minimum_size = Vector2(200, 0)
+	score_col.add_theme_constant_override("separation", 0)
+	score_col.alignment = BoxContainer.ALIGNMENT_CENTER
+	top_bar.add_child(score_col)
+
+	var score_eyebrow := Label.new()
+	score_eyebrow.text = "SCORE"
+	score_eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	score_eyebrow.add_theme_font_override("font", FONT_SEMIBOLD)
+	score_eyebrow.add_theme_font_size_override("font_size", 11)
+	score_eyebrow.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	score_col.add_child(score_eyebrow)
 
 	_score_label = Label.new()
 	_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_score_label.custom_minimum_size = Vector2(180, 0)
-	_score_label.add_theme_font_override("font", FONT_SEMIBOLD)
-	_score_label.add_theme_font_size_override("font_size", 22)
+	_score_label.add_theme_font_override("font", FONT_BOLD)
+	_score_label.add_theme_font_size_override("font_size", 34)
 	_score_label.add_theme_color_override("font_color", COLOR_GOLD)
-	top_bar.add_child(_score_label)
+	score_col.add_child(_score_label)
 
-	var top_right := VBoxContainer.new()
-	top_right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top_right.alignment = BoxContainer.ALIGNMENT_END
-	top_right.add_theme_constant_override("separation", 2)
-	top_bar.add_child(top_right)
+	# Right — faction stat boxes (P1  VS  P2)
+	var top_right_row := HBoxContainer.new()
+	top_right_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_right_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	top_right_row.alignment = BoxContainer.ALIGNMENT_END
+	top_right_row.add_theme_constant_override("separation", 8)
+	top_bar.add_child(top_right_row)
 
+	var p1_box := _make_faction_stat_box(COLOR_P1)
+	top_right_row.add_child(p1_box)
+	_p1_stat_label = p1_box.get_meta("hp_label") as Label
+	_p1_units_label = p1_box.get_meta("units_label") as Label
+
+	var vs_lbl := Label.new()
+	vs_lbl.text = "VS"
+	vs_lbl.add_theme_font_override("font", FONT_BOLD)
+	vs_lbl.add_theme_font_size_override("font_size", 13)
+	vs_lbl.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	vs_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	top_right_row.add_child(vs_lbl)
+
+	var p2_box := _make_faction_stat_box(COLOR_P2)
+	top_right_row.add_child(p2_box)
+	_p2_stat_label = p2_box.get_meta("hp_label") as Label
+	_p2_units_label = p2_box.get_meta("units_label") as Label
+
+	# Legacy labels kept hidden (still written by _refresh_view for debug purposes)
 	_hp_summary_label = Label.new()
-	_hp_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_hp_summary_label.add_theme_font_override("font", FONT_SEMIBOLD)
-	_hp_summary_label.add_theme_font_size_override("font_size", 14)
-	top_right.add_child(_hp_summary_label)
+	_hp_summary_label.visible = false
+	top_right_row.add_child(_hp_summary_label)
 
 	_units_label = Label.new()
-	_units_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_units_label.add_theme_font_override("font", FONT_MEDIUM)
-	_units_label.add_theme_font_size_override("font_size", 12)
-	_units_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	top_right.add_child(_units_label)
+	_units_label.visible = false
+	top_right_row.add_child(_units_label)
 
 	var content := HBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -195,6 +247,14 @@ func _build_layout() -> void:
 	board_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(board_frame)
+	# Transparent board frame — bg.png provides the visual background
+	var bf_style := StyleBoxFlat.new()
+	bf_style.bg_color = Color(0, 0, 0, 0)
+	bf_style.border_width_left = 0
+	bf_style.border_width_top = 0
+	bf_style.border_width_right = 0
+	bf_style.border_width_bottom = 0
+	board_frame.add_theme_stylebox_override("panel", bf_style)
 	var board_margin := _wrap_panel_content(board_frame, 0, 0)
 	var board_surface := Control.new()
 	board_surface.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -217,7 +277,7 @@ func _build_layout() -> void:
 	_board_holder.add_child(_board_view)
 
 	var side_scroll := ScrollContainer.new()
-	side_scroll.custom_minimum_size = Vector2(236, 0)
+	side_scroll.custom_minimum_size = Vector2(260, 0)
 	side_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_scroll.size_flags_horizontal = Control.SIZE_SHRINK_END
 	side_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -225,7 +285,7 @@ func _build_layout() -> void:
 	_sidebar_scroll = side_scroll
 
 	var side_rail := VBoxContainer.new()
-	side_rail.custom_minimum_size = Vector2(228, 0)
+	side_rail.custom_minimum_size = Vector2(252, 0)
 	side_rail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_rail.add_theme_constant_override("separation", 8)
 	side_scroll.add_child(side_rail)
@@ -405,47 +465,62 @@ func _build_layout() -> void:
 	_mini_board_holder.add_child(_mini_board_view)
 
 	var bottom_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
-	bottom_panel.custom_minimum_size = Vector2(0, 76)
+	bottom_panel.custom_minimum_size = Vector2(0, 98)
 	root_layout.add_child(bottom_panel)
-	var bottom_margin := _wrap_panel_content(bottom_panel, 16, 14)
-	var bottom_row := HBoxContainer.new()
-	bottom_row.add_theme_constant_override("separation", 14)
-	bottom_margin.add_child(bottom_row)
+	var bottom_margin := _wrap_panel_content(bottom_panel, 16, 8)
+	var bottom_col := VBoxContainer.new()
+	bottom_col.add_theme_constant_override("separation", 6)
+	bottom_margin.add_child(bottom_col)
 
-	var left_spacer := Control.new()
-	left_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bottom_row.add_child(left_spacer)
+	# Permanent hint strip
+	var hint_strip := Label.new()
+	hint_strip.text = "◆  Select a unit  ·  [M] Move   [A] Attack  ·  [ESC] Pause"
+	hint_strip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_strip.add_theme_font_override("font", FONT_MEDIUM)
+	hint_strip.add_theme_font_size_override("font_size", 12)
+	hint_strip.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	hint_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bottom_col.add_child(hint_strip)
 
 	var controls_row := HBoxContainer.new()
-	controls_row.add_theme_constant_override("separation", 12)
-	bottom_row.add_child(controls_row)
+	controls_row.add_theme_constant_override("separation", 10)
+	controls_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	bottom_col.add_child(controls_row)
 
-	_move_button = _make_action_button("Move", COLOR_GREEN)
-	_move_button.custom_minimum_size = Vector2(164, 56)
+	_move_button = _make_action_button("⬆  MOVE", COLOR_GREEN)
+	_move_button.custom_minimum_size = Vector2(0, 60)
+	_move_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_move_button.add_theme_font_override("font", FONT_BOLD)
+	_move_button.add_theme_font_size_override("font_size", 22)
 	_move_button.pressed.connect(_on_move_mode_pressed)
 	_wire_button_audio(_move_button)
 	controls_row.add_child(_move_button)
 
-	_attack_button = _make_action_button("Attack", COLOR_ATTACK)
-	_attack_button.custom_minimum_size = Vector2(164, 56)
+	_attack_button = _make_action_button("⊕  ATTACK", COLOR_ATTACK)
+	_attack_button.custom_minimum_size = Vector2(0, 60)
+	_attack_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_attack_button.add_theme_font_override("font", FONT_BOLD)
+	_attack_button.add_theme_font_size_override("font_size", 22)
 	_attack_button.pressed.connect(_on_attack_mode_pressed)
 	_wire_button_audio(_attack_button)
 	controls_row.add_child(_attack_button)
 
-	_ability_button = _make_action_button("Ability", Color("9a89ff"))
-	_ability_button.custom_minimum_size = Vector2(164, 56)
+	_ability_button = _make_action_button("⚡  ABILITY", Color("9a89ff"))
+	_ability_button.custom_minimum_size = Vector2(0, 60)
+	_ability_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_ability_button.add_theme_font_override("font", FONT_BOLD)
+	_ability_button.add_theme_font_size_override("font_size", 22)
 	_ability_button.disabled = true
 	controls_row.add_child(_ability_button)
 
-	_pass_button = _make_action_button("End Turn", COLOR_GOLD)
-	_pass_button.custom_minimum_size = Vector2(182, 56)
+	_pass_button = _make_action_button("»  END TURN", COLOR_GOLD)
+	_pass_button.custom_minimum_size = Vector2(0, 60)
+	_pass_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_pass_button.add_theme_font_override("font", FONT_BOLD)
+	_pass_button.add_theme_font_size_override("font_size", 22)
 	_pass_button.pressed.connect(_on_pass_pressed)
 	_wire_button_audio(_pass_button)
 	controls_row.add_child(_pass_button)
-
-	var right_spacer := Control.new()
-	right_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bottom_row.add_child(right_spacer)
 
 	_control_strip_label = null
 
@@ -507,6 +582,31 @@ func _build_layout() -> void:
 	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	modal_layer.add_child(_transition_overlay)
 
+	# Startup hint overlay — non-interactive, fades out after a few seconds
+	_startup_hint_panel = _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
+	_startup_hint_panel.visible = false
+	_startup_hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_startup_hint_panel.anchor_left = 0.5
+	_startup_hint_panel.anchor_top = 1.0
+	_startup_hint_panel.anchor_right = 0.5
+	_startup_hint_panel.anchor_bottom = 1.0
+	_startup_hint_panel.offset_left = -280
+	_startup_hint_panel.offset_top = -104
+	_startup_hint_panel.offset_right = 280
+	_startup_hint_panel.offset_bottom = -68
+	_startup_hint_panel.z_index = 12
+	var hint_margin := _wrap_panel_content(_startup_hint_panel, 18, 8)
+	var hint_label := Label.new()
+	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hint_label.add_theme_font_override("font", FONT_MEDIUM)
+	hint_label.add_theme_font_size_override("font_size", 14)
+	hint_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	hint_label.text = "◆  Select a unit  ·  [M] Move   [A] Attack  ·  [ESC] Pause"
+	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint_margin.add_child(hint_label)
+	modal_layer.add_child(_startup_hint_panel)
+
 	_autoplay_timer = Timer.new()
 	_autoplay_timer.one_shot = true
 	_autoplay_timer.timeout.connect(_on_autoplay_timer_timeout)
@@ -517,237 +617,19 @@ func _build_layout() -> void:
 	call_deferred("_reset_sidebar_scroll")
 
 
-func _build_world_backdrop(parent: Control) -> void:
-	var far_glow := TextureRect.new()
-	far_glow.texture = WORLD_LIGHT_CIRCLE
-	far_glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	far_glow.modulate = Color(0.3, 0.5, 0.78, 0.06)
-	far_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	far_glow.anchor_left = 0.14
-	far_glow.anchor_top = 0.08
-	far_glow.anchor_right = 0.84
-	far_glow.anchor_bottom = 0.9
-	parent.add_child(far_glow)
-
-	var center_spot := TextureRect.new()
-	center_spot.texture = WORLD_LIGHT_CIRCLE
-	center_spot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	center_spot.modulate = Color(1.0, 0.88, 0.52, 0.03)
-	center_spot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	center_spot.anchor_left = 0.26
-	center_spot.anchor_top = 0.12
-	center_spot.anchor_right = 0.74
-	center_spot.anchor_bottom = 0.94
-	parent.add_child(center_spot)
-
-	var upper_left_cone := TextureRect.new()
-	upper_left_cone.texture = WORLD_LIGHT_CONE
-	upper_left_cone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	upper_left_cone.modulate = Color(0.44, 0.68, 1.0, 0.06)
-	upper_left_cone.rotation = deg_to_rad(12.0)
-	upper_left_cone.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	upper_left_cone.anchor_left = -0.02
-	upper_left_cone.anchor_top = -0.08
-	upper_left_cone.anchor_right = 0.56
-	upper_left_cone.anchor_bottom = 0.52
-	parent.add_child(upper_left_cone)
-
-	var lower_right_cone := TextureRect.new()
-	lower_right_cone.texture = WORLD_LIGHT_CONE
-	lower_right_cone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	lower_right_cone.modulate = Color(0.85, 0.72, 0.38, 0.04)
-	lower_right_cone.rotation = deg_to_rad(188.0)
-	lower_right_cone.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lower_right_cone.anchor_left = 0.52
-	lower_right_cone.anchor_top = 0.42
-	lower_right_cone.anchor_right = 1.04
-	lower_right_cone.anchor_bottom = 1.06
-	parent.add_child(lower_right_cone)
-
-	var left_plate := TextureRect.new()
-	left_plate.texture = WORLD_LIGHT_CIRCLE
-	left_plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	left_plate.modulate = Color(0.0, 0.0, 0.0, 0.16)
-	left_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	left_plate.anchor_left = -0.08
-	left_plate.anchor_top = 0.06
-	left_plate.anchor_right = 0.26
-	left_plate.anchor_bottom = 1.02
-	parent.add_child(left_plate)
-
-	var right_plate := TextureRect.new()
-	right_plate.texture = WORLD_LIGHT_CIRCLE
-	right_plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	right_plate.modulate = Color(0.0, 0.0, 0.0, 0.15)
-	right_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	right_plate.anchor_left = 0.74
-	right_plate.anchor_top = 0.08
-	right_plate.anchor_right = 1.08
-	right_plate.anchor_bottom = 1.0
-	parent.add_child(right_plate)
-
-	var left_silhouette := TextureRect.new()
-	left_silhouette.texture = WORLD_WINDOW_CORNER
-	left_silhouette.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	left_silhouette.modulate = Color(0.54, 0.66, 0.84, 0.05)
-	left_silhouette.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	left_silhouette.anchor_left = -0.02
-	left_silhouette.anchor_top = 0.12
-	left_silhouette.anchor_right = 0.22
-	left_silhouette.anchor_bottom = 0.48
-	parent.add_child(left_silhouette)
-
-	var right_silhouette := TextureRect.new()
-	right_silhouette.texture = WORLD_CORRIDOR_CROSS
-	right_silhouette.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	right_silhouette.modulate = Color(0.46, 0.58, 0.74, 0.055)
-	right_silhouette.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	right_silhouette.anchor_left = 0.82
-	right_silhouette.anchor_top = 0.14
-	right_silhouette.anchor_right = 1.02
-	right_silhouette.anchor_bottom = 0.44
-	parent.add_child(right_silhouette)
-
-	var lower_left_stack := TextureRect.new()
-	lower_left_stack.texture = WORLD_CHIMNEY
-	lower_left_stack.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	lower_left_stack.modulate = Color(0.42, 0.52, 0.66, 0.045)
-	lower_left_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lower_left_stack.anchor_left = 0.02
-	lower_left_stack.anchor_top = 0.72
-	lower_left_stack.anchor_right = 0.18
-	lower_left_stack.anchor_bottom = 0.98
-	parent.add_child(lower_left_stack)
-
-	var upper_right_stack := TextureRect.new()
-	upper_right_stack.texture = WORLD_CHIMNEY
-	upper_right_stack.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	upper_right_stack.modulate = Color(0.36, 0.48, 0.66, 0.04)
-	upper_right_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	upper_right_stack.rotation = deg_to_rad(6.0)
-	upper_right_stack.anchor_left = 0.84
-	upper_right_stack.anchor_top = 0.02
-	upper_right_stack.anchor_right = 0.98
-	upper_right_stack.anchor_bottom = 0.28
-	parent.add_child(upper_right_stack)
-
-	parent.add_child(_make_world_rib(0.035, 0.16, 0.05, 0.88, 0.1))
-	parent.add_child(_make_world_rib(0.135, 0.12, 0.035, 0.8, 0.08))
-	parent.add_child(_make_world_rib(0.83, 0.16, 0.05, 0.84, 0.1))
-	parent.add_child(_make_world_rib(0.915, 0.18, 0.03, 0.78, 0.08))
-
-	var top_beam := ColorRect.new()
-	top_beam.color = Color(0.34, 0.44, 0.6, 0.07)
-	top_beam.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top_beam.anchor_left = 0.08
-	top_beam.anchor_top = 0.035
-	top_beam.anchor_right = 0.92
-	top_beam.anchor_bottom = 0.045
-	parent.add_child(top_beam)
-
-	var edge_smoke_left := TextureRect.new()
-	edge_smoke_left.texture = WORLD_EDGE_SMOKE
-	edge_smoke_left.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	edge_smoke_left.modulate = Color(0.56, 0.68, 0.88, 0.038)
-	edge_smoke_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	edge_smoke_left.rotation = deg_to_rad(90.0)
-	edge_smoke_left.anchor_left = -0.02
-	edge_smoke_left.anchor_top = 0.28
-	edge_smoke_left.anchor_right = 0.26
-	edge_smoke_left.anchor_bottom = 0.96
-	parent.add_child(edge_smoke_left)
-
-	var edge_smoke_right := TextureRect.new()
-	edge_smoke_right.texture = WORLD_EDGE_SMOKE
-	edge_smoke_right.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	edge_smoke_right.modulate = Color(0.76, 0.68, 0.54, 0.032)
-	edge_smoke_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	edge_smoke_right.rotation = deg_to_rad(-90.0)
-	edge_smoke_right.anchor_left = 0.78
-	edge_smoke_right.anchor_top = 0.32
-	edge_smoke_right.anchor_right = 1.02
-	edge_smoke_right.anchor_bottom = 0.98
-	parent.add_child(edge_smoke_right)
-
-	var vignette := ColorRect.new()
-	vignette.color = Color(0.02, 0.03, 0.05, 0.22)
-	vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(vignette)
+func _build_world_backdrop(_parent: Control) -> void:
+	pass # bg.png provides the environment; no overlay decorations needed
 
 
 func _build_board_world_layer(parent: Control) -> void:
-	var board_plate := TextureRect.new()
-	board_plate.texture = WORLD_LIGHT_CIRCLE
-	board_plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	board_plate.modulate = Color(0.0, 0.0, 0.0, 0.18)
-	board_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board_plate.anchor_left = 0.06
-	board_plate.anchor_top = 0.08
-	board_plate.anchor_right = 0.94
-	board_plate.anchor_bottom = 1.04
-	parent.add_child(board_plate)
-
-	var local_cone := TextureRect.new()
-	local_cone.texture = WORLD_LIGHT_CONE
-	local_cone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	local_cone.modulate = Color(0.46, 0.7, 1.0, 0.08)
-	local_cone.rotation = deg_to_rad(14.0)
-	local_cone.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	local_cone.anchor_left = -0.08
-	local_cone.anchor_top = -0.08
-	local_cone.anchor_right = 0.58
-	local_cone.anchor_bottom = 0.52
-	parent.add_child(local_cone)
-
-	var center_glow := TextureRect.new()
-	center_glow.texture = WORLD_LIGHT_CIRCLE
-	center_glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	center_glow.modulate = Color(0.98, 0.86, 0.46, 0.08)
-	center_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	center_glow.anchor_left = 0.22
-	center_glow.anchor_top = 0.12
-	center_glow.anchor_right = 0.78
-	center_glow.anchor_bottom = 0.9
-	parent.add_child(center_glow)
-
-	var board_smoke_left := TextureRect.new()
-	board_smoke_left.texture = WORLD_EDGE_SMOKE
-	board_smoke_left.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	board_smoke_left.modulate = Color(0.58, 0.72, 0.9, 0.05)
-	board_smoke_left.rotation = deg_to_rad(90.0)
-	board_smoke_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board_smoke_left.anchor_left = -0.04
-	board_smoke_left.anchor_top = 0.16
-	board_smoke_left.anchor_right = 0.2
-	board_smoke_left.anchor_bottom = 0.94
-	parent.add_child(board_smoke_left)
-
-	var board_smoke_right := TextureRect.new()
-	board_smoke_right.texture = WORLD_EDGE_SMOKE
-	board_smoke_right.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	board_smoke_right.modulate = Color(0.72, 0.62, 0.48, 0.035)
-	board_smoke_right.rotation = deg_to_rad(-90.0)
-	board_smoke_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board_smoke_right.anchor_left = 0.8
-	board_smoke_right.anchor_top = 0.2
-	board_smoke_right.anchor_right = 1.04
-	board_smoke_right.anchor_bottom = 0.98
-	parent.add_child(board_smoke_right)
-
-	var center_floor_glow := TextureRect.new()
-	center_floor_glow.texture = WORLD_LIGHT_CIRCLE
-	center_floor_glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	center_floor_glow.modulate = Color(0.84, 0.92, 1.0, 0.035)
-	center_floor_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	center_floor_glow.anchor_left = 0.28
-	center_floor_glow.anchor_top = 0.22
-	center_floor_glow.anchor_right = 0.72
-	center_floor_glow.anchor_bottom = 0.86
-	parent.add_child(center_floor_glow)
-
-	parent.add_child(_make_world_rib(0.02, 0.08, 0.022, 0.92, 0.06))
-	parent.add_child(_make_world_rib(0.958, 0.1, 0.02, 0.9, 0.06))
+	var bg_tex := TextureRect.new()
+	bg_tex.texture = BOARD_BG
+	bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg_tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg_tex.modulate = Color(1.0, 1.0, 1.0, 0.9)
+	bg_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(bg_tex)
 
 
 func _make_world_rib(anchor_left_value: float, anchor_top_value: float, width_value: float, height_value: float, alpha_value: float) -> Control:
@@ -830,10 +712,10 @@ func _wrap_panel_content(panel: PanelContainer, horizontal_margin: int, vertical
 func _panel_style(accent_color: Color, fill_color: Color = COLOR_SURFACE) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill_color
-	style.corner_radius_top_left = 12
-	style.corner_radius_top_right = 12
-	style.corner_radius_bottom_left = 12
-	style.corner_radius_bottom_right = 12
+	style.corner_radius_top_left = 10
+	style.corner_radius_top_right = 10
+	style.corner_radius_bottom_left = 10
+	style.corner_radius_bottom_right = 10
 	style.border_width_left = 1
 	style.border_width_top = 1
 	style.border_width_right = 1
@@ -852,9 +734,10 @@ func _panel_style(accent_color: Color, fill_color: Color = COLOR_SURFACE) -> Sty
 func _make_section_title(title_text: String) -> Label:
 	var label := Label.new()
 	label.text = title_text.to_upper()
-	label.add_theme_font_override("font", FONT_BOLD)
-	label.add_theme_font_size_override("font_size", 18)
-	label.add_theme_color_override("font_color", COLOR_TEXT)
+	label.add_theme_font_override("font", FONT_SEMIBOLD)
+	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	return label
 	return label
 
 
@@ -863,6 +746,27 @@ func _make_section_divider() -> ColorRect:
 	divider.color = Color(COLOR_BORDER.r, COLOR_BORDER.g, COLOR_BORDER.b, 0.9)
 	divider.custom_minimum_size = Vector2(0, 2)
 	return divider
+
+
+func _make_faction_stat_box(accent: Color) -> PanelContainer:
+	var panel := _make_panel_card(accent.darkened(0.35), COLOR_SURFACE_ALT)
+	var margin := _wrap_panel_content(panel, 10, 6)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 2)
+	margin.add_child(col)
+	var hp_lbl := Label.new()
+	hp_lbl.add_theme_font_override("font", FONT_SEMIBOLD)
+	hp_lbl.add_theme_font_size_override("font_size", 13)
+	hp_lbl.add_theme_color_override("font_color", Color.WHITE)
+	col.add_child(hp_lbl)
+	var units_lbl := Label.new()
+	units_lbl.add_theme_font_override("font", FONT_REGULAR)
+	units_lbl.add_theme_font_size_override("font_size", 10)
+	units_lbl.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	col.add_child(units_lbl)
+	panel.set_meta("hp_label", hp_lbl)
+	panel.set_meta("units_label", units_lbl)
+	return panel
 
 
 func _make_body_label() -> Label:
@@ -966,10 +870,10 @@ func _make_overlay_button(text_value: String, callback: Callable, accent_color: 
 func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(COLOR_SURFACE_ALT.r, COLOR_SURFACE_ALT.g, COLOR_SURFACE_ALT.b, 1.0)
-	style.corner_radius_top_left = 12
-	style.corner_radius_top_right = 12
-	style.corner_radius_bottom_left = 12
-	style.corner_radius_bottom_right = 12
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
 	style.border_width_left = 2
 	style.border_width_top = 2
 	style.border_width_right = 2
@@ -1027,8 +931,7 @@ func _apply_button_visual_state(button: Button, accent_color: Color, active: boo
 
 
 func _refresh_view_legacy() -> void:
-	_turn_label.text = "%s Player %d's Turn" % ["◆" if _game_state.current_player == 1 else "◆", _game_state.current_player]
-	_turn_label.add_theme_color_override("font_color", COLOR_P1 if _game_state.current_player == 1 else COLOR_P2)
+	_turn_label.text = "[b]Player %d's Turn[/b]" % [_game_state.current_player]
 	_objective_label.text = "Turn %d" % _game_state.turn_count
 	_score_label.text = "★ P1=%d  P2=%d" % [_control_score_for_player(1), _control_score_for_player(2)]
 	_hp_summary_label.text = _hp_summary_text()
@@ -1079,12 +982,22 @@ func _refresh_view_legacy() -> void:
 
 func _refresh_view() -> void:
 	_sync_human_selection()
-	_turn_label.text = "Turn %d  |  %s" % [_game_state.turn_count, "Blue Command" if _game_state.current_player == 1 else "Red Command"]
-	_turn_label.add_theme_color_override("font_color", COLOR_P1 if _game_state.current_player == 1 else COLOR_P2)
+	_turn_label.text = "[b]TURN %d[/b]  [color=#334766]|[/color]  [b][color=#%s]%s[/color][/b]" % [
+		_game_state.turn_count,
+		"6bc7ff" if _game_state.current_player == 1 else "ff8a76",
+		"BLUE COMMAND" if _game_state.current_player == 1 else "RED COMMAND",
+	]
 	_objective_label.text = _phase_text().to_upper()
-	_score_label.text = "Score  P1 %d  :  %d P2" % [_control_score_for_player(1), _control_score_for_player(2)]
+	_faction_strip.color = COLOR_P1 if _game_state.current_player == 1 else COLOR_P2
+	_score_label.text = "%d  :  %d" % [_control_score_for_player(1), _control_score_for_player(2)]
 	_hp_summary_label.text = _hp_summary_text()
 	_units_label.text = _remaining_units_text()
+	_p1_stat_label.text = _player_stat_text(1)
+	_p2_stat_label.text = _player_stat_text(2)
+	if _p1_units_label != null:
+		_p1_units_label.text = "UNITS  P1  %d/2" % _game_state.get_player_tanks(1).size()
+	if _p2_units_label != null:
+		_p2_units_label.text = "UNITS  P2  %d/2" % _game_state.get_player_tanks(2).size()
 	_map_label.text = "Map: %s\nController: P1 %s | P2 %s\nF3 toggles debug controls." % [
 		_game_state.board.map_display_name,
 		_controller_label(AppState.current_match_config.player_one_ai.controller_type),
@@ -1109,6 +1022,7 @@ func _refresh_view() -> void:
 	_refresh_event_log()
 	_refresh_debug_panel()
 	_refresh_result_overlay()
+	_refresh_pause_overlay()
 	_refresh_onboarding_overlay()
 	_update_button_state()
 	_autoplay_button.text = "Auto %s" % ("On" if _autoplay_enabled else "Off")
@@ -1162,6 +1076,15 @@ func _hp_summary_text() -> String:
 
 func _remaining_units_text() -> String:
 	return "Units  P1 %d/2   P2 %d/2" % [_game_state.get_player_tanks(1).size(), _game_state.get_player_tanks(2).size()]
+
+
+func _player_stat_text(player_id: int) -> String:
+	var pk: TankData = _find_tank(player_id, GameTypes.TankType.KTANK)
+	var pq: TankData = _find_tank(player_id, GameTypes.TankType.QTANK)
+	return "P%dK %s/%s  P%dQ %s/%s" % [
+		player_id, pk.hp if pk != null else "-", pk.max_hp if pk != null else "-",
+		player_id, pq.hp if pq != null else "-", pq.max_hp if pq != null else "-",
+	]
 
 
 func _phase_text() -> String:
@@ -1480,6 +1403,9 @@ func _reset_match() -> void:
 	_result_visible = false
 	_result_dismissed = false
 	_onboarding_dismissed = false
+	if _startup_hint_panel != null:
+		_startup_hint_panel.visible = false
+		_startup_hint_panel.modulate = Color.WHITE
 	if _board_view != null:
 		_board_view.clear_transient_effects()
 	AppState.last_action_explanation = ActionExplanation.new()
@@ -1492,6 +1418,7 @@ func _reset_match() -> void:
 		"initial_state": _game_state.to_snapshot(),
 	}
 	call_deferred("_recenter_board_view")
+	call_deferred("_show_startup_hint")
 
 
 func _winner_label() -> String:
@@ -1567,6 +1494,21 @@ func _play_turn_transition_feedback(next_player: int) -> void:
 	_show_phase_banner("%s TURN" % ("BLUE" if next_player == 1 else "RED"))
 
 
+func _show_startup_hint() -> void:
+	if _startup_hint_panel == null:
+		return
+	_startup_hint_panel.modulate = Color(1, 1, 1, 0)
+	_startup_hint_panel.visible = true
+	var tween := create_tween()
+	tween.tween_property(_startup_hint_panel, "modulate:a", 1.0, 0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(3.5)
+	tween.tween_property(_startup_hint_panel, "modulate:a", 0.0, 1.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tween.finished.connect(func() -> void:
+		if _startup_hint_panel != null:
+			_startup_hint_panel.visible = false
+	)
+
+
 func _show_phase_banner(text_value: String) -> void:
 	if _phase_banner_panel == null or _phase_banner_label == null:
 		return
@@ -1585,11 +1527,18 @@ func _show_phase_banner(text_value: String) -> void:
 	)
 
 
+func _refresh_pause_overlay() -> void:
+	if _pause_overlay == null:
+		return
+	_pause_overlay.visible = _pause_visible
+
+
 func _toggle_pause_overlay(force_visible: bool = true) -> void:
 	_pause_visible = force_visible
 	if _pause_visible:
 		_disable_autoplay()
 		_debug_visible = false
+	_refresh_pause_overlay()
 	_refresh_view()
 
 
@@ -1606,6 +1555,7 @@ func _dismiss_onboarding(disable_forever: bool) -> void:
 		AppState.save_preferences()
 	if _onboarding_overlay != null:
 		_onboarding_overlay.visible = false
+	_refresh_view()
 
 
 func _refresh_result_overlay() -> void:
@@ -1672,7 +1622,7 @@ func _pulse_control(control: Control, peak_scale: float, duration: float) -> voi
 	tween.tween_property(control, "scale", Vector2.ONE, duration * 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
 
-func _pulse_label_color(label: Label, accent_color: Color) -> void:
+func _pulse_label_color(label: Control, accent_color: Color) -> void:
 	if label == null:
 		return
 	label.modulate = accent_color.lerp(Color.WHITE, 0.32)
@@ -2071,7 +2021,7 @@ func _recenter_board_view() -> void:
 	var visual_size: Vector2 = _board_view.get_board_visual_size()
 	var width_scale: float = holder_size.x / maxf(visual_size.x, 1.0)
 	var height_scale: float = holder_size.y / maxf(visual_size.y, 1.0)
-	var scale_factor: float = clampf(minf(width_scale, height_scale), 1.0, 2.18)
+	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.1, 2.18)
 	_board_view.scale = Vector2.ONE * scale_factor
 	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.492)
 

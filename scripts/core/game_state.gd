@@ -165,13 +165,21 @@ func get_legal_attack_targets(actor_id: String) -> Array[HexCoord]:
 			for step_coord: HexCoord in tank.position.raycast(direction, board.rings * 3):
 				if not board.has_cell(step_coord):
 					break
-				results.append(step_coord)
-				if is_cell_occupied(step_coord) or board.blocks_attack(step_coord):
+				var occupant: TankData = get_tank_at(step_coord)
+				if occupant != null:
+					if occupant.owner_id != tank.owner_id:
+						results.append(step_coord)  # valid enemy target
+					break  # always stop ray at any occupied cell
+				if board.blocks_attack(step_coord):
+					results.append(step_coord)
 					break
+				results.append(step_coord)
 	else:
 		for neighbor_coord: HexCoord in tank.position.neighbors():
 			if board.has_cell(neighbor_coord):
-				results.append(neighbor_coord)
+				var occupant: TankData = get_tank_at(neighbor_coord)
+				if occupant == null or occupant.owner_id != tank.owner_id:
+					results.append(neighbor_coord)  # empty or enemy cell only
 	return results
 
 
@@ -331,6 +339,8 @@ func _apply_qtank_attack(tank: TankData, direction: int) -> void:
 			break
 		var target_tank: TankData = get_tank_at(step_coord)
 		if target_tank != null:
+			if target_tank.owner_id == tank.owner_id:
+				break  # stop ray at allied unit without dealing damage
 			var applied: int = target_tank.take_damage(damage)
 			_add_event("hit_tank", {"target": target_tank.actor_id(), "damage": applied, "coord": step_coord.key()})
 			_check_tank_elimination(target_tank, tank.owner_id)
@@ -352,6 +362,8 @@ func _apply_ktank_attack(tank: TankData) -> void:
 			continue
 		var target_tank: TankData = get_tank_at(neighbor_coord)
 		if target_tank != null:
+			if target_tank.owner_id == tank.owner_id:
+				continue  # skip allied tanks
 			var applied: int = target_tank.take_damage(damage)
 			_add_event("hit_tank", {"target": target_tank.actor_id(), "damage": applied, "coord": neighbor_coord.key()})
 			_check_tank_elimination(target_tank, tank.owner_id)

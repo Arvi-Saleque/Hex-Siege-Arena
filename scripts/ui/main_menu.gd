@@ -4,10 +4,12 @@ const MATCH_SCENE := "res://scenes/match/match_root.tscn"
 const REPLAY_SCENE := "res://scenes/replay/replay_shell.tscn"
 const SETTINGS_SCENE := "res://scenes/settings/settings_root.tscn"
 const HELP_SCENE := "res://scenes/help/help_root.tscn"
-const FONT_REGULAR := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Regular.ttf")
-const FONT_MEDIUM := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Medium.ttf")
-const FONT_SEMIBOLD := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-SemiBold.ttf")
-const FONT_BOLD := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Bold.ttf")
+const FONT_HEADING  := preload("res://fonts/Rajdhani/Rajdhani-Bold.ttf")
+const FONT_LABEL    := preload("res://fonts/Rajdhani/Rajdhani-SemiBold.ttf")
+const FONT_UI_BOLD  := preload("res://fonts/Inter/static/Inter_18pt-Bold.ttf")
+const FONT_SEMIBOLD := preload("res://fonts/Inter/static/Inter_18pt-SemiBold.ttf")
+const FONT_BODY     := preload("res://fonts/Inter/static/Inter_18pt-Medium.ttf")
+const FONT_SMALL    := preload("res://fonts/Inter/static/Inter_18pt-Regular.ttf")
 const COLOR_BG := Color("09111c")
 const COLOR_SURFACE := Color("111c2b")
 const COLOR_SURFACE_ALT := Color("162335")
@@ -22,13 +24,30 @@ const COLOR_GREEN := Color("69dd8e")
 var _p1_controller: OptionButton
 var _p2_controller: OptionButton
 var _map_select: OptionButton
-var _max_turns_spin: SpinBox
-var _p1_depth_spin: SpinBox
-var _p2_rollout_spin: SpinBox
-var _replay_button: Button
-var _summary_label: RichTextLabel
+# Stepper state (replace SpinBox)
+var _turns_value: int = 85
+var _depth_value: int = 4
+var _rollouts_value: int = 250
+var _turns_value_label: Label
+var _depth_value_label: Label
+var _rollouts_value_label: Label
+# Session snapshot labels
+var _snap_build_val: Label
+var _snap_ctrl_val: RichTextLabel
+var _snap_map_val: Label
+var _snap_replay_val: Label
+var _snap_scale_val: Label
+var _snap_motion_val: Label
+# Arena preview
+var _arena_preview_title_label: Label
 var _arena_preview_label: Label
-var _rules_preview_label: Label
+# Match rules
+var _rules_p1_val: Label
+var _rules_p2_val: Label
+var _rules_turns_val: Label
+var _rules_mode_val: Label
+# Other
+var _replay_button: Button
 var _version_label: Label
 var _transition_overlay: ColorRect
 
@@ -43,29 +62,13 @@ func _ready() -> void:
 
 
 func _build_layout() -> void:
+	# ── Background ────────────────────────────────────────────────────────────
 	var background := ColorRect.new()
 	background.color = COLOR_BG
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
-	var glow_left := ColorRect.new()
-	glow_left.color = Color(0.19, 0.32, 0.48, 0.08)
-	glow_left.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	glow_left.offset_left = -280
-	glow_left.offset_top = 80
-	glow_left.offset_right = -980
-	glow_left.offset_bottom = -140
-	add_child(glow_left)
-
-	var glow_right := ColorRect.new()
-	glow_right.color = Color(0.94, 0.75, 0.37, 0.04)
-	glow_right.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	glow_right.offset_left = 980
-	glow_right.offset_top = 0
-	glow_right.offset_right = 160
-	glow_right.offset_bottom = -320
-	add_child(glow_right)
-
+	# ── Root scroll ───────────────────────────────────────────────────────────
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -76,253 +79,399 @@ func _build_layout() -> void:
 	var root_margin := MarginContainer.new()
 	root_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root_margin.add_theme_constant_override("margin_left", 28)
-	root_margin.add_theme_constant_override("margin_top", 28)
-	root_margin.add_theme_constant_override("margin_right", 28)
-	root_margin.add_theme_constant_override("margin_bottom", 28)
+	root_margin.add_theme_constant_override("margin_left", 14)
+	root_margin.add_theme_constant_override("margin_top", 14)
+	root_margin.add_theme_constant_override("margin_right", 14)
+	root_margin.add_theme_constant_override("margin_bottom", 14)
 	scroll.add_child(root_margin)
 
-	var root_layout := VBoxContainer.new()
-	root_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root_layout.add_theme_constant_override("separation", 20)
-	root_margin.add_child(root_layout)
+	var root_row := HBoxContainer.new()
+	root_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root_row.add_theme_constant_override("separation", 14)
+	root_margin.add_child(root_row)
 
-	var hero_panel := _make_panel_card(COLOR_GOLD, COLOR_SURFACE_ALT)
-	hero_panel.custom_minimum_size = Vector2(0, 192)
-	root_layout.add_child(hero_panel)
+	# ══ LEFT CARD ═════════════════════════════════════════════════════════════
+	var left_card := _make_panel_card(COLOR_P1, COLOR_SURFACE)
+	left_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root_row.add_child(left_card)
 
-	var hero_margin := _wrap_panel_content(hero_panel, 28, 26)
-	var hero_layout := HBoxContainer.new()
-	hero_layout.add_theme_constant_override("separation", 24)
-	hero_margin.add_child(hero_layout)
+	var left_vbox := VBoxContainer.new()
+	left_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left_vbox.add_theme_constant_override("separation", 0)
+	left_card.add_child(left_vbox)
 
-	var hero_left := VBoxContainer.new()
-	hero_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hero_left.add_theme_constant_override("separation", 10)
-	hero_layout.add_child(hero_left)
+	# ── Hero section ──────────────────────────────────────────────────────────
+	var hero_margin := MarginContainer.new()
+	hero_margin.add_theme_constant_override("margin_left", 28)
+	hero_margin.add_theme_constant_override("margin_top", 24)
+	hero_margin.add_theme_constant_override("margin_right", 28)
+	hero_margin.add_theme_constant_override("margin_bottom", 20)
+	left_vbox.add_child(hero_margin)
+
+	var hero_row := HBoxContainer.new()
+	hero_row.add_theme_constant_override("separation", 20)
+	hero_margin.add_child(hero_row)
+
+	hero_row.add_child(_make_icon_box("⬡", COLOR_P1.darkened(0.55), 64))
+
+	var hero_text := VBoxContainer.new()
+	hero_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hero_text.add_theme_constant_override("separation", 6)
+	hero_row.add_child(hero_text)
 
 	var eyebrow := Label.new()
 	eyebrow.text = "TACTICAL AI ARENA"
 	eyebrow.add_theme_font_override("font", FONT_SEMIBOLD)
-	eyebrow.add_theme_font_size_override("font_size", 13)
+	eyebrow.add_theme_font_size_override("font_size", 12)
 	eyebrow.add_theme_color_override("font_color", COLOR_GOLD)
-	hero_left.add_child(eyebrow)
+	hero_text.add_child(eyebrow)
 
 	var title := Label.new()
-	title.text = "Hex Siege Arena"
-	title.add_theme_font_override("font", FONT_BOLD)
-	title.add_theme_font_size_override("font_size", 48)
-	hero_left.add_child(title)
+	title.text = "HEX SIEGE ARENA"
+	title.add_theme_font_override("font", FONT_HEADING)
+	title.add_theme_font_size_override("font_size", 64)
+	hero_text.add_child(title)
 
 	var subtitle := Label.new()
 	subtitle.text = "Command a four-tank duel across a hex battlefield where Minimax and MCTS fight for center control."
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	subtitle.add_theme_font_override("font", FONT_MEDIUM)
-	subtitle.add_theme_font_size_override("font_size", 18)
+	subtitle.add_theme_font_override("font", FONT_SMALL)
+	subtitle.add_theme_font_size_override("font_size", 14)
 	subtitle.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	hero_left.add_child(subtitle)
-
-	var hero_note := Label.new()
-	hero_note.text = "Board-first tactical duel with premium replay flow, readable AI battles, and a product-style fullscreen presentation."
-	hero_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hero_note.add_theme_font_override("font", FONT_REGULAR)
-	hero_note.add_theme_font_size_override("font_size", 15)
-	hero_note.add_theme_color_override("font_color", Color("d7e3f5"))
-	hero_left.add_child(hero_note)
+	hero_text.add_child(subtitle)
 
 	_version_label = Label.new()
-	_version_label.text = "%s  |  %s" % [AppState.game_version, AppState.build_label.replace("-", " ")]
-	_version_label.add_theme_font_override("font", FONT_MEDIUM)
+	_version_label.add_theme_font_override("font", FONT_SMALL)
 	_version_label.add_theme_font_size_override("font_size", 12)
 	_version_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	hero_left.add_child(_version_label)
+	hero_text.add_child(_version_label)
 
-	var hero_right := _make_panel_card(COLOR_BORDER.lightened(0.15), Color("142033"))
-	hero_right.custom_minimum_size = Vector2(380, 0)
-	hero_layout.add_child(hero_right)
+	# Divider
+	var div1 := ColorRect.new()
+	div1.custom_minimum_size = Vector2(0, 1)
+	div1.color = COLOR_BORDER
+	left_vbox.add_child(div1)
 
-	var hero_right_margin := _wrap_panel_content(hero_right, 20, 18)
-	var hero_right_layout := VBoxContainer.new()
-	hero_right_layout.add_theme_constant_override("separation", 8)
-	hero_right_margin.add_child(hero_right_layout)
+	# ── Setup section ─────────────────────────────────────────────────────────
+	var setup_margin := MarginContainer.new()
+	setup_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	setup_margin.add_theme_constant_override("margin_left", 22)
+	setup_margin.add_theme_constant_override("margin_top", 18)
+	setup_margin.add_theme_constant_override("margin_right", 22)
+	setup_margin.add_theme_constant_override("margin_bottom", 18)
+	left_vbox.add_child(setup_margin)
 
-	var snapshot_label := Label.new()
-	snapshot_label.text = "SESSION SNAPSHOT"
-	snapshot_label.add_theme_font_override("font", FONT_SEMIBOLD)
-	snapshot_label.add_theme_font_size_override("font_size", 12)
-	snapshot_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	hero_right_layout.add_child(snapshot_label)
+	var setup_vbox := VBoxContainer.new()
+	setup_vbox.add_theme_constant_override("separation", 14)
+	setup_margin.add_child(setup_vbox)
 
-	_summary_label = RichTextLabel.new()
-	_summary_label.bbcode_enabled = true
-	_summary_label.fit_content = true
-	_summary_label.scroll_active = false
-	_summary_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_summary_label.add_theme_font_override("normal_font", FONT_MEDIUM)
-	_summary_label.add_theme_font_size_override("normal_font_size", 15)
-	hero_right_layout.add_child(_summary_label)
-
-	var content_row := HBoxContainer.new()
-	content_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_row.add_theme_constant_override("separation", 18)
-	root_layout.add_child(content_row)
-
-	var setup_panel := _make_panel_card(COLOR_P1, COLOR_SURFACE)
-	setup_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	setup_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_row.add_child(setup_panel)
-
-	var setup_margin := _wrap_panel_content(setup_panel, 24, 22)
-	var setup_layout := VBoxContainer.new()
-	setup_layout.add_theme_constant_override("separation", 18)
-	setup_margin.add_child(setup_layout)
-
+	# Setup header
 	var setup_header := HBoxContainer.new()
-	setup_header.add_theme_constant_override("separation", 12)
-	setup_layout.add_child(setup_header)
+	setup_header.add_theme_constant_override("separation", 14)
+	setup_vbox.add_child(setup_header)
 
 	var setup_title_block := VBoxContainer.new()
 	setup_title_block.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	setup_title_block.add_theme_constant_override("separation", 4)
 	setup_header.add_child(setup_title_block)
 
-	var setup_title := Label.new()
-	setup_title.text = "Match Setup"
-	setup_title.add_theme_font_override("font", FONT_BOLD)
-	setup_title.add_theme_font_size_override("font_size", 28)
-	setup_title_block.add_child(setup_title)
+	var setup_label := Label.new()
+	setup_label.text = "// MATCH SETUP"
+	setup_label.add_theme_font_override("font", FONT_HEADING)
+	setup_label.add_theme_font_size_override("font_size", 24)
+	setup_title_block.add_child(setup_label)
 
 	var setup_subtitle := Label.new()
 	setup_subtitle.text = "Tune both commanders, choose the battleground, and launch straight into the arena."
 	setup_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	setup_subtitle.add_theme_font_override("font", FONT_MEDIUM)
-	setup_subtitle.add_theme_font_size_override("font_size", 15)
+	setup_subtitle.add_theme_font_override("font", FONT_BODY)
+	setup_subtitle.add_theme_font_size_override("font_size", 14)
 	setup_subtitle.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	setup_title_block.add_child(setup_subtitle)
 
-	var setup_badge := _make_chip("AI-vs-AI Recommended", COLOR_GOLD)
-	setup_header.add_child(setup_badge)
+	setup_header.add_child(_make_chip("⭐ AI-vs-AI Recommended", COLOR_GOLD))
 
-	var setup_grid := GridContainer.new()
-	setup_grid.columns = 2
-	setup_grid.add_theme_constant_override("h_separation", 18)
-	setup_grid.add_theme_constant_override("v_separation", 14)
-	setup_layout.add_child(setup_grid)
+	var div2 := ColorRect.new()
+	div2.custom_minimum_size = Vector2(0, 1)
+	div2.color = COLOR_BORDER
+	setup_vbox.add_child(div2)
 
-	setup_grid.add_child(_field_label("Player 1 Controller"))
+	# 6 field rows
 	_p1_controller = _controller_option()
-	setup_grid.add_child(_p1_controller)
+	setup_vbox.add_child(_make_field_row("●", COLOR_P1, "PLAYER 1 CONTROLLER", _p1_controller))
 
-	setup_grid.add_child(_field_label("Player 2 Controller"))
 	_p2_controller = _controller_option()
-	setup_grid.add_child(_p2_controller)
+	setup_vbox.add_child(_make_field_row("●", COLOR_P2, "PLAYER 2 CONTROLLER", _p2_controller))
 
-	setup_grid.add_child(_field_label("Arena Map"))
 	_map_select = OptionButton.new()
 	for map_id: String in ["standard", "open", "fortress", "labyrinth"]:
 		_map_select.add_item(map_id.capitalize())
 		_map_select.set_item_metadata(_map_select.item_count - 1, map_id)
 	_map_select.item_selected.connect(_on_setup_changed)
 	_style_option_button(_map_select)
-	setup_grid.add_child(_map_select)
+	setup_vbox.add_child(_make_field_row("◈", COLOR_BORDER.lightened(0.3), "ARENA MAP", _map_select))
 
-	setup_grid.add_child(_field_label("Turn Limit"))
-	_max_turns_spin = _make_spin_box(20, 200, 5)
-	setup_grid.add_child(_max_turns_spin)
+	var turns_stepper := _make_stepper(_turns_value, 20, 200, 5)
+	_turns_value_label = turns_stepper["value_label"]
+	setup_vbox.add_child(_make_field_row("◷", COLOR_GOLD, "TURN LIMIT", turns_stepper["hbox"]))
 
-	setup_grid.add_child(_field_label("Minimax Depth"))
-	_p1_depth_spin = _make_spin_box(1, 6, 1)
-	setup_grid.add_child(_p1_depth_spin)
+	var depth_stepper := _make_stepper(_depth_value, 1, 6, 1)
+	_depth_value_label = depth_stepper["value_label"]
+	setup_vbox.add_child(_make_field_row("◆", COLOR_P1.darkened(0.3), "MINIMAX DEPTH", depth_stepper["hbox"]))
 
-	setup_grid.add_child(_field_label("MCTS Rollouts"))
-	_p2_rollout_spin = _make_spin_box(50, 2000, 50)
-	setup_grid.add_child(_p2_rollout_spin)
+	var rollouts_stepper := _make_stepper(_rollouts_value, 50, 2000, 50)
+	_rollouts_value_label = rollouts_stepper["value_label"]
+	setup_vbox.add_child(_make_field_row("◎", COLOR_P2.darkened(0.3), "MCTS ROLLOUTS", rollouts_stepper["hbox"]))
 
-	var action_column := VBoxContainer.new()
-	action_column.add_theme_constant_override("separation", 12)
-	setup_layout.add_child(action_column)
+	var div3 := ColorRect.new()
+	div3.custom_minimum_size = Vector2(0, 1)
+	div3.color = COLOR_BORDER
+	setup_vbox.add_child(div3)
 
+	# Action buttons
 	var primary_row := HBoxContainer.new()
 	primary_row.add_theme_constant_override("separation", 12)
-	action_column.add_child(primary_row)
-	primary_row.add_child(_make_button("Start Skirmish", _on_open_match_pressed, COLOR_GOLD, 58))
-
-	_replay_button = _make_button("Replay Viewer", _on_open_replay_pressed, COLOR_P1, 56)
+	setup_vbox.add_child(primary_row)
+	primary_row.add_child(_make_button("▶  START SKIRMISH", _on_open_match_pressed, COLOR_GOLD, 58))
+	_replay_button = _make_button("⏺  REPLAY VIEWER", _on_open_replay_pressed, COLOR_P1, 56)
 	primary_row.add_child(_replay_button)
 
 	var secondary_row := HBoxContainer.new()
 	secondary_row.add_theme_constant_override("separation", 12)
-	action_column.add_child(secondary_row)
-	secondary_row.add_child(_make_button("Quick Start Guide", _on_open_help_pressed, COLOR_GREEN, 46))
-	secondary_row.add_child(_make_button("Settings", _on_open_settings_pressed, COLOR_BORDER.lightened(0.18), 46))
+	setup_vbox.add_child(secondary_row)
+	secondary_row.add_child(_make_button("≡  QUICK START GUIDE", _on_open_help_pressed, COLOR_GREEN, 46))
+	secondary_row.add_child(_make_button("◎  SETTINGS", _on_open_settings_pressed, COLOR_BORDER.lightened(0.18), 46))
 
 	var utility_row := HBoxContainer.new()
 	utility_row.add_theme_constant_override("separation", 12)
-	action_column.add_child(utility_row)
-	utility_row.add_child(_make_button("Reset Runtime State", _on_reset_state_pressed, COLOR_BORDER.lightened(0.10), 44))
-	utility_row.add_child(_make_button("Quit", _on_exit_game_pressed, COLOR_P2, 44, true))
+	setup_vbox.add_child(utility_row)
+	utility_row.add_child(_make_button("↺  RESET RUNTIME STATE", _on_reset_state_pressed, COLOR_BORDER.lightened(0.10), 44))
+	utility_row.add_child(_make_button("✕  QUIT", _on_exit_game_pressed, COLOR_P2, 44, true))
 
-	var side_column := VBoxContainer.new()
-	side_column.custom_minimum_size = Vector2(360, 0)
-	side_column.add_theme_constant_override("separation", 18)
-	content_row.add_child(side_column)
+	# ══ RIGHT COLUMN ══════════════════════════════════════════════════════════
+	var right_column := VBoxContainer.new()
+	right_column.custom_minimum_size = Vector2(440, 0)
+	right_column.add_theme_constant_override("separation", 12)
+	right_column.size_flags_horizontal = Control.SIZE_SHRINK_END
+	root_row.add_child(right_column)
 
-	var brief_panel := _make_panel_card(COLOR_BORDER.lightened(0.15), COLOR_SURFACE_ALT)
-	side_column.add_child(brief_panel)
-	var brief_margin := _wrap_panel_content(brief_panel, 22, 20)
-	var brief_layout := VBoxContainer.new()
-	brief_layout.add_theme_constant_override("separation", 12)
-	brief_margin.add_child(brief_layout)
-	brief_layout.add_child(_make_section_heading("Arena Preview"))
+	# ── Card 1: Session Snapshot ──────────────────────────────────────────────
+	var snap_card := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
+	right_column.add_child(snap_card)
+	var snap_content := _wrap_panel_content(snap_card, 16, 14)
+	var snap_vbox := VBoxContainer.new()
+	snap_vbox.add_theme_constant_override("separation", 10)
+	snap_content.add_child(snap_vbox)
+
+	var snap_heading := Label.new()
+	snap_heading.text = "SESSION SNAPSHOT"
+	snap_heading.add_theme_font_override("font", FONT_SEMIBOLD)
+	snap_heading.add_theme_font_size_override("font_size", 11)
+	snap_heading.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	snap_vbox.add_child(snap_heading)
+
+	var snap_div := ColorRect.new()
+	snap_div.custom_minimum_size = Vector2(0, 1)
+	snap_div.color = COLOR_BORDER
+	snap_vbox.add_child(snap_div)
+
+	var srow1 := _make_snapshot_row("◉", Color(0.94, 0.75, 0.28, 1.0), "Build Step")
+	_snap_build_val = srow1["value_label"]
+	snap_vbox.add_child(srow1["hbox"])
+
+	var srow2 := _make_snapshot_row("●", COLOR_P1, "P1 / P2 Controller")
+	# Swap plain label for RichTextLabel to colour player names
+	srow2["hbox"].remove_child(srow2["value_label"])
+	srow2["value_label"].queue_free()
+	_snap_ctrl_val = RichTextLabel.new()
+	_snap_ctrl_val.bbcode_enabled = true
+	_snap_ctrl_val.fit_content = true
+	_snap_ctrl_val.scroll_active = false
+	_snap_ctrl_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_snap_ctrl_val.add_theme_font_override("normal_font", FONT_BODY)
+	_snap_ctrl_val.add_theme_font_size_override("normal_font_size", 13)
+	srow2["hbox"].add_child(_snap_ctrl_val)
+	snap_vbox.add_child(srow2["hbox"])
+
+	var srow3 := _make_snapshot_row("◈", COLOR_GOLD, "Map")
+	_snap_map_val = srow3["value_label"]
+	_snap_map_val.add_theme_color_override("font_color", Color("5bc8d4"))
+	snap_vbox.add_child(srow3["hbox"])
+
+	var srow4 := _make_snapshot_row("▶", COLOR_TEXT_MUTED, "Replay")
+	_snap_replay_val = srow4["value_label"]
+	snap_vbox.add_child(srow4["hbox"])
+
+	var srow5 := _make_snapshot_row("⊡", Color(0.47, 0.72, 0.87, 1.0), "UI Scale")
+	_snap_scale_val = srow5["value_label"]
+	snap_vbox.add_child(srow5["hbox"])
+
+	var srow6 := _make_snapshot_row("◈", COLOR_TEXT_MUTED, "Motion / Contrast")
+	_snap_motion_val = srow6["value_label"]
+	snap_vbox.add_child(srow6["hbox"])
+
+	# ── Card 2: Arena Preview ─────────────────────────────────────────────────
+	var arena_card := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
+	arena_card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_column.add_child(arena_card)
+
+	var arena_outer := HBoxContainer.new()
+	arena_outer.add_theme_constant_override("separation", 0)
+	arena_card.add_child(arena_outer)
+
+	var arena_content := MarginContainer.new()
+	arena_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	arena_content.add_theme_constant_override("margin_left", 16)
+	arena_content.add_theme_constant_override("margin_top", 14)
+	arena_content.add_theme_constant_override("margin_right", 16)
+	arena_content.add_theme_constant_override("margin_bottom", 14)
+	arena_outer.add_child(arena_content)
+
+	var arena_vbox := VBoxContainer.new()
+	arena_vbox.add_theme_constant_override("separation", 8)
+	arena_content.add_child(arena_vbox)
+
+	var arena_head_row := HBoxContainer.new()
+	arena_head_row.add_theme_constant_override("separation", 12)
+	arena_vbox.add_child(arena_head_row)
+	arena_head_row.add_child(_make_icon_box("◈", Color(0.94, 0.75, 0.28, 0.20), 42))
+	var arena_head_text := VBoxContainer.new()
+	arena_head_text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	arena_head_text.add_theme_constant_override("separation", 2)
+	arena_head_row.add_child(arena_head_text)
+
+	var arena_heading := Label.new()
+	arena_heading.text = "ARENA PREVIEW"
+	arena_heading.add_theme_font_override("font", FONT_SEMIBOLD)
+	arena_heading.add_theme_font_size_override("font_size", 11)
+	arena_heading.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	arena_head_text.add_child(arena_heading)
+
+	_arena_preview_title_label = Label.new()
+	_arena_preview_title_label.add_theme_font_override("font", FONT_HEADING)
+	_arena_preview_title_label.add_theme_font_size_override("font_size", 22)
+	arena_head_text.add_child(_arena_preview_title_label)
 
 	_arena_preview_label = Label.new()
 	_arena_preview_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_arena_preview_label.add_theme_font_override("font", FONT_REGULAR)
-	_arena_preview_label.add_theme_font_size_override("font_size", 15)
-	_arena_preview_label.add_theme_color_override("font_color", COLOR_TEXT)
-	brief_layout.add_child(_arena_preview_label)
+	_arena_preview_label.add_theme_font_override("font", FONT_BODY)
+	_arena_preview_label.add_theme_font_size_override("font_size", 14)
+	_arena_preview_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	arena_vbox.add_child(_arena_preview_label)
 
-	var start_steps := Label.new()
-	start_steps.text = "1. Pick controllers and map.\n2. Launch the match.\n3. Use F3 in-game for extra tools.\n4. Open Replay Viewer after a finished match."
-	start_steps.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	start_steps.add_theme_font_override("font", FONT_MEDIUM)
-	start_steps.add_theme_font_size_override("font_size", 14)
-	start_steps.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	brief_layout.add_child(start_steps)
+	arena_vbox.add_child(_make_step_badge(1, "Pick controllers and map."))
+	arena_vbox.add_child(_make_step_badge(2, "Launch the match."))
+	arena_vbox.add_child(_make_step_badge(3, "Use F3 in-game for extra tools."))
+	arena_vbox.add_child(_make_step_badge(4, "Open Replay Viewer after a finished match."))
 
-	var rules_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
-	side_column.add_child(rules_panel)
-	var rules_margin := _wrap_panel_content(rules_panel, 22, 20)
-	var rules_layout := VBoxContainer.new()
-	rules_layout.add_theme_constant_override("separation", 10)
-	rules_margin.add_child(rules_layout)
-	rules_layout.add_child(_make_section_heading("Match Rules"))
+	# ── Card 3: Match Rules ───────────────────────────────────────────────────
+	var rules_card := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
+	right_column.add_child(rules_card)
 
-	_rules_preview_label = Label.new()
-	_rules_preview_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_rules_preview_label.add_theme_font_override("font", FONT_REGULAR)
-	_rules_preview_label.add_theme_font_size_override("font_size", 15)
-	_rules_preview_label.add_theme_color_override("font_color", COLOR_TEXT)
-	rules_layout.add_child(_rules_preview_label)
+	var rules_outer := HBoxContainer.new()
+	rules_outer.add_theme_constant_override("separation", 0)
+	rules_card.add_child(rules_outer)
 
-	var support_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
-	side_column.add_child(support_panel)
-	var support_margin := _wrap_panel_content(support_panel, 22, 20)
-	var support_layout := VBoxContainer.new()
-	support_layout.add_theme_constant_override("separation", 10)
-	support_margin.add_child(support_layout)
-	support_layout.add_child(_make_section_heading("Build Focus"))
+	var rules_content := MarginContainer.new()
+	rules_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rules_content.add_theme_constant_override("margin_left", 16)
+	rules_content.add_theme_constant_override("margin_top", 14)
+	rules_content.add_theme_constant_override("margin_right", 16)
+	rules_content.add_theme_constant_override("margin_bottom", 14)
+	rules_outer.add_child(rules_content)
 
-	var support_text := Label.new()
-	support_text.text = "This release focuses on a cohesive front-end flow: stronger setup clarity, cleaner fullscreen match pacing, replay review, onboarding, and a more intentional launch-to-result loop."
-	support_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	support_text.add_theme_font_override("font", FONT_REGULAR)
-	support_text.add_theme_font_size_override("font_size", 15)
-	support_text.add_theme_color_override("font_color", COLOR_TEXT)
-	support_layout.add_child(support_text)
+	var rules_vbox := VBoxContainer.new()
+	rules_vbox.add_theme_constant_override("separation", 8)
+	rules_content.add_child(rules_vbox)
 
+	var rules_head_row := HBoxContainer.new()
+	rules_head_row.add_theme_constant_override("separation", 12)
+	rules_vbox.add_child(rules_head_row)
+	rules_head_row.add_child(_make_icon_box("▶", COLOR_P1.darkened(0.4), 42))
+	var rules_head_text := VBoxContainer.new()
+	rules_head_text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	rules_head_text.add_theme_constant_override("separation", 2)
+	rules_head_row.add_child(rules_head_text)
+
+	var rules_heading := Label.new()
+	rules_heading.text = "MATCH RULES"
+	rules_heading.add_theme_font_override("font", FONT_SEMIBOLD)
+	rules_heading.add_theme_font_size_override("font_size", 11)
+	rules_heading.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	rules_head_text.add_child(rules_heading)
+
+	var rules_win_cond := Label.new()
+	rules_win_cond.text = "Win by destroying the enemy Ktank or occupying the center hex with your own."
+	rules_win_cond.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rules_win_cond.add_theme_font_override("font", FONT_SMALL)
+	rules_win_cond.add_theme_font_size_override("font_size", 12)
+	rules_win_cond.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	rules_vbox.add_child(rules_win_cond)
+
+	var rrow1 := _make_rules_row("▸  P1 Controller")
+	_rules_p1_val = rrow1["value_label"]
+	rules_vbox.add_child(rrow1["hbox"])
+
+	var rrow2 := _make_rules_row("▸  P2 Controller")
+	_rules_p2_val = rrow2["value_label"]
+	rules_vbox.add_child(rrow2["hbox"])
+
+	var rrow3 := _make_rules_row("▸  Turn Limit")
+	_rules_turns_val = rrow3["value_label"]
+	rules_vbox.add_child(rrow3["hbox"])
+
+	var rrow4 := _make_rules_row("▸  Mode")
+	_rules_mode_val = rrow4["value_label"]
+	rules_vbox.add_child(rrow4["hbox"])
+
+	# ── Card 4: Build Focus ───────────────────────────────────────────────────
+	var build_card := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
+	right_column.add_child(build_card)
+
+	var build_outer := HBoxContainer.new()
+	build_outer.add_theme_constant_override("separation", 0)
+	build_card.add_child(build_outer)
+
+	var build_content := MarginContainer.new()
+	build_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	build_content.add_theme_constant_override("margin_left", 16)
+	build_content.add_theme_constant_override("margin_top", 14)
+	build_content.add_theme_constant_override("margin_right", 16)
+	build_content.add_theme_constant_override("margin_bottom", 14)
+	build_outer.add_child(build_content)
+
+	var build_vbox := VBoxContainer.new()
+	build_vbox.add_theme_constant_override("separation", 8)
+	build_content.add_child(build_vbox)
+
+	var build_head_row := HBoxContainer.new()
+	build_head_row.add_theme_constant_override("separation", 12)
+	build_vbox.add_child(build_head_row)
+	build_head_row.add_child(_make_icon_box("◆", COLOR_GREEN.darkened(0.4), 42))
+	var build_head_text := VBoxContainer.new()
+	build_head_text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	build_head_text.add_theme_constant_override("separation", 2)
+	build_head_row.add_child(build_head_text)
+
+	var build_heading := Label.new()
+	build_heading.text = "BUILD FOCUS"
+	build_heading.add_theme_font_override("font", FONT_SEMIBOLD)
+	build_heading.add_theme_font_size_override("font_size", 11)
+	build_heading.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	build_head_text.add_child(build_heading)
+
+	var build_body := Label.new()
+	build_body.text = "This release focuses on a cohesive front-end flow: stronger setup clarity, cleaner full-screen match pacing, replay review, onboarding, and a more intentional launch-to-result loop."
+	build_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	build_body.add_theme_font_override("font", FONT_BODY)
+	build_body.add_theme_font_size_override("font_size", 14)
+	build_body.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	build_vbox.add_child(build_body)
+
+	# ── Transition overlay (top of z-order) ───────────────────────────────────
 	_transition_overlay = ColorRect.new()
 	_transition_overlay.color = Color(0.03, 0.05, 0.09, 1.0)
 	_transition_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -334,13 +483,12 @@ func _build_layout() -> void:
 
 func _build_menu_theme() -> Theme:
 	var menu_theme := Theme.new()
-	menu_theme.default_font = FONT_REGULAR
-	menu_theme.default_font_size = 16
-	menu_theme.set_font("font", "Label", FONT_REGULAR)
-	menu_theme.set_font("font", "Button", FONT_SEMIBOLD)
-	menu_theme.set_font("font", "OptionButton", FONT_MEDIUM)
-	menu_theme.set_font("font", "SpinBox", FONT_MEDIUM)
-	menu_theme.set_font("font", "RichTextLabel", FONT_REGULAR)
+	menu_theme.default_font = FONT_SMALL
+	menu_theme.default_font_size = 14
+	menu_theme.set_font("font", "Label", FONT_SMALL)
+	menu_theme.set_font("font", "Button", FONT_UI_BOLD)
+	menu_theme.set_font("font", "OptionButton", FONT_BODY)
+	menu_theme.set_font("font", "RichTextLabel", FONT_SMALL)
 	menu_theme.set_color("font_color", "Label", COLOR_TEXT)
 	menu_theme.set_color("font_color", "Button", COLOR_TEXT)
 	menu_theme.set_color("font_hover_color", "Button", Color.WHITE)
@@ -349,17 +497,235 @@ func _build_menu_theme() -> Theme:
 	menu_theme.set_color("default_color", "RichTextLabel", COLOR_TEXT)
 	menu_theme.set_color("font_color", "RichTextLabel", COLOR_TEXT)
 	menu_theme.set_color("font_color", "OptionButton", COLOR_TEXT)
-	menu_theme.set_color("font_color", "SpinBox", COLOR_TEXT)
 	return menu_theme
 
 
-func _field_label(text: String) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.add_theme_font_override("font", FONT_SEMIBOLD)
-	label.add_theme_font_size_override("font_size", 15)
-	label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	return label
+func _make_field_row(icon_char: String, icon_color: Color, label_text: String, control: Control) -> PanelContainer:
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(icon_color.r, icon_color.g, icon_color.b, 0.05)
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	style.border_width_left = 1
+	style.border_color = Color(icon_color.r, icon_color.g, icon_color.b, 0.30)
+	style.content_margin_left = 10.0
+	style.content_margin_top = 6.0
+	style.content_margin_right = 10.0
+	style.content_margin_bottom = 6.0
+	panel.add_theme_stylebox_override("panel", style)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	panel.add_child(row)
+
+	var icon_lbl := Label.new()
+	icon_lbl.text = icon_char
+	icon_lbl.add_theme_font_override("font", FONT_BODY)
+	icon_lbl.add_theme_font_size_override("font_size", 14)
+	icon_lbl.add_theme_color_override("font_color", icon_color)
+	icon_lbl.custom_minimum_size = Vector2(18, 0)
+	row.add_child(icon_lbl)
+
+	var field_lbl := Label.new()
+	field_lbl.text = label_text
+	field_lbl.add_theme_font_override("font", FONT_SEMIBOLD)
+	field_lbl.add_theme_font_size_override("font_size", 11)
+	field_lbl.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	field_lbl.custom_minimum_size = Vector2(148, 0)
+	row.add_child(field_lbl)
+
+	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(control)
+	return panel
+
+
+func _make_stepper(initial: int, min_v: int, max_v: int, step_v: int) -> Dictionary:
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 4)
+	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var val_lbl := Label.new()
+	val_lbl.text = str(initial)
+	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	val_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	val_lbl.add_theme_font_override("font", FONT_HEADING)
+	val_lbl.add_theme_font_size_override("font_size", 16)
+	hbox.add_child(val_lbl)
+
+	var btn_minus := Button.new()
+	btn_minus.text = "◀"
+	btn_minus.custom_minimum_size = Vector2(32, 32)
+	btn_minus.focus_mode = Control.FOCUS_NONE
+	btn_minus.add_theme_stylebox_override("normal", _button_style(COLOR_BORDER, 0.08))
+	btn_minus.add_theme_stylebox_override("hover", _button_style(COLOR_P1, 0.16))
+	btn_minus.add_theme_stylebox_override("pressed", _button_style(COLOR_P1, 0.24))
+	btn_minus.add_theme_font_override("font", FONT_BODY)
+	btn_minus.add_theme_font_size_override("font_size", 11)
+	hbox.add_child(btn_minus)
+
+	var btn_plus := Button.new()
+	btn_plus.text = "▶"
+	btn_plus.custom_minimum_size = Vector2(32, 32)
+	btn_plus.focus_mode = Control.FOCUS_NONE
+	btn_plus.add_theme_stylebox_override("normal", _button_style(COLOR_BORDER, 0.08))
+	btn_plus.add_theme_stylebox_override("hover", _button_style(COLOR_P1, 0.16))
+	btn_plus.add_theme_stylebox_override("pressed", _button_style(COLOR_P1, 0.24))
+	btn_plus.add_theme_font_override("font", FONT_BODY)
+	btn_plus.add_theme_font_size_override("font_size", 11)
+	hbox.add_child(btn_plus)
+
+	# Closure over val_lbl reference to update display and propagate
+	var current: int = initial
+	btn_minus.pressed.connect(func() -> void:
+		current = max(min_v, current - step_v)
+		val_lbl.text = str(current)
+		_on_stepper_changed(val_lbl, current)
+	)
+	btn_plus.pressed.connect(func() -> void:
+		current = min(max_v, current + step_v)
+		val_lbl.text = str(current)
+		_on_stepper_changed(val_lbl, current)
+	)
+	return {"hbox": hbox, "value_label": val_lbl}
+
+
+func _on_stepper_changed(val_lbl: Label, current: int) -> void:
+	if val_lbl == _turns_value_label:
+		_turns_value = current
+	elif val_lbl == _depth_value_label:
+		_depth_value = current
+	elif val_lbl == _rollouts_value_label:
+		_rollouts_value = current
+	_on_setup_changed()
+
+
+func _make_snapshot_row(icon_char: String, icon_color: Color, label_text: String) -> Dictionary:
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+
+	var icon_lbl := Label.new()
+	icon_lbl.text = icon_char
+	icon_lbl.add_theme_font_override("font", FONT_BODY)
+	icon_lbl.add_theme_font_size_override("font_size", 13)
+	icon_lbl.add_theme_color_override("font_color", icon_color)
+	icon_lbl.custom_minimum_size = Vector2(16, 0)
+	hbox.add_child(icon_lbl)
+
+	var key_lbl := Label.new()
+	key_lbl.text = label_text
+	key_lbl.add_theme_font_override("font", FONT_SMALL)
+	key_lbl.add_theme_font_size_override("font_size", 13)
+	key_lbl.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	key_lbl.custom_minimum_size = Vector2(130, 0)
+	hbox.add_child(key_lbl)
+
+	var val_lbl := Label.new()
+	val_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	val_lbl.add_theme_font_override("font", FONT_BODY)
+	val_lbl.add_theme_font_size_override("font_size", 13)
+	hbox.add_child(val_lbl)
+
+	return {"hbox": hbox, "value_label": val_lbl}
+
+
+func _make_rules_row(label_text: String) -> Dictionary:
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+
+	var key_lbl := Label.new()
+	key_lbl.text = label_text
+	key_lbl.add_theme_font_override("font", FONT_BODY)
+	key_lbl.add_theme_font_size_override("font_size", 13)
+	key_lbl.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	key_lbl.custom_minimum_size = Vector2(110, 0)
+	hbox.add_child(key_lbl)
+
+	var val_lbl := Label.new()
+	val_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	val_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	val_lbl.add_theme_font_override("font", FONT_BODY)
+	val_lbl.add_theme_font_size_override("font_size", 13)
+	hbox.add_child(val_lbl)
+
+	return {"hbox": hbox, "value_label": val_lbl}
+
+
+func _make_step_badge(n: int, text: String) -> HBoxContainer:
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+
+	var num_panel := PanelContainer.new()
+	var num_style := StyleBoxFlat.new()
+	num_style.bg_color = Color(COLOR_GOLD.r, COLOR_GOLD.g, COLOR_GOLD.b, 0.15)
+	num_style.border_color = COLOR_GOLD
+	num_style.border_width_left = 1
+	num_style.border_width_top = 1
+	num_style.border_width_right = 1
+	num_style.border_width_bottom = 1
+	num_style.corner_radius_top_left = 4
+	num_style.corner_radius_top_right = 4
+	num_style.corner_radius_bottom_left = 4
+	num_style.corner_radius_bottom_right = 4
+	num_style.content_margin_left = 6.0
+	num_style.content_margin_top = 2.0
+	num_style.content_margin_right = 6.0
+	num_style.content_margin_bottom = 2.0
+	num_panel.add_theme_stylebox_override("panel", num_style)
+	hbox.add_child(num_panel)
+
+	var num_lbl := Label.new()
+	num_lbl.text = str(n)
+	num_lbl.add_theme_font_override("font", FONT_LABEL)
+	num_lbl.add_theme_font_size_override("font_size", 12)
+	num_lbl.add_theme_color_override("font_color", COLOR_GOLD)
+	num_panel.add_child(num_lbl)
+
+	var text_lbl := Label.new()
+	text_lbl.text = text
+	text_lbl.add_theme_font_override("font", FONT_BODY)
+	text_lbl.add_theme_font_size_override("font_size", 13)
+	text_lbl.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	hbox.add_child(text_lbl)
+
+	return hbox
+
+
+func _make_hex_decoration() -> Control:
+	var script := load("res://scripts/ui/hex_decoration.gd")
+	var deco: Control = script.new()
+	deco.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	return deco
+
+
+func _make_icon_box(char: String, bg_color: Color, box_size: int) -> PanelContainer:
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.corner_radius_top_left = 10
+	style.corner_radius_top_right = 10
+	style.corner_radius_bottom_left = 10
+	style.corner_radius_bottom_right = 10
+	style.content_margin_left = 4.0
+	style.content_margin_top = 4.0
+	style.content_margin_right = 4.0
+	style.content_margin_bottom = 4.0
+	panel.add_theme_stylebox_override("panel", style)
+	panel.custom_minimum_size = Vector2(box_size, box_size)
+
+	var lbl := Label.new()
+	lbl.text = char
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_override("font", FONT_HEADING)
+	lbl.add_theme_font_size_override("font_size", int(box_size * 0.52))
+	lbl.add_theme_color_override("font_color", COLOR_GOLD)
+	panel.add_child(lbl)
+	return panel
 
 
 func _controller_option() -> OptionButton:
@@ -375,19 +741,8 @@ func _controller_option() -> OptionButton:
 	return option
 
 
-func _make_spin_box(min_value: float, max_value: float, step: float) -> SpinBox:
-	var spin := SpinBox.new()
-	spin.min_value = min_value
-	spin.max_value = max_value
-	spin.step = step
-	spin.value_changed.connect(_on_setup_changed)
-	spin.custom_minimum_size = Vector2(0, 44)
-	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	return spin
-
-
 func _style_option_button(option: OptionButton) -> void:
-	option.custom_minimum_size = Vector2(0, 44)
+	option.custom_minimum_size = Vector2(0, 40)
 	option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	option.focus_mode = Control.FOCUS_NONE
 	var normal := _button_style(COLOR_BORDER.lightened(0.08), 0.08)
@@ -398,7 +753,7 @@ func _style_option_button(option: OptionButton) -> void:
 	option.add_theme_stylebox_override("pressed", pressed)
 	option.add_theme_stylebox_override("focus", hover)
 	option.add_theme_stylebox_override("disabled", _button_style(COLOR_BORDER, 0.04))
-	option.add_theme_font_override("font", FONT_MEDIUM)
+	option.add_theme_font_override("font", FONT_BODY)
 	option.add_theme_font_size_override("font_size", 14)
 
 
@@ -412,8 +767,8 @@ func _make_button(text: String, callback: Callable, accent_color: Color, min_hei
 	button.add_theme_stylebox_override("hover", _button_style(accent_color, 0.18))
 	button.add_theme_stylebox_override("pressed", _button_style(accent_color, 0.24))
 	button.add_theme_stylebox_override("disabled", _button_style(COLOR_BORDER, 0.04))
-	button.add_theme_font_override("font", FONT_SEMIBOLD)
-	button.add_theme_font_size_override("font_size", 15 if min_height >= 52 else 14)
+	button.add_theme_font_override("font", FONT_HEADING)
+	button.add_theme_font_size_override("font_size", 18 if min_height >= 52 else 15)
 	button.add_theme_color_override("font_color", Color.WHITE)
 	button.add_theme_color_override("font_disabled_color", COLOR_TEXT_MUTED)
 	button.mouse_entered.connect(AudioManager.play_ui_hover)
@@ -446,34 +801,34 @@ func _wrap_panel_content(panel: PanelContainer, horizontal_margin: int, vertical
 func _panel_style(accent_color: Color, fill_color: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill_color
-	style.corner_radius_top_left = 16
-	style.corner_radius_top_right = 16
-	style.corner_radius_bottom_left = 16
-	style.corner_radius_bottom_right = 16
+	style.corner_radius_top_left = 10
+	style.corner_radius_top_right = 10
+	style.corner_radius_bottom_left = 10
+	style.corner_radius_bottom_right = 10
 	style.border_width_left = 1
 	style.border_width_top = 1
 	style.border_width_right = 1
 	style.border_width_bottom = 1
 	style.border_color = accent_color.lerp(COLOR_BORDER, 0.58)
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.24)
-	style.shadow_size = 10
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.28)
+	style.shadow_size = 8
 	return style
 
 
 func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(accent_color.r, accent_color.g, accent_color.b, fill_alpha)
-	style.corner_radius_top_left = 12
-	style.corner_radius_top_right = 12
-	style.corner_radius_bottom_left = 12
-	style.corner_radius_bottom_right = 12
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
 	style.border_width_left = 1
 	style.border_width_top = 1
 	style.border_width_right = 1
 	style.border_width_bottom = 1
 	style.border_color = accent_color
 	style.shadow_color = Color(0.0, 0.0, 0.0, 0.16)
-	style.shadow_size = 5
+	style.shadow_size = 4
 	style.content_margin_left = 14.0
 	style.content_margin_top = 8.0
 	style.content_margin_right = 14.0
@@ -484,8 +839,8 @@ func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 func _make_section_heading(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
-	label.add_theme_font_override("font", FONT_SEMIBOLD)
-	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_font_override("font", FONT_LABEL)
+	label.add_theme_font_size_override("font_size", 11)
 	label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	return label
 
@@ -499,23 +854,23 @@ func _make_chip(text: String, accent_color: Color) -> PanelContainer:
 	style.border_width_top = 1
 	style.border_width_right = 1
 	style.border_width_bottom = 1
-	style.corner_radius_top_left = 10
-	style.corner_radius_top_right = 10
-	style.corner_radius_bottom_left = 10
-	style.corner_radius_bottom_right = 10
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
 	chip.add_theme_stylebox_override("panel", style)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_top", 5)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_bottom", 5)
 	chip.add_child(margin)
 
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_override("font", FONT_SEMIBOLD)
-	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_font_size_override("font_size", 12)
 	label.add_theme_color_override("font_color", accent_color)
 	margin.add_child(label)
 	return chip
@@ -526,9 +881,15 @@ func _apply_config_to_controls() -> void:
 	_select_controller(_p1_controller, config.player_one_ai.controller_type)
 	_select_controller(_p2_controller, config.player_two_ai.controller_type)
 	_select_map(config.map_id)
-	_max_turns_spin.value = config.max_turns
-	_p1_depth_spin.value = config.player_one_ai.search_depth
-	_p2_rollout_spin.value = config.player_two_ai.rollout_limit
+	_turns_value = config.max_turns
+	_depth_value = config.player_one_ai.search_depth
+	_rollouts_value = config.player_two_ai.rollout_limit
+	if _turns_value_label != null:
+		_turns_value_label.text = str(_turns_value)
+	if _depth_value_label != null:
+		_depth_value_label.text = str(_depth_value)
+	if _rollouts_value_label != null:
+		_rollouts_value_label.text = str(_rollouts_value)
 
 
 func _select_controller(option: OptionButton, controller_type: int) -> void:
@@ -550,9 +911,9 @@ func _on_setup_changed(_value: Variant = null) -> void:
 	config.player_one_ai.controller_type = int(_p1_controller.get_item_metadata(_p1_controller.selected))
 	config.player_two_ai.controller_type = int(_p2_controller.get_item_metadata(_p2_controller.selected))
 	config.map_id = str(_map_select.get_item_metadata(_map_select.selected))
-	config.max_turns = int(_max_turns_spin.value)
-	config.player_one_ai.search_depth = int(_p1_depth_spin.value)
-	config.player_two_ai.rollout_limit = int(_p2_rollout_spin.value)
+	config.max_turns = _turns_value
+	config.player_one_ai.search_depth = _depth_value
+	config.player_two_ai.rollout_limit = _rollouts_value
 	config.ai_vs_ai_mode = config.player_one_ai.controller_type != GameTypes.ControllerType.HUMAN and config.player_two_ai.controller_type != GameTypes.ControllerType.HUMAN
 	AppState.save_preferences()
 	_refresh_summary()
@@ -564,21 +925,45 @@ func _refresh_summary() -> void:
 	if _replay_button != null:
 		_replay_button.disabled = AppState.current_replay.turns.is_empty()
 
-	_summary_label.text = "[right][b]Build[/b] %s[/right]\n" % AppState.build_label.replace("-", " ")
-	_summary_label.text += "[right]P1 [color=#77b8ff]%s[/color]  |  P2 [color=#ff8a76]%s[/color][/right]\n" % [
-		_controller_label(config.player_one_ai.controller_type),
-		_controller_label(config.player_two_ai.controller_type),
-	]
-	_summary_label.text += "[right]Map [color=#f0c05e]%s[/color]  |  Replay %s[/right]\n" % [config.map_id.capitalize(), replay_ready]
-	_summary_label.text += "[right]UI %.2fx  |  Motion %s  |  Contrast %s[/right]" % [
-		AppState.ui_scale,
-		"Reduced" if AppState.reduced_motion else "Standard",
-		"High" if AppState.high_contrast_mode else "Standard",
-	]
+	# Version label
+	if _version_label != null:
+		_version_label.text = "%s  |  %s" % [AppState.game_version, AppState.build_label.replace("-", " ")]
+
+	# Session snapshot values
+	if _snap_build_val != null:
+		_snap_build_val.text = AppState.build_label.replace("-", " ")
+	if _snap_ctrl_val != null:
+		_snap_ctrl_val.text = "[color=#77b8ff]P1 %s[/color]  |  [color=#ff8a76]P2 %s[/color]" % [
+			_controller_label(config.player_one_ai.controller_type),
+			_controller_label(config.player_two_ai.controller_type),
+		]
+	if _snap_map_val != null:
+		_snap_map_val.text = config.map_id.capitalize()
+	if _snap_replay_val != null:
+		_snap_replay_val.text = replay_ready
+	if _snap_scale_val != null:
+		_snap_scale_val.text = "%.2fx" % AppState.ui_scale
+	if _snap_motion_val != null:
+		_snap_motion_val.text = "%s  |  %s" % [
+			"Reduced" if AppState.reduced_motion else "Standard",
+			"High" if AppState.high_contrast_mode else "Standard",
+		]
+
+	# Arena preview
+	if _arena_preview_title_label != null:
+		_arena_preview_title_label.text = config.map_id.capitalize() + " Arena"
 	if _arena_preview_label != null:
 		_arena_preview_label.text = _map_preview_text(config.map_id)
-	if _rules_preview_label != null:
-		_rules_preview_label.text = _match_rules_text(config)
+
+	# Match rules
+	if _rules_p1_val != null:
+		_rules_p1_val.text = _controller_label(config.player_one_ai.controller_type)
+	if _rules_p2_val != null:
+		_rules_p2_val.text = _controller_label(config.player_two_ai.controller_type)
+	if _rules_turns_val != null:
+		_rules_turns_val.text = str(config.max_turns)
+	if _rules_mode_val != null:
+		_rules_mode_val.text = "AI Spectator" if config.ai_vs_ai_mode else "Local Skirmish"
 
 
 func _controller_label(controller_type: int) -> String:
@@ -596,24 +981,13 @@ func _controller_label(controller_type: int) -> String:
 func _map_preview_text(map_id: String) -> String:
 	match map_id:
 		"labyrinth":
-			return "Labyrinth Arena\nDense lanes, heavier obstruction pressure, and more tactical route tension. Best for deeper optimization and risk-heavy center fights."
+			return "Dense lanes, heavier obstruction pressure, and more tactical route tension. Best for deeper optimization and risk-heavy center fights."
 		"fortress":
-			return "Fortress Arena\nMore defensive structure and tighter engagement corridors. Rewards deliberate heavy-unit pressure."
+			return "More defensive structure and tighter engagement corridors. Rewards deliberate heavy-unit pressure."
 		"open":
-			return "Open Arena\nCleaner firing lanes and faster flank pressure. Qtanks gain more room to project control."
+			return "Cleaner firing lanes and faster flank pressure. Qtanks gain more room to project control."
 		_:
-			return "Standard Arena\nBalanced central skirmish map with one hidden bonus tile and clear tempo around the center objective."
-
-
-func _match_rules_text(config: MatchConfig) -> String:
-	var p1_label: String = _controller_label(config.player_one_ai.controller_type)
-	var p2_label: String = _controller_label(config.player_two_ai.controller_type)
-	return "Win by destroying the enemy Ktank or occupying the center hex with your own.\nP1: %s  |  P2: %s\nTurn Limit: %d\nMode: %s" % [
-		p1_label,
-		p2_label,
-		config.max_turns,
-		"AI Spectator" if config.ai_vs_ai_mode else "Local Skirmish",
-	]
+			return "Balanced central skirmish map with one hidden bonus tile and clear tempo around the center objective."
 
 
 func _play_intro_transition() -> void:

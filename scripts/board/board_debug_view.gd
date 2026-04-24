@@ -1047,7 +1047,10 @@ func _draw_attack_preview_line(active_board: BoardState) -> void:
 	var hovered_cell: CellData = active_board.cells.get(hovered_key)
 	if attacker == null or hovered_cell == null:
 		return
-	var from_center: Vector2 = _tile_center(active_board.get_cell(attacker.position))
+	var from_cell: CellData = active_board.get_cell(attacker.position)
+	if from_cell == null:
+		return
+	var from_center: Vector2 = _tile_center(from_cell)
 	var to_center: Vector2 = _tile_center(hovered_cell)
 	var line_color: Color = _attack_preview_color()
 	if highlighted_keys.has(hovered_key):
@@ -1111,6 +1114,8 @@ func _movement_preview_path(tank: TankData, target_coord: HexCoord) -> Array[Hex
 			if not _active_board().has_cell(step_coord):
 				break
 			if not _active_board().is_walkable(step_coord):
+				break
+			if game_state != null and game_state.is_cell_occupied(step_coord):
 				break
 			candidate_path.append(step_coord)
 			if step_coord.equals(target_coord):
@@ -1879,7 +1884,7 @@ func _trigger_shake(duration: float) -> void:
 	if AppState.reduced_motion:
 		return
 	_shake_timer = maxf(_shake_timer, duration)
-	_shake_strength = maxf(_shake_strength, duration)
+	_shake_strength = _shake_timer  # always sync so each shake starts at full intensity
 
 
 func clear_transient_effects() -> void:
