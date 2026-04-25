@@ -78,11 +78,25 @@ var _action_mode: String = ""
 var _selected_actor_id: String = ""
 var _autoplay_enabled: bool = false
 var _autoplay_speed_index: int = 1
+var _auto_ai_pending: bool = false
 var _guide_visible: bool = false
 var _presentation_locked: bool = false
 var _debug_visible: bool = false
+var _activity_text: String = "Ready"
+var _active_actor_id: String = ""
 var _top_panel: PanelContainer
 var _selected_unit_panel: PanelContainer
+var _red_team_panel: PanelContainer
+var _blue_team_panel: PanelContainer
+var _red_king_label: Label
+var _red_queen_label: Label
+var _blue_king_label: Label
+var _blue_queen_label: Label
+var _phase_chip_panel: PanelContainer
+var _phase_chip_label: Label
+var _actor_chip_panel: PanelContainer
+var _actor_chip_label: Label
+var _command_panel: PanelContainer
 var _phase_banner_panel: PanelContainer
 var _phase_banner_label: Label
 var _pause_overlay: Control
@@ -129,20 +143,20 @@ func _build_layout() -> void:
 
 	var root_margin := MarginContainer.new()
 	root_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root_margin.add_theme_constant_override("margin_left", 14)
-	root_margin.add_theme_constant_override("margin_top", 14)
-	root_margin.add_theme_constant_override("margin_right", 14)
-	root_margin.add_theme_constant_override("margin_bottom", 14)
+	root_margin.add_theme_constant_override("margin_left", 0)
+	root_margin.add_theme_constant_override("margin_top", 0)
+	root_margin.add_theme_constant_override("margin_right", 0)
+	root_margin.add_theme_constant_override("margin_bottom", 0)
 	add_child(root_margin)
 
 	var root_layout := VBoxContainer.new()
 	root_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root_layout.add_theme_constant_override("separation", 12)
+	root_layout.add_theme_constant_override("separation", 0)
 	root_margin.add_child(root_layout)
 
 	_top_panel = _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
-	_top_panel.custom_minimum_size = Vector2(0, 86)
+	_top_panel.custom_minimum_size = Vector2(0, 72)
 	root_layout.add_child(_top_panel)
 	var top_margin := _wrap_panel_content(_top_panel, 18, 10)
 	var top_bar := HBoxContainer.new()
@@ -236,11 +250,12 @@ func _build_layout() -> void:
 	_units_label = Label.new()
 	_units_label.visible = false
 	top_right_row.add_child(_units_label)
+	_top_panel.visible = false
 
 	var content := HBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 12)
+	content.add_theme_constant_override("separation", 0)
 	root_layout.add_child(content)
 
 	var board_frame := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_DEEP)
@@ -259,7 +274,7 @@ func _build_layout() -> void:
 	var board_surface := Control.new()
 	board_surface.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_surface.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	board_surface.clip_contents = true
+	board_surface.clip_contents = false
 	board_margin.add_child(board_surface)
 	_build_board_world_layer(board_surface)
 
@@ -277,7 +292,7 @@ func _build_layout() -> void:
 	_board_holder.add_child(_board_view)
 
 	var side_scroll := ScrollContainer.new()
-	side_scroll.custom_minimum_size = Vector2(260, 0)
+	side_scroll.custom_minimum_size = Vector2(270, 0)
 	side_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_scroll.size_flags_horizontal = Control.SIZE_SHRINK_END
 	side_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -285,12 +300,12 @@ func _build_layout() -> void:
 	_sidebar_scroll = side_scroll
 
 	var side_rail := VBoxContainer.new()
-	side_rail.custom_minimum_size = Vector2(252, 0)
+	side_rail.custom_minimum_size = Vector2(262, 0)
 	side_rail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_rail.add_theme_constant_override("separation", 8)
 	side_scroll.add_child(side_rail)
 
-	_selected_unit_panel = _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
+	_selected_unit_panel = _make_panel_card(COLOR_BORDER, Color(0.05, 0.08, 0.13, 0.92))
 	side_rail.add_child(_selected_unit_panel)
 	var info_margin := _wrap_panel_content(_selected_unit_panel, 12, 12)
 	var info_layout := VBoxContainer.new()
@@ -321,18 +336,18 @@ func _build_layout() -> void:
 	_status_label = _make_rich_body_label()
 	info_layout.add_child(_status_label)
 
-	var objective_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
+	var objective_panel := _make_panel_card(COLOR_GOLD, Color(0.05, 0.08, 0.13, 0.92))
 	side_rail.add_child(objective_panel)
 	var objective_margin := _wrap_panel_content(objective_panel, 12, 10)
 	var objective_layout := VBoxContainer.new()
 	objective_layout.add_theme_constant_override("separation", 8)
 	objective_margin.add_child(objective_layout)
-	objective_layout.add_child(_make_section_title("Objective"))
+	objective_layout.add_child(_make_section_title("Battle Status"))
 	objective_layout.add_child(_make_section_divider())
 	_preview_label = _make_rich_body_label()
 	objective_layout.add_child(_preview_label)
 
-	var log_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
+	var log_panel := _make_panel_card(COLOR_P1, Color(0.04, 0.07, 0.12, 0.90))
 	log_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side_rail.add_child(log_panel)
 	var log_margin := _wrap_panel_content(log_panel, 12, 10)
@@ -361,9 +376,9 @@ func _build_layout() -> void:
 	var overlay_margin := MarginContainer.new()
 	overlay_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay_margin.add_theme_constant_override("margin_top", 92)
+	overlay_margin.add_theme_constant_override("margin_top", 78)
 	overlay_margin.add_theme_constant_override("margin_right", 0)
-	overlay_margin.add_theme_constant_override("margin_bottom", 88)
+	overlay_margin.add_theme_constant_override("margin_bottom", 74)
 	overlay_layer.add_child(overlay_margin)
 
 	var overlay_row := HBoxContainer.new()
@@ -465,7 +480,8 @@ func _build_layout() -> void:
 	_mini_board_holder.add_child(_mini_board_view)
 
 	var bottom_panel := _make_panel_card(COLOR_BORDER, COLOR_SURFACE)
-	bottom_panel.custom_minimum_size = Vector2(0, 98)
+	bottom_panel.visible = false
+	bottom_panel.custom_minimum_size = Vector2(0, 78)
 	root_layout.add_child(bottom_panel)
 	var bottom_margin := _wrap_panel_content(bottom_panel, 16, 8)
 	var bottom_col := VBoxContainer.new()
@@ -474,6 +490,7 @@ func _build_layout() -> void:
 
 	# Permanent hint strip
 	var hint_strip := Label.new()
+	hint_strip.visible = false
 	hint_strip.text = "◆  Select a unit  ·  [M] Move   [A] Attack  ·  [ESC] Pause"
 	hint_strip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_strip.add_theme_font_override("font", FONT_MEDIUM)
@@ -488,46 +505,89 @@ func _build_layout() -> void:
 	bottom_col.add_child(controls_row)
 
 	_move_button = _make_action_button("⬆  MOVE", COLOR_GREEN)
-	_move_button.custom_minimum_size = Vector2(0, 60)
+	_move_button.custom_minimum_size = Vector2(0, 50)
 	_move_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_move_button.add_theme_font_override("font", FONT_BOLD)
-	_move_button.add_theme_font_size_override("font_size", 22)
+	_move_button.add_theme_font_size_override("font_size", 18)
 	_move_button.pressed.connect(_on_move_mode_pressed)
 	_wire_button_audio(_move_button)
 	controls_row.add_child(_move_button)
 
 	_attack_button = _make_action_button("⊕  ATTACK", COLOR_ATTACK)
-	_attack_button.custom_minimum_size = Vector2(0, 60)
+	_attack_button.custom_minimum_size = Vector2(0, 50)
 	_attack_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_attack_button.add_theme_font_override("font", FONT_BOLD)
-	_attack_button.add_theme_font_size_override("font_size", 22)
+	_attack_button.add_theme_font_size_override("font_size", 18)
 	_attack_button.pressed.connect(_on_attack_mode_pressed)
 	_wire_button_audio(_attack_button)
 	controls_row.add_child(_attack_button)
 
 	_ability_button = _make_action_button("⚡  ABILITY", Color("9a89ff"))
-	_ability_button.custom_minimum_size = Vector2(0, 60)
+	_ability_button.custom_minimum_size = Vector2(0, 50)
 	_ability_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_ability_button.add_theme_font_override("font", FONT_BOLD)
-	_ability_button.add_theme_font_size_override("font_size", 22)
+	_ability_button.add_theme_font_size_override("font_size", 18)
 	_ability_button.disabled = true
 	controls_row.add_child(_ability_button)
 
 	_pass_button = _make_action_button("»  END TURN", COLOR_GOLD)
-	_pass_button.custom_minimum_size = Vector2(0, 60)
+	_pass_button.custom_minimum_size = Vector2(0, 50)
 	_pass_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_pass_button.add_theme_font_override("font", FONT_BOLD)
-	_pass_button.add_theme_font_size_override("font_size", 22)
+	_pass_button.add_theme_font_size_override("font_size", 18)
 	_pass_button.pressed.connect(_on_pass_pressed)
 	_wire_button_audio(_pass_button)
 	controls_row.add_child(_pass_button)
 
 	_control_strip_label = null
 
+	_command_panel = _make_panel_card(COLOR_GOLD, Color(0.05, 0.08, 0.13, 0.92))
+	side_rail.add_child(_command_panel)
+	var command_margin := _wrap_panel_content(_command_panel, 12, 10)
+	var command_layout := VBoxContainer.new()
+	command_layout.add_theme_constant_override("separation", 8)
+	command_margin.add_child(command_layout)
+	command_layout.add_child(_make_section_title("Commands"))
+	command_layout.add_child(_make_section_divider())
+
+	var command_grid := GridContainer.new()
+	command_grid.columns = 2
+	command_grid.add_theme_constant_override("h_separation", 8)
+	command_grid.add_theme_constant_override("v_separation", 8)
+	command_layout.add_child(command_grid)
+
+	_move_button = _make_action_button("MOVE", COLOR_GREEN)
+	_move_button.custom_minimum_size = Vector2(0, 44)
+	_move_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_move_button.pressed.connect(_on_move_mode_pressed)
+	_wire_button_audio(_move_button)
+	command_grid.add_child(_move_button)
+
+	_attack_button = _make_action_button("FIRE", COLOR_ATTACK)
+	_attack_button.custom_minimum_size = Vector2(0, 44)
+	_attack_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_attack_button.pressed.connect(_on_attack_mode_pressed)
+	_wire_button_audio(_attack_button)
+	command_grid.add_child(_attack_button)
+
+	_ability_button = _make_action_button("SKILL", Color("9a89ff"))
+	_ability_button.custom_minimum_size = Vector2(0, 44)
+	_ability_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_ability_button.disabled = true
+	command_grid.add_child(_ability_button)
+
+	_pass_button = _make_action_button("END", COLOR_GOLD)
+	_pass_button.custom_minimum_size = Vector2(0, 44)
+	_pass_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_pass_button.pressed.connect(_on_pass_pressed)
+	_wire_button_audio(_pass_button)
+	command_grid.add_child(_pass_button)
+
 	var modal_layer := Control.new()
 	modal_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	modal_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root_margin.add_child(modal_layer)
+	_build_spectator_hud(modal_layer)
 
 	_phase_banner_panel = _make_panel_card(COLOR_GOLD, COLOR_SURFACE_ALT)
 	_phase_banner_panel.visible = false
@@ -769,6 +829,106 @@ func _make_faction_stat_box(accent: Color) -> PanelContainer:
 	return panel
 
 
+func _build_spectator_hud(parent: Control) -> void:
+	_red_team_panel = _make_team_hud(2, "RED COMMAND", COLOR_P2)
+	_red_team_panel.anchor_left = 0.0
+	_red_team_panel.anchor_top = 0.0
+	_red_team_panel.anchor_right = 0.0
+	_red_team_panel.anchor_bottom = 0.0
+	_red_team_panel.offset_left = 14
+	_red_team_panel.offset_top = 14
+	_red_team_panel.offset_right = 342
+	_red_team_panel.offset_bottom = 134
+	parent.add_child(_red_team_panel)
+	_red_king_label = _red_team_panel.get_meta("king_label") as Label
+	_red_queen_label = _red_team_panel.get_meta("queen_label") as Label
+
+	_blue_team_panel = _make_team_hud(1, "BLUE COMMAND", COLOR_P1)
+	_blue_team_panel.anchor_left = 1.0
+	_blue_team_panel.anchor_top = 0.0
+	_blue_team_panel.anchor_right = 1.0
+	_blue_team_panel.anchor_bottom = 0.0
+	_blue_team_panel.offset_left = -342
+	_blue_team_panel.offset_top = 14
+	_blue_team_panel.offset_right = -14
+	_blue_team_panel.offset_bottom = 134
+	parent.add_child(_blue_team_panel)
+	_blue_king_label = _blue_team_panel.get_meta("king_label") as Label
+	_blue_queen_label = _blue_team_panel.get_meta("queen_label") as Label
+
+	_phase_chip_panel = _make_corner_chip(COLOR_GOLD)
+	_phase_chip_panel.anchor_left = 0.0
+	_phase_chip_panel.anchor_top = 1.0
+	_phase_chip_panel.anchor_right = 0.0
+	_phase_chip_panel.anchor_bottom = 1.0
+	_phase_chip_panel.offset_left = 14
+	_phase_chip_panel.offset_top = -70
+	_phase_chip_panel.offset_right = 286
+	_phase_chip_panel.offset_bottom = -14
+	parent.add_child(_phase_chip_panel)
+	_phase_chip_label = _phase_chip_panel.get_meta("label") as Label
+
+	_actor_chip_panel = _make_corner_chip(COLOR_P1)
+	_actor_chip_panel.anchor_left = 1.0
+	_actor_chip_panel.anchor_top = 1.0
+	_actor_chip_panel.anchor_right = 1.0
+	_actor_chip_panel.anchor_bottom = 1.0
+	_actor_chip_panel.offset_left = -360
+	_actor_chip_panel.offset_top = -70
+	_actor_chip_panel.offset_right = -14
+	_actor_chip_panel.offset_bottom = -14
+	parent.add_child(_actor_chip_panel)
+	_actor_chip_label = _actor_chip_panel.get_meta("label") as Label
+
+
+func _make_team_hud(_player_id: int, title_text: String, accent: Color) -> PanelContainer:
+	var panel := _make_panel_card(accent, Color(0.04, 0.07, 0.12, 0.92))
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var margin := _wrap_panel_content(panel, 14, 10)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 5)
+	margin.add_child(col)
+
+	var title := Label.new()
+	title.text = title_text
+	title.add_theme_font_override("font", FONT_BOLD)
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", accent.lerp(Color.WHITE, 0.32))
+	col.add_child(title)
+
+	var king_label := _make_hud_line_label()
+	col.add_child(king_label)
+	var queen_label := _make_hud_line_label()
+	col.add_child(queen_label)
+
+	panel.set_meta("king_label", king_label)
+	panel.set_meta("queen_label", queen_label)
+	return panel
+
+
+func _make_corner_chip(accent: Color) -> PanelContainer:
+	var panel := _make_panel_card(accent, Color(0.04, 0.07, 0.12, 0.92))
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var margin := _wrap_panel_content(panel, 14, 8)
+	var label := Label.new()
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_override("font", FONT_BOLD)
+	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_color_override("font_color", accent.lerp(Color.WHITE, 0.32))
+	margin.add_child(label)
+	panel.set_meta("label", label)
+	return panel
+
+
+func _make_hud_line_label() -> Label:
+	var label := Label.new()
+	label.add_theme_font_override("font", FONT_MEDIUM)
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", COLOR_TEXT)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return label
+
+
 func _make_body_label() -> Label:
 	var label := Label.new()
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -829,6 +989,8 @@ func _make_modal_overlay(parent: Control, title_text: String, accent_color: Colo
 	var panel := _make_panel_card(accent_color, COLOR_SURFACE_ALT)
 	panel.custom_minimum_size = Vector2(420, 0)
 	center.add_child(panel)
+	overlay.set_meta("panel", panel)
+	overlay.set_meta("scrim", scrim)
 
 	var margin := _wrap_panel_content(panel, 22, 20)
 	var layout := VBoxContainer.new()
@@ -998,15 +1160,20 @@ func _refresh_view() -> void:
 		_p1_units_label.text = "UNITS  P1  %d/2" % _game_state.get_player_tanks(1).size()
 	if _p2_units_label != null:
 		_p2_units_label.text = "UNITS  P2  %d/2" % _game_state.get_player_tanks(2).size()
-	_map_label.text = "Map: %s\nController: P1 %s | P2 %s\nF3 toggles debug controls." % [
+	_map_label.text = "Map: %s\nController: P1 %s | P2 %s\nAI turns play automatically." % [
 		_game_state.board.map_display_name,
 		_controller_label(AppState.current_match_config.player_one_ai.controller_type),
 		_controller_label(AppState.current_match_config.player_two_ai.controller_type),
 	]
 	if _debug_panel != null:
 		_debug_panel.visible = _debug_visible and not _pause_visible and not _result_visible
+	var spectator_mode: bool = _both_players_are_ai()
+	if _sidebar_scroll != null:
+		_sidebar_scroll.visible = not spectator_mode
+	if _command_panel != null:
+		_command_panel.visible = not spectator_mode
 
-	_preview_label.text = _objective_text()
+	_preview_label.text = _battle_status_text()
 
 	_board_view.set_game_state(_game_state)
 	_board_view.set_selected_actor(_selected_actor_id)
@@ -1020,6 +1187,7 @@ func _refresh_view() -> void:
 	_recenter_board_view()
 	_recenter_mini_board()
 	_refresh_event_log()
+	_refresh_spectator_hud()
 	_refresh_debug_panel()
 	_refresh_result_overlay()
 	_refresh_pause_overlay()
@@ -1027,6 +1195,7 @@ func _refresh_view() -> void:
 	_update_button_state()
 	_autoplay_button.text = "Auto %s" % ("On" if _autoplay_enabled else "Off")
 	_speed_button.text = AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
+	_maybe_schedule_current_ai_turn()
 
 
 func _sync_human_selection() -> void:
@@ -1094,6 +1263,99 @@ func _phase_text() -> String:
 	if _game_state.turn_count <= 5:
 		return "Opening Phase"
 	return "Midgame Phase"
+
+
+func _battle_status_text() -> String:
+	if _game_state == null:
+		return "[b]READY[/b]\nLoading arena."
+	if _game_state.game_over:
+		return "[font_size=18][b]MATCH OVER[/b][/font_size]\n%s" % _winner_label()
+
+	var side_name: String = "BLUE COMMAND" if _game_state.current_player == 1 else "RED COMMAND"
+	var side_color: String = "6bc7ff" if _game_state.current_player == 1 else "ff8a76"
+	var controller_name: String = _controller_label(_current_player_controller_type())
+	var action_line: String = _activity_text
+	if _presentation_locked:
+		action_line = "Resolving action"
+	elif _current_player_controller_type() != GameTypes.ControllerType.HUMAN:
+		action_line = "%s is thinking" % controller_name
+	elif _action_mode == "move":
+		action_line = "Moving: choose a glowing hex"
+	elif _action_mode == "attack":
+		action_line = "Firing: choose a target lane"
+	elif _selected_actor_id != "":
+		action_line = "Waiting for command"
+
+	return "[color=#%s][font_size=18][b]%s TURN[/b][/font_size][/color]\n%s\n[color=#9db0cc]%s[/color]" % [
+		side_color,
+		side_name,
+		action_line,
+		_phase_text(),
+	]
+
+
+func _refresh_spectator_hud() -> void:
+	if _red_king_label == null:
+		return
+	_red_king_label.text = _team_unit_line(2, GameTypes.TankType.KTANK)
+	_red_queen_label.text = _team_unit_line(2, GameTypes.TankType.QTANK)
+	_blue_king_label.text = _team_unit_line(1, GameTypes.TankType.KTANK)
+	_blue_queen_label.text = _team_unit_line(1, GameTypes.TankType.QTANK)
+
+	if _phase_chip_label != null:
+		_phase_chip_label.text = _phase_text().to_upper()
+	if _actor_chip_label != null:
+		_actor_chip_label.text = _turn_actor_chip_text()
+		var accent: Color = COLOR_P1 if _game_state.current_player == 1 else COLOR_P2
+		_actor_chip_label.add_theme_color_override("font_color", accent.lerp(Color.WHITE, 0.3))
+		if _actor_chip_panel != null:
+			_actor_chip_panel.add_theme_stylebox_override("panel", _panel_style(accent, Color(0.04, 0.07, 0.12, 0.92)))
+
+
+func _team_unit_line(player_id: int, tank_type: int) -> String:
+	var role: String = "KING" if tank_type == GameTypes.TankType.KTANK else "QUEEN"
+	var tank: TankData = _find_tank(player_id, tank_type)
+	if tank == null:
+		return "%s  DESTROYED" % role
+	var buff_note := ""
+	if tank.active_buff != GameTypes.BuffType.NONE:
+		buff_note = "  BUFF %s" % _buff_label(tank.active_buff).to_upper()
+	return "%s  HP %d/%d  ABILITY %s%s" % [
+		role,
+		tank.hp,
+		tank.max_hp,
+		_tank_ability_label(tank_type),
+		buff_note,
+	]
+
+
+func _tank_ability_label(tank_type: int) -> String:
+	if tank_type == GameTypes.TankType.KTANK:
+		return "CENTER BLAST"
+	return "LANE LASER"
+
+
+func _turn_actor_chip_text() -> String:
+	if _game_state == null:
+		return "READY"
+	if _game_state.game_over:
+		return "%s WINS" % _winner_label().to_upper()
+
+	var tank: TankData = _game_state.get_tank(_active_actor_id)
+	if tank == null and _selected_actor_id != "":
+		tank = _game_state.get_tank(_selected_actor_id)
+
+	var side: String = "BLUE" if _game_state.current_player == 1 else "RED"
+	if tank == null:
+		return "%s THINKING" % side if _current_player_controller_type() != GameTypes.ControllerType.HUMAN else "%s TURN" % side
+
+	var role: String = "QUEEN" if tank.tank_type == GameTypes.TankType.QTANK else "KING"
+	if _presentation_locked:
+		if _activity_text.to_lower().contains("firing"):
+			return "%s %s FIRING" % [side, role]
+		if _activity_text.to_lower().contains("moving"):
+			return "%s %s MOVING" % [side, role]
+	return "%s %s READY" % [side, role]
 
 
 func _build_highlight_map() -> Dictionary:
@@ -1179,7 +1441,7 @@ func _refresh_selected_unit_panel() -> void:
 func _refresh_debug_panel() -> void:
 	if _debug_label == null:
 		return
-	_debug_label.text = "Current Player: P%d\nAction Mode: %s\nAutoplay: %s\nPresentation Locked: %s" % [
+	_debug_label.text = "Current Player: P%d\nAction Mode: %s\nDebug Auto: %s\nPresentation Locked: %s" % [
 		_game_state.current_player,
 		_action_mode if _action_mode != "" else "none",
 		"On" if _autoplay_enabled else "Off",
@@ -1236,11 +1498,12 @@ func _format_event(event_item: GameEvent) -> String:
 
 func _update_button_state() -> void:
 	var onboarding_blocking: bool = _onboarding_overlay != null and _onboarding_overlay.visible
-	var can_act: bool = not _game_state.game_over and not _autoplay_enabled and not _presentation_locked and not _pause_visible and not _result_visible and not onboarding_blocking and _selected_actor_id != ""
+	var is_human_turn: bool = _current_player_controller_type() == GameTypes.ControllerType.HUMAN
+	var can_act: bool = is_human_turn and not _game_state.game_over and not _autoplay_enabled and not _presentation_locked and not _pause_visible and not _result_visible and not onboarding_blocking and _selected_actor_id != ""
 	_move_button.disabled = not can_act
 	_attack_button.disabled = not can_act
 	_ability_button.disabled = true
-	_pass_button.disabled = _game_state.game_over or _autoplay_enabled or _presentation_locked or _pause_visible or _result_visible or onboarding_blocking
+	_pass_button.disabled = not is_human_turn or _game_state.game_over or _autoplay_enabled or _presentation_locked or _pause_visible or _result_visible or onboarding_blocking
 	_reset_button.disabled = _presentation_locked or _pause_visible
 	_ai_move_button.disabled = _game_state.game_over or _autoplay_enabled or _presentation_locked or _pause_visible or _result_visible or _current_player_controller_type() == GameTypes.ControllerType.HUMAN
 	_autoplay_button.disabled = _game_state.game_over or _presentation_locked or _pause_visible or _result_visible or not _both_players_are_ai()
@@ -1256,6 +1519,8 @@ func _update_button_state() -> void:
 
 func _on_board_cell_clicked(coord_key: String) -> void:
 	if _presentation_locked:
+		return
+	if _current_player_controller_type() != GameTypes.ControllerType.HUMAN:
 		return
 	var coord: HexCoord = HexCoord.from_key(coord_key)
 	var clicked_tank: TankData = _game_state.get_tank_at(coord)
@@ -1307,6 +1572,8 @@ func _after_action() -> void:
 
 
 func _on_move_mode_pressed() -> void:
+	if _current_player_controller_type() != GameTypes.ControllerType.HUMAN:
+		return
 	_sync_human_selection()
 	if _selected_actor_id == "":
 		return
@@ -1316,6 +1583,8 @@ func _on_move_mode_pressed() -> void:
 
 
 func _on_attack_mode_pressed() -> void:
+	if _current_player_controller_type() != GameTypes.ControllerType.HUMAN:
+		return
 	_sync_human_selection()
 	if _selected_actor_id == "":
 		return
@@ -1325,6 +1594,8 @@ func _on_attack_mode_pressed() -> void:
 
 
 func _on_pass_pressed() -> void:
+	if _current_player_controller_type() != GameTypes.ControllerType.HUMAN:
+		return
 	_debug_visible = false
 	var action: ActionData = ActionData.new(GameTypes.ActionType.PASS)
 	_execute_action(action, "Human", _manual_explanation(action))
@@ -1397,12 +1668,15 @@ func _reset_match() -> void:
 	_game_state = GameState.new(AppState.current_match_config.clone())
 	_action_mode = ""
 	_selected_actor_id = ""
+	_active_actor_id = ""
+	_activity_text = "Ready"
 	_presentation_locked = false
 	_debug_visible = false
 	_pause_visible = false
 	_result_visible = false
 	_result_dismissed = false
 	_onboarding_dismissed = false
+	_auto_ai_pending = false
 	if _startup_hint_panel != null:
 		_startup_hint_panel.visible = false
 		_startup_hint_panel.modulate = Color.WHITE
@@ -1545,7 +1819,8 @@ func _toggle_pause_overlay(force_visible: bool = true) -> void:
 func _refresh_onboarding_overlay() -> void:
 	if _onboarding_overlay == null:
 		return
-	_onboarding_overlay.visible = AppState.show_onboarding_hints and not _onboarding_dismissed and not _game_state.game_over and AppState.current_replay.turns.is_empty() and not _pause_visible and not _result_visible
+	var is_human_turn: bool = _game_state != null and _current_player_controller_type() == GameTypes.ControllerType.HUMAN
+	_onboarding_overlay.visible = AppState.show_onboarding_hints and is_human_turn and not _onboarding_dismissed and not _game_state.game_over and AppState.current_replay.turns.is_empty() and not _pause_visible and not _result_visible
 
 
 func _dismiss_onboarding(disable_forever: bool) -> void:
@@ -1567,11 +1842,19 @@ func _refresh_result_overlay() -> void:
 		return
 	var winner_id: int = _game_state.winner
 	var accent_color: Color = COLOR_GOLD if winner_id == 0 else (COLOR_P1 if winner_id == 1 else COLOR_P2)
-	var title_text: String = "Draw" if winner_id == 0 else ("%s Victory" % ("Blue Command" if winner_id == 1 else "Red Command"))
+	var winner_name: String = "Draw" if winner_id == 0 else ("Blue Command" if winner_id == 1 else "Red Command")
+	var title_text: String = "TACTICAL DRAW" if winner_id == 0 else ("%s VICTORY" % winner_name.to_upper())
+	var result_panel: PanelContainer = _result_overlay.get_meta("panel", null) as PanelContainer
+	if result_panel != null:
+		result_panel.custom_minimum_size = Vector2(520, 0)
+		result_panel.add_theme_stylebox_override("panel", _panel_style(accent_color, Color(0.04, 0.07, 0.12, 0.96)))
 	_result_title_label.text = title_text
+	_result_title_label.add_theme_font_size_override("font_size", 40)
 	_result_title_label.add_theme_color_override("font_color", accent_color.lerp(Color.WHITE, 0.18))
-	_result_summary_label.text = "[color=#9db0cc]Match Summary[/color]\n[b]%s[/b]\n\n[color=#9db0cc]Turns Recorded[/color]\n[b]%d[/b]\n\n[color=#9db0cc]Map[/color]\n[b]%s[/b]\n\n%s" % [
-		_winner_label(),
+	_result_title_label.add_theme_color_override("font_outline_color", Color(accent_color.r, accent_color.g, accent_color.b, 0.72))
+	_result_title_label.add_theme_constant_override("outline_size", 2)
+	_result_summary_label.text = "[center][color=#f0c94a][font_size=22][b]ARENA CELEBRATION[/b][/font_size][/color][/center]\n\n[color=#9db0cc]Winner[/color]\n[b]%s[/b]\n\n[color=#9db0cc]Turns Recorded[/color]\n[b]%d[/b]\n\n[color=#9db0cc]Map[/color]\n[b]%s[/b]\n\n%s" % [
+		winner_name,
 		AppState.current_replay.turns.size(),
 		_game_state.board.map_display_name,
 		ReplayAnalytics.format_summary_text(ReplayAnalytics.build_summary(AppState.current_replay)),
@@ -1677,6 +1960,8 @@ func _execute_action(action: ActionData, source_label: String, explanation: Acti
 	if _presentation_locked:
 		return
 	_presentation_locked = true
+	_activity_text = _action_activity_text(action, source_label)
+	_active_actor_id = action.actor_id
 	var acting_turn: int = _game_state.turn_count
 	var acting_player: int = _game_state.current_player
 	var previous_state: GameState = _game_state.clone()
@@ -1698,6 +1983,7 @@ func _execute_action(action: ActionData, source_label: String, explanation: Acti
 	_refresh_view()
 	await get_tree().create_timer(feedback_hold).timeout
 	_presentation_locked = false
+	_activity_text = "Ready"
 	_after_action()
 
 
@@ -1761,15 +2047,10 @@ func _history_detail_text(index: int) -> String:
 		return "History Detail: no turn selected."
 
 	var turn_data: Dictionary = AppState.current_replay.turns[index]
-	var metrics: Dictionary = turn_data.get("metrics", {})
 	var event_lines: Array[String] = []
 	for event_line: Variant in turn_data.get("events", []):
 		event_lines.append(str(event_line))
 	var metrics_summary: String = "Score %.2f" % float(turn_data.get("score", 0.0))
-	if turn_data.get("source", "") == "Minimax":
-		metrics_summary += " | Depth %s | Nodes %s" % [metrics.get("depth_completed", 0), metrics.get("nodes_searched", 0)]
-	elif turn_data.get("source", "") == "MCTS":
-		metrics_summary += " | Iter %s | Rollouts %s" % [metrics.get("iterations", 0), metrics.get("rollouts", 0)]
 
 	var events_text: String = "\n".join(event_lines)
 	return "History Detail:\n%s\n%s\n%s" % [turn_data.get("summary", ""), metrics_summary, events_text]
@@ -1789,6 +2070,20 @@ func _manual_summary(action: ActionData) -> String:
 			return "Human passed the turn."
 		_:
 			return "Human action resolved."
+
+
+func _action_activity_text(action: ActionData, source_label: String) -> String:
+	var actor_text: String = _actor_label(action.actor_id)
+	var source_text: String = source_label if source_label != "" else "Player"
+	match action.action_type:
+		GameTypes.ActionType.MOVE:
+			return "%s moving %s" % [source_text, actor_text]
+		GameTypes.ActionType.ATTACK:
+			return "%s firing with %s" % [source_text, actor_text]
+		GameTypes.ActionType.PASS:
+			return "%s ending turn" % source_text
+		_:
+			return "%s resolving action" % source_text
 
 
 func _enable_autoplay() -> void:
@@ -1812,6 +2107,31 @@ func _schedule_autoplay() -> void:
 	_autoplay_timer.start()
 
 
+func _maybe_schedule_current_ai_turn() -> void:
+	if _auto_ai_pending:
+		return
+	if not _should_auto_play_current_turn():
+		return
+	_auto_ai_pending = true
+	get_tree().create_timer(0.22).timeout.connect(_on_auto_ai_turn_timeout)
+
+
+func _on_auto_ai_turn_timeout() -> void:
+	_auto_ai_pending = false
+	if _should_auto_play_current_turn():
+		_step_current_ai_turn()
+
+
+func _should_auto_play_current_turn() -> bool:
+	if _game_state == null or _game_state.game_over:
+		return false
+	if _autoplay_enabled or _presentation_locked or _pause_visible or _result_visible:
+		return false
+	if _onboarding_overlay != null and _onboarding_overlay.visible:
+		return false
+	return _current_player_controller_type() != GameTypes.ControllerType.HUMAN
+
+
 func _both_players_are_ai() -> bool:
 	return AppState.current_match_config.player_one_ai.controller_type != GameTypes.ControllerType.HUMAN and AppState.current_match_config.player_two_ai.controller_type != GameTypes.ControllerType.HUMAN
 
@@ -1820,7 +2140,7 @@ func _ai_status_text() -> String:
 	var p1_type: String = _controller_label(AppState.current_match_config.player_one_ai.controller_type)
 	var p2_type: String = _controller_label(AppState.current_match_config.player_two_ai.controller_type)
 	var current_type: String = _controller_label(_game_state.get_ai_config_for_player(_game_state.current_player).controller_type)
-	return "Controllers: P1 %s | P2 %s\nCurrent Turn AI: %s\nAutoplay: %s" % [p1_type, p2_type, current_type, "Enabled" if _autoplay_enabled else "Disabled"]
+	return "Controllers: P1 %s | P2 %s\nCurrent Turn: %s\nAuto AI: Enabled for algorithm controllers" % [p1_type, p2_type, current_type]
 
 
 func _explanation_text() -> String:
@@ -1833,29 +2153,22 @@ func _explanation_text() -> String:
 			_:
 				return "AI Explanation: Current player is human-controlled."
 
-	var metrics: Dictionary = AppState.last_action_explanation.metrics
 	if str(AppState.last_action_explanation.summary).begins_with("MCTS"):
-		return "AI Explanation: %s\nScore %.2f | Iterations %s | Rollouts %s | %.0f ms" % [
+		return "AI Explanation: %s\nScore %.2f" % [
 			AppState.last_action_explanation.summary,
 			AppState.last_action_explanation.score,
-			metrics.get("iterations", 0),
-			metrics.get("rollouts", 0),
-			metrics.get("elapsed_ms", 0.0),
 		]
 
-	return "AI Explanation: %s\nScore %.2f | Depth %s | Nodes %s | %.0f ms" % [
+	return "AI Explanation: %s\nScore %.2f" % [
 		AppState.last_action_explanation.summary,
 		AppState.last_action_explanation.score,
-		metrics.get("depth_completed", 0),
-		metrics.get("nodes_searched", 0),
-		metrics.get("elapsed_ms", 0.0),
 	]
 
 
 func _stats_text() -> String:
 	var total_turns: int = AppState.current_replay.turns.size()
 	if total_turns == 0:
-		return "Arena Stats: no recorded turns yet.\nUse Step AI or Auto to begin.\nAccessibility: UI %.2fx | Motion %s | Contrast %s" % [
+		return "Arena Stats: no recorded turns yet.\nAlgorithm turns begin automatically.\nAccessibility: UI %.2fx | Motion %s | Contrast %s" % [
 			AppState.ui_scale,
 			"Reduced" if AppState.reduced_motion else "Standard",
 			"High" if AppState.high_contrast_mode else "Standard",
@@ -2021,7 +2334,7 @@ func _recenter_board_view() -> void:
 	var visual_size: Vector2 = _board_view.get_board_visual_size()
 	var width_scale: float = holder_size.x / maxf(visual_size.x, 1.0)
 	var height_scale: float = holder_size.y / maxf(visual_size.y, 1.0)
-	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.1, 2.18)
+	var scale_factor: float = clampf(minf(width_scale, height_scale) * 1.22, 0.1, 2.7)
 	_board_view.scale = Vector2.ONE * scale_factor
 	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.492)
 
@@ -2085,7 +2398,7 @@ func _input(event: InputEvent) -> void:
 	var is_f3: bool = key_event.keycode == KEY_F3 or key_event.physical_keycode == KEY_F3
 	if not is_f3:
 		return
-	_debug_visible = not _debug_visible
+	_debug_visible = false
 	_refresh_view()
 	accept_event()
 

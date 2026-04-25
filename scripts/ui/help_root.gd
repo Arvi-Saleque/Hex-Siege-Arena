@@ -3,6 +3,7 @@ extends Control
 const MENU_SCENE := "res://scenes/menu/main_menu.tscn"
 const MATCH_SCENE := "res://scenes/match/match_root.tscn"
 const SETTINGS_SCENE := "res://scenes/settings/settings_root.tscn"
+const HOME_BG_PATH := "res://assets/ui/home_background.png"
 const FONT_REGULAR := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Regular.ttf")
 const FONT_MEDIUM := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Medium.ttf")
 const FONT_SEMIBOLD := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-SemiBold.ttf")
@@ -29,10 +30,19 @@ func _ready() -> void:
 
 
 func _build_layout() -> void:
-	var background := ColorRect.new()
-	background.color = COLOR_BG
+	var background := TextureRect.new()
+	background.texture = _load_home_background()
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
+
+	var shade := ColorRect.new()
+	shade.color = Color(0.02, 0.03, 0.05, 0.38)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
 
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -93,7 +103,7 @@ func _build_layout() -> void:
 	hero_right_layout.add_child(_make_section_heading("Recommended First Match"))
 
 	var first_match_text := Label.new()
-	first_match_text.text = "Standard Arena\nP1 Minimax vs P2 MCTS\nAuto enabled\nReplay review after finish"
+	first_match_text.text = "Standard Arena\nP1 Minimax vs P2 MCTS\nAI starts automatically\nReplay review after finish"
 	first_match_text.add_theme_font_override("font", FONT_MEDIUM)
 	first_match_text.add_theme_font_size_override("font_size", 15)
 	first_match_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -202,6 +212,10 @@ func _make_button(text: String, callback: Callable, accent_color: Color, use_bac
 		callback.call()
 	)
 	return button
+
+
+func _load_home_background() -> Texture2D:
+	return ResourceLoader.load(HOME_BG_PATH, "Texture2D") as Texture2D
 
 
 func _make_panel_card(accent_color: Color, fill_color: Color) -> PanelContainer:

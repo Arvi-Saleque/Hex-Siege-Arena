@@ -4,6 +4,7 @@ const MATCH_SCENE := "res://scenes/match/match_root.tscn"
 const REPLAY_SCENE := "res://scenes/replay/replay_shell.tscn"
 const SETTINGS_SCENE := "res://scenes/settings/settings_root.tscn"
 const HELP_SCENE := "res://scenes/help/help_root.tscn"
+const HOME_BG_PATH := "res://assets/ui/home_background.png"
 const FONT_HEADING  := preload("res://fonts/Rajdhani/Rajdhani-Bold.ttf")
 const FONT_LABEL    := preload("res://fonts/Rajdhani/Rajdhani-SemiBold.ttf")
 const FONT_UI_BOLD  := preload("res://fonts/Inter/static/Inter_18pt-Bold.ttf")
@@ -20,14 +21,19 @@ const COLOR_GOLD := Color("f0c05e")
 const COLOR_P1 := Color("77b8ff")
 const COLOR_P2 := Color("ff8a76")
 const COLOR_GREEN := Color("69dd8e")
+const DEFAULT_TURN_LIMIT := 85
+const DEFAULT_MINIMAX_DEPTH := 6
+const DEFAULT_MINIMAX_TIME_MS := 3800
+const DEFAULT_MCTS_ROLLOUTS := 80
+const DEFAULT_MCTS_TIME_MS := 650
 
 var _p1_controller: OptionButton
 var _p2_controller: OptionButton
 var _map_select: OptionButton
 # Stepper state (replace SpinBox)
-var _turns_value: int = 85
-var _depth_value: int = 4
-var _rollouts_value: int = 250
+var _turns_value: int = DEFAULT_TURN_LIMIT
+var _depth_value: int = DEFAULT_MINIMAX_DEPTH
+var _rollouts_value: int = DEFAULT_MCTS_ROLLOUTS
 var _turns_value_label: Label
 var _depth_value_label: Label
 var _rollouts_value_label: Label
@@ -50,6 +56,7 @@ var _rules_mode_val: Label
 var _replay_button: Button
 var _version_label: Label
 var _transition_overlay: ColorRect
+var _neon_title_label: Label
 
 
 func _ready() -> void:
@@ -62,6 +69,85 @@ func _ready() -> void:
 
 
 func _build_layout() -> void:
+	var background := TextureRect.new()
+	background.texture = _load_home_background()
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(background)
+
+	var shade := ColorRect.new()
+	shade.color = Color(0.02, 0.03, 0.05, 0.18)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(center)
+
+	var menu_vbox := VBoxContainer.new()
+	menu_vbox.custom_minimum_size = Vector2(500, 0)
+	menu_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	menu_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	menu_vbox.add_theme_constant_override("separation", 16)
+	center.add_child(menu_vbox)
+
+	_neon_title_label = Label.new()
+	_neon_title_label.text = "Hex Siege Arena"
+	_neon_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_neon_title_label.add_theme_font_override("font", _title_font())
+	_neon_title_label.add_theme_font_size_override("font_size", 96)
+	_neon_title_label.add_theme_color_override("font_color", Color("dff8ff"))
+	_neon_title_label.add_theme_color_override("font_outline_color", Color(0.15, 0.78, 1.0, 0.82))
+	_neon_title_label.add_theme_constant_override("outline_size", 3)
+	_neon_title_label.add_theme_color_override("font_shadow_color", Color(0.95, 0.36, 0.18, 0.82))
+	_neon_title_label.add_theme_constant_override("shadow_offset_x", 0)
+	_neon_title_label.add_theme_constant_override("shadow_offset_y", 0)
+	menu_vbox.add_child(_neon_title_label)
+
+	_p1_controller = _controller_option()
+	menu_vbox.add_child(_make_field_row("P1", COLOR_P1, "PLAYER 1", _p1_controller))
+
+	_p2_controller = _controller_option()
+	menu_vbox.add_child(_make_field_row("P2", COLOR_P2, "PLAYER 2", _p2_controller))
+
+	_map_select = OptionButton.new()
+	for map_id: String in ["standard", "open", "fortress", "labyrinth"]:
+		_map_select.add_item(map_id.capitalize())
+		_map_select.set_item_metadata(_map_select.item_count - 1, map_id)
+	_map_select.item_selected.connect(_on_setup_changed)
+	_style_option_button(_map_select)
+
+	var button_grid := GridContainer.new()
+	button_grid.columns = 2
+	button_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button_grid.add_theme_constant_override("h_separation", 12)
+	button_grid.add_theme_constant_override("v_separation", 12)
+	menu_vbox.add_child(button_grid)
+
+	button_grid.add_child(_make_button("START", _on_open_match_pressed, COLOR_GOLD, 58))
+	_replay_button = _make_button("REPLAY", _on_open_replay_pressed, COLOR_P1, 58)
+	button_grid.add_child(_replay_button)
+	button_grid.add_child(_make_button("GUIDE", _on_open_help_pressed, COLOR_GREEN, 50))
+	button_grid.add_child(_make_button("SETTINGS", _on_open_settings_pressed, COLOR_BORDER.lightened(0.18), 50))
+	button_grid.add_child(_make_button("RESET", _on_reset_state_pressed, COLOR_BORDER.lightened(0.10), 48))
+	button_grid.add_child(_make_button("QUIT", _on_exit_game_pressed, COLOR_P2, 48, true))
+
+	_transition_overlay = ColorRect.new()
+	_transition_overlay.color = Color(0.03, 0.05, 0.09, 1.0)
+	_transition_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_transition_overlay)
+
+	_apply_config_to_controls()
+	call_deferred("_animate_neon_title")
+
+
+func _build_legacy_layout() -> void:
 	# ── Background ────────────────────────────────────────────────────────────
 	var background := ColorRect.new()
 	background.color = COLOR_BG
@@ -136,7 +222,7 @@ func _build_layout() -> void:
 	hero_text.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "Command a four-tank duel across a hex battlefield where Minimax and MCTS fight for center control."
+	subtitle.text = "Choose Human, Minimax, or MCTS. Algorithms play automatically."
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.add_theme_font_override("font", FONT_SMALL)
 	subtitle.add_theme_font_size_override("font_size", 14)
@@ -179,20 +265,20 @@ func _build_layout() -> void:
 	setup_header.add_child(setup_title_block)
 
 	var setup_label := Label.new()
-	setup_label.text = "// MATCH SETUP"
+	setup_label.text = "MATCH SETUP"
 	setup_label.add_theme_font_override("font", FONT_HEADING)
 	setup_label.add_theme_font_size_override("font_size", 24)
 	setup_title_block.add_child(setup_label)
 
 	var setup_subtitle := Label.new()
-	setup_subtitle.text = "Tune both commanders, choose the battleground, and launch straight into the arena."
+	setup_subtitle.text = "Pick controllers and arena, then start."
 	setup_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	setup_subtitle.add_theme_font_override("font", FONT_BODY)
 	setup_subtitle.add_theme_font_size_override("font_size", 14)
 	setup_subtitle.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	setup_title_block.add_child(setup_subtitle)
 
-	setup_header.add_child(_make_chip("⭐ AI-vs-AI Recommended", COLOR_GOLD))
+	setup_header.add_child(_make_chip("AUTO AI READY", COLOR_GOLD))
 
 	var div2 := ColorRect.new()
 	div2.custom_minimum_size = Vector2(0, 1)
@@ -201,10 +287,10 @@ func _build_layout() -> void:
 
 	# 6 field rows
 	_p1_controller = _controller_option()
-	setup_vbox.add_child(_make_field_row("●", COLOR_P1, "PLAYER 1 CONTROLLER", _p1_controller))
+	setup_vbox.add_child(_make_field_row("P1", COLOR_P1, "PLAYER 1", _p1_controller))
 
 	_p2_controller = _controller_option()
-	setup_vbox.add_child(_make_field_row("●", COLOR_P2, "PLAYER 2 CONTROLLER", _p2_controller))
+	setup_vbox.add_child(_make_field_row("P2", COLOR_P2, "PLAYER 2", _p2_controller))
 
 	_map_select = OptionButton.new()
 	for map_id: String in ["standard", "open", "fortress", "labyrinth"]:
@@ -212,19 +298,19 @@ func _build_layout() -> void:
 		_map_select.set_item_metadata(_map_select.item_count - 1, map_id)
 	_map_select.item_selected.connect(_on_setup_changed)
 	_style_option_button(_map_select)
-	setup_vbox.add_child(_make_field_row("◈", COLOR_BORDER.lightened(0.3), "ARENA MAP", _map_select))
+	setup_vbox.add_child(_make_field_row("MAP", COLOR_BORDER.lightened(0.3), "ARENA", _map_select))
 
 	var turns_stepper := _make_stepper(_turns_value, 20, 200, 5)
 	_turns_value_label = turns_stepper["value_label"]
-	setup_vbox.add_child(_make_field_row("◷", COLOR_GOLD, "TURN LIMIT", turns_stepper["hbox"]))
+	setup_vbox.add_child(_make_field_row("T", COLOR_GOLD, "TURNS", turns_stepper["hbox"]))
 
 	var depth_stepper := _make_stepper(_depth_value, 1, 6, 1)
 	_depth_value_label = depth_stepper["value_label"]
-	setup_vbox.add_child(_make_field_row("◆", COLOR_P1.darkened(0.3), "MINIMAX DEPTH", depth_stepper["hbox"]))
+	setup_vbox.add_child(_make_field_row("MM", COLOR_P1.darkened(0.3), "MINIMAX", depth_stepper["hbox"]))
 
 	var rollouts_stepper := _make_stepper(_rollouts_value, 50, 2000, 50)
 	_rollouts_value_label = rollouts_stepper["value_label"]
-	setup_vbox.add_child(_make_field_row("◎", COLOR_P2.darkened(0.3), "MCTS ROLLOUTS", rollouts_stepper["hbox"]))
+	setup_vbox.add_child(_make_field_row("MC", COLOR_P2.darkened(0.3), "MCTS", rollouts_stepper["hbox"]))
 
 	var div3 := ColorRect.new()
 	div3.custom_minimum_size = Vector2(0, 1)
@@ -235,25 +321,25 @@ func _build_layout() -> void:
 	var primary_row := HBoxContainer.new()
 	primary_row.add_theme_constant_override("separation", 12)
 	setup_vbox.add_child(primary_row)
-	primary_row.add_child(_make_button("▶  START SKIRMISH", _on_open_match_pressed, COLOR_GOLD, 58))
-	_replay_button = _make_button("⏺  REPLAY VIEWER", _on_open_replay_pressed, COLOR_P1, 56)
+	primary_row.add_child(_make_button("START MATCH", _on_open_match_pressed, COLOR_GOLD, 58))
+	_replay_button = _make_button("REPLAY", _on_open_replay_pressed, COLOR_P1, 56)
 	primary_row.add_child(_replay_button)
 
 	var secondary_row := HBoxContainer.new()
 	secondary_row.add_theme_constant_override("separation", 12)
 	setup_vbox.add_child(secondary_row)
-	secondary_row.add_child(_make_button("≡  QUICK START GUIDE", _on_open_help_pressed, COLOR_GREEN, 46))
-	secondary_row.add_child(_make_button("◎  SETTINGS", _on_open_settings_pressed, COLOR_BORDER.lightened(0.18), 46))
+	secondary_row.add_child(_make_button("GUIDE", _on_open_help_pressed, COLOR_GREEN, 46))
+	secondary_row.add_child(_make_button("SETTINGS", _on_open_settings_pressed, COLOR_BORDER.lightened(0.18), 46))
 
 	var utility_row := HBoxContainer.new()
 	utility_row.add_theme_constant_override("separation", 12)
 	setup_vbox.add_child(utility_row)
-	utility_row.add_child(_make_button("↺  RESET RUNTIME STATE", _on_reset_state_pressed, COLOR_BORDER.lightened(0.10), 44))
-	utility_row.add_child(_make_button("✕  QUIT", _on_exit_game_pressed, COLOR_P2, 44, true))
+	utility_row.add_child(_make_button("RESET", _on_reset_state_pressed, COLOR_BORDER.lightened(0.10), 44))
+	utility_row.add_child(_make_button("QUIT", _on_exit_game_pressed, COLOR_P2, 44, true))
 
 	# ══ RIGHT COLUMN ══════════════════════════════════════════════════════════
 	var right_column := VBoxContainer.new()
-	right_column.custom_minimum_size = Vector2(440, 0)
+	right_column.custom_minimum_size = Vector2(360, 0)
 	right_column.add_theme_constant_override("separation", 12)
 	right_column.size_flags_horizontal = Control.SIZE_SHRINK_END
 	root_row.add_child(right_column)
@@ -278,11 +364,7 @@ func _build_layout() -> void:
 	snap_div.color = COLOR_BORDER
 	snap_vbox.add_child(snap_div)
 
-	var srow1 := _make_snapshot_row("◉", Color(0.94, 0.75, 0.28, 1.0), "Build Step")
-	_snap_build_val = srow1["value_label"]
-	snap_vbox.add_child(srow1["hbox"])
-
-	var srow2 := _make_snapshot_row("●", COLOR_P1, "P1 / P2 Controller")
+	var srow2 := _make_snapshot_row("AI", COLOR_P1, "Controllers")
 	# Swap plain label for RichTextLabel to colour player names
 	srow2["hbox"].remove_child(srow2["value_label"])
 	srow2["value_label"].queue_free()
@@ -296,22 +378,14 @@ func _build_layout() -> void:
 	srow2["hbox"].add_child(_snap_ctrl_val)
 	snap_vbox.add_child(srow2["hbox"])
 
-	var srow3 := _make_snapshot_row("◈", COLOR_GOLD, "Map")
+	var srow3 := _make_snapshot_row("MAP", COLOR_GOLD, "Arena")
 	_snap_map_val = srow3["value_label"]
 	_snap_map_val.add_theme_color_override("font_color", Color("5bc8d4"))
 	snap_vbox.add_child(srow3["hbox"])
 
-	var srow4 := _make_snapshot_row("▶", COLOR_TEXT_MUTED, "Replay")
+	var srow4 := _make_snapshot_row("R", COLOR_TEXT_MUTED, "Replay")
 	_snap_replay_val = srow4["value_label"]
 	snap_vbox.add_child(srow4["hbox"])
-
-	var srow5 := _make_snapshot_row("⊡", Color(0.47, 0.72, 0.87, 1.0), "UI Scale")
-	_snap_scale_val = srow5["value_label"]
-	snap_vbox.add_child(srow5["hbox"])
-
-	var srow6 := _make_snapshot_row("◈", COLOR_TEXT_MUTED, "Motion / Contrast")
-	_snap_motion_val = srow6["value_label"]
-	snap_vbox.add_child(srow6["hbox"])
 
 	# ── Card 2: Arena Preview ─────────────────────────────────────────────────
 	var arena_card := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
@@ -337,7 +411,7 @@ func _build_layout() -> void:
 	var arena_head_row := HBoxContainer.new()
 	arena_head_row.add_theme_constant_override("separation", 12)
 	arena_vbox.add_child(arena_head_row)
-	arena_head_row.add_child(_make_icon_box("◈", Color(0.94, 0.75, 0.28, 0.20), 42))
+	arena_head_row.add_child(_make_icon_box("M", Color(0.94, 0.75, 0.28, 0.20), 42))
 	var arena_head_text := VBoxContainer.new()
 	arena_head_text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	arena_head_text.add_theme_constant_override("separation", 2)
@@ -362,10 +436,8 @@ func _build_layout() -> void:
 	_arena_preview_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	arena_vbox.add_child(_arena_preview_label)
 
-	arena_vbox.add_child(_make_step_badge(1, "Pick controllers and map."))
-	arena_vbox.add_child(_make_step_badge(2, "Launch the match."))
-	arena_vbox.add_child(_make_step_badge(3, "Use F3 in-game for extra tools."))
-	arena_vbox.add_child(_make_step_badge(4, "Open Replay Viewer after a finished match."))
+	arena_vbox.add_child(_make_step_badge(1, "Pick setup."))
+	arena_vbox.add_child(_make_step_badge(2, "Start match."))
 
 	# ── Card 3: Match Rules ───────────────────────────────────────────────────
 	var rules_card := _make_panel_card(COLOR_BORDER, COLOR_SURFACE_ALT)
@@ -390,7 +462,7 @@ func _build_layout() -> void:
 	var rules_head_row := HBoxContainer.new()
 	rules_head_row.add_theme_constant_override("separation", 12)
 	rules_vbox.add_child(rules_head_row)
-	rules_head_row.add_child(_make_icon_box("▶", COLOR_P1.darkened(0.4), 42))
+	rules_head_row.add_child(_make_icon_box("W", COLOR_P1.darkened(0.4), 42))
 	var rules_head_text := VBoxContainer.new()
 	rules_head_text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	rules_head_text.add_theme_constant_override("separation", 2)
@@ -404,26 +476,18 @@ func _build_layout() -> void:
 	rules_head_text.add_child(rules_heading)
 
 	var rules_win_cond := Label.new()
-	rules_win_cond.text = "Win by destroying the enemy Ktank or occupying the center hex with your own."
+	rules_win_cond.text = "Destroy the enemy Ktank or hold the center."
 	rules_win_cond.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rules_win_cond.add_theme_font_override("font", FONT_SMALL)
 	rules_win_cond.add_theme_font_size_override("font_size", 12)
 	rules_win_cond.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	rules_vbox.add_child(rules_win_cond)
 
-	var rrow1 := _make_rules_row("▸  P1 Controller")
-	_rules_p1_val = rrow1["value_label"]
-	rules_vbox.add_child(rrow1["hbox"])
-
-	var rrow2 := _make_rules_row("▸  P2 Controller")
-	_rules_p2_val = rrow2["value_label"]
-	rules_vbox.add_child(rrow2["hbox"])
-
-	var rrow3 := _make_rules_row("▸  Turn Limit")
+	var rrow3 := _make_rules_row("Turns")
 	_rules_turns_val = rrow3["value_label"]
 	rules_vbox.add_child(rrow3["hbox"])
 
-	var rrow4 := _make_rules_row("▸  Mode")
+	var rrow4 := _make_rules_row("Mode")
 	_rules_mode_val = rrow4["value_label"]
 	rules_vbox.add_child(rrow4["hbox"])
 
@@ -450,21 +514,21 @@ func _build_layout() -> void:
 	var build_head_row := HBoxContainer.new()
 	build_head_row.add_theme_constant_override("separation", 12)
 	build_vbox.add_child(build_head_row)
-	build_head_row.add_child(_make_icon_box("◆", COLOR_GREEN.darkened(0.4), 42))
+	build_head_row.add_child(_make_icon_box("A", COLOR_GREEN.darkened(0.4), 42))
 	var build_head_text := VBoxContainer.new()
 	build_head_text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	build_head_text.add_theme_constant_override("separation", 2)
 	build_head_row.add_child(build_head_text)
 
 	var build_heading := Label.new()
-	build_heading.text = "BUILD FOCUS"
+	build_heading.text = "FLOW"
 	build_heading.add_theme_font_override("font", FONT_SEMIBOLD)
 	build_heading.add_theme_font_size_override("font_size", 11)
 	build_heading.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
 	build_head_text.add_child(build_heading)
 
 	var build_body := Label.new()
-	build_body.text = "This release focuses on a cohesive front-end flow: stronger setup clarity, cleaner full-screen match pacing, replay review, onboarding, and a more intentional launch-to-result loop."
+	build_body.text = "Algorithm controllers move on their own. Human controllers wait for player input."
 	build_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	build_body.add_theme_font_override("font", FONT_BODY)
 	build_body.add_theme_font_size_override("font_size", 14)
@@ -479,6 +543,27 @@ func _build_layout() -> void:
 	add_child(_transition_overlay)
 
 	_apply_config_to_controls()
+
+
+func _animate_neon_title() -> void:
+	if _neon_title_label == null:
+		return
+	var tween := create_tween()
+	tween.set_loops()
+	tween.tween_property(_neon_title_label, "modulate", Color(0.72, 0.92, 1.0, 0.86), 0.72).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(_neon_title_label, "modulate", Color(1.0, 0.72, 0.42, 1.0), 0.12).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(0.05)
+	tween.tween_property(_neon_title_label, "modulate", Color(0.92, 0.98, 1.0, 1.0), 0.48).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+func _load_home_background() -> Texture2D:
+	return ResourceLoader.load(HOME_BG_PATH, "Texture2D") as Texture2D
+
+
+func _title_font() -> Font:
+	var font := SystemFont.new()
+	font.font_names = PackedStringArray(["Gabriola", "Segoe Script", "Brush Script MT"])
+	return font
 
 
 func _build_menu_theme() -> Theme:
@@ -503,7 +588,7 @@ func _build_menu_theme() -> Theme:
 func _make_field_row(icon_char: String, icon_color: Color, label_text: String, control: Control) -> PanelContainer:
 	var panel := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(icon_color.r, icon_color.g, icon_color.b, 0.05)
+	style.bg_color = Color(icon_color.r, icon_color.g, icon_color.b, 0.30)
 	style.corner_radius_top_left = 8
 	style.corner_radius_top_right = 8
 	style.corner_radius_bottom_left = 8
@@ -526,7 +611,7 @@ func _make_field_row(icon_char: String, icon_color: Color, label_text: String, c
 	icon_lbl.add_theme_font_override("font", FONT_BODY)
 	icon_lbl.add_theme_font_size_override("font_size", 14)
 	icon_lbl.add_theme_color_override("font_color", icon_color)
-	icon_lbl.custom_minimum_size = Vector2(18, 0)
+	icon_lbl.custom_minimum_size = Vector2(34, 0)
 	row.add_child(icon_lbl)
 
 	var field_lbl := Label.new()
@@ -534,7 +619,7 @@ func _make_field_row(icon_char: String, icon_color: Color, label_text: String, c
 	field_lbl.add_theme_font_override("font", FONT_SEMIBOLD)
 	field_lbl.add_theme_font_size_override("font_size", 11)
 	field_lbl.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	field_lbl.custom_minimum_size = Vector2(148, 0)
+	field_lbl.custom_minimum_size = Vector2(98, 0)
 	row.add_child(field_lbl)
 
 	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -611,7 +696,7 @@ func _make_snapshot_row(icon_char: String, icon_color: Color, label_text: String
 	icon_lbl.add_theme_font_override("font", FONT_BODY)
 	icon_lbl.add_theme_font_size_override("font_size", 13)
 	icon_lbl.add_theme_color_override("font_color", icon_color)
-	icon_lbl.custom_minimum_size = Vector2(16, 0)
+	icon_lbl.custom_minimum_size = Vector2(34, 0)
 	hbox.add_child(icon_lbl)
 
 	var key_lbl := Label.new()
@@ -619,7 +704,7 @@ func _make_snapshot_row(icon_char: String, icon_color: Color, label_text: String
 	key_lbl.add_theme_font_override("font", FONT_SMALL)
 	key_lbl.add_theme_font_size_override("font_size", 13)
 	key_lbl.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	key_lbl.custom_minimum_size = Vector2(130, 0)
+	key_lbl.custom_minimum_size = Vector2(96, 0)
 	hbox.add_child(key_lbl)
 
 	var val_lbl := Label.new()
@@ -817,7 +902,8 @@ func _panel_style(accent_color: Color, fill_color: Color) -> StyleBoxFlat:
 
 func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(accent_color.r, accent_color.g, accent_color.b, fill_alpha)
+	var alpha: float = maxf(fill_alpha, 0.30)
+	style.bg_color = Color(accent_color.r, accent_color.g, accent_color.b, alpha)
 	style.corner_radius_top_left = 8
 	style.corner_radius_top_right = 8
 	style.corner_radius_bottom_left = 8
@@ -876,14 +962,29 @@ func _make_chip(text: String, accent_color: Color) -> PanelContainer:
 	return chip
 
 
+func _configure_ai_defaults(ai_config: AIConfig) -> void:
+	ai_config.search_depth = DEFAULT_MINIMAX_DEPTH
+	ai_config.rollout_limit = DEFAULT_MCTS_ROLLOUTS
+	match ai_config.controller_type:
+		GameTypes.ControllerType.MINIMAX:
+			ai_config.time_budget_ms = DEFAULT_MINIMAX_TIME_MS
+		GameTypes.ControllerType.MCTS:
+			ai_config.time_budget_ms = DEFAULT_MCTS_TIME_MS
+		_:
+			ai_config.time_budget_ms = DEFAULT_MCTS_TIME_MS
+
+
 func _apply_config_to_controls() -> void:
 	var config: MatchConfig = AppState.current_match_config
 	_select_controller(_p1_controller, config.player_one_ai.controller_type)
 	_select_controller(_p2_controller, config.player_two_ai.controller_type)
 	_select_map(config.map_id)
-	_turns_value = config.max_turns
-	_depth_value = config.player_one_ai.search_depth
-	_rollouts_value = config.player_two_ai.rollout_limit
+	config.max_turns = DEFAULT_TURN_LIMIT
+	_configure_ai_defaults(config.player_one_ai)
+	_configure_ai_defaults(config.player_two_ai)
+	_turns_value = DEFAULT_TURN_LIMIT
+	_depth_value = DEFAULT_MINIMAX_DEPTH
+	_rollouts_value = DEFAULT_MCTS_ROLLOUTS
 	if _turns_value_label != null:
 		_turns_value_label.text = str(_turns_value)
 	if _depth_value_label != null:
@@ -911,9 +1012,12 @@ func _on_setup_changed(_value: Variant = null) -> void:
 	config.player_one_ai.controller_type = int(_p1_controller.get_item_metadata(_p1_controller.selected))
 	config.player_two_ai.controller_type = int(_p2_controller.get_item_metadata(_p2_controller.selected))
 	config.map_id = str(_map_select.get_item_metadata(_map_select.selected))
-	config.max_turns = _turns_value
-	config.player_one_ai.search_depth = _depth_value
-	config.player_two_ai.rollout_limit = _rollouts_value
+	_turns_value = DEFAULT_TURN_LIMIT
+	_depth_value = DEFAULT_MINIMAX_DEPTH
+	_rollouts_value = DEFAULT_MCTS_ROLLOUTS
+	config.max_turns = DEFAULT_TURN_LIMIT
+	_configure_ai_defaults(config.player_one_ai)
+	_configure_ai_defaults(config.player_two_ai)
 	config.ai_vs_ai_mode = config.player_one_ai.controller_type != GameTypes.ControllerType.HUMAN and config.player_two_ai.controller_type != GameTypes.ControllerType.HUMAN
 	AppState.save_preferences()
 	_refresh_summary()
@@ -963,7 +1067,7 @@ func _refresh_summary() -> void:
 	if _rules_turns_val != null:
 		_rules_turns_val.text = str(config.max_turns)
 	if _rules_mode_val != null:
-		_rules_mode_val.text = "AI Spectator" if config.ai_vs_ai_mode else "Local Skirmish"
+		_rules_mode_val.text = "Auto AI" if config.ai_vs_ai_mode else "Human Ready"
 
 
 func _controller_label(controller_type: int) -> String:
@@ -981,13 +1085,13 @@ func _controller_label(controller_type: int) -> String:
 func _map_preview_text(map_id: String) -> String:
 	match map_id:
 		"labyrinth":
-			return "Dense lanes, heavier obstruction pressure, and more tactical route tension. Best for deeper optimization and risk-heavy center fights."
+			return "Dense lanes and risky center routes."
 		"fortress":
-			return "More defensive structure and tighter engagement corridors. Rewards deliberate heavy-unit pressure."
+			return "Tighter corridors and defensive pressure."
 		"open":
-			return "Cleaner firing lanes and faster flank pressure. Qtanks gain more room to project control."
+			return "Open lanes and faster flanks."
 		_:
-			return "Balanced central skirmish map with one hidden bonus tile and clear tempo around the center objective."
+			return "Balanced terrain around the center."
 
 
 func _play_intro_transition() -> void:
@@ -1014,6 +1118,7 @@ func _transition_to(scene_path: String) -> void:
 
 
 func _on_open_match_pressed() -> void:
+	_on_setup_changed()
 	_transition_to(MATCH_SCENE)
 
 

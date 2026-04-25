@@ -2,17 +2,17 @@ class_name MinimaxAI
 extends RefCounted
 
 const WIN_SCORE := 100000.0
-const WEIGHT_KTANK_HP := 24.0
-const WEIGHT_QTANK_HP := 15.0
-const WEIGHT_KTANK_DISTANCE := 4.5
+const WEIGHT_KTANK_HP := 32.0
+const WEIGHT_QTANK_HP := 17.0
+const WEIGHT_KTANK_DISTANCE := 7.5
 const WEIGHT_QTANK_DISTANCE := 1.0
 const WEIGHT_ATTACK_BUFF := 8.0
 const WEIGHT_SHIELD := 7.0
 const WEIGHT_BONUS_MOVE := 5.0
-const WEIGHT_MOBILITY := 1.35
-const WEIGHT_KTANK_DANGER := 18.0
-const WEIGHT_QTANK_DANGER := 7.0
-const WEIGHT_OBJECTIVE_PRESSURE := 9.0
+const WEIGHT_MOBILITY := 1.7
+const WEIGHT_KTANK_DANGER := 28.0
+const WEIGHT_QTANK_DANGER := 9.0
+const WEIGHT_OBJECTIVE_PRESSURE := 16.0
 
 var _root_player: int = 1
 var _time_deadline_ms: int = 0
@@ -176,7 +176,7 @@ func _evaluate_tank_group(tanks: Array[TankData], prefer_center: bool) -> float:
 				score += WEIGHT_BONUS_MOVE
 
 		if prefer_center and tank.tank_type == GameTypes.TankType.KTANK and tank.position.q == 0 and tank.position.r == 0:
-			score += 25.0
+			score += 45.0
 
 	return score
 
@@ -186,7 +186,7 @@ func _center_control_bonus(state: GameState, player_id: int) -> float:
 	for tank: TankData in state.get_player_tanks(player_id):
 		if tank.tank_type != GameTypes.TankType.KTANK:
 			continue
-		score += maxf(0.0, 8.0 - float(tank.position.distance_to(HexCoord.new())))
+		score += maxf(0.0, 10.0 - float(tank.position.distance_to(HexCoord.new()))) * 4.0
 	return score
 
 
@@ -198,7 +198,7 @@ func _threat_bonus(state: GameState, player_id: int) -> float:
 			var target_tank: TankData = state.get_tank_at(target_coord)
 			if target_tank == null or target_tank.owner_id == player_id:
 				continue
-			score += 6.0 if target_tank.tank_type == GameTypes.TankType.KTANK else 3.0
+			score += 14.0 if target_tank.tank_type == GameTypes.TankType.KTANK else 5.0
 	return score
 
 

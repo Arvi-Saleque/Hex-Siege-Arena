@@ -2,7 +2,7 @@ class_name MctsAI
 extends RefCounted
 
 const WIN_SCORE := 100000.0
-const ROLLOUT_DEPTH_LIMIT := 10
+const ROLLOUT_DEPTH_LIMIT := 6
 
 
 class SearchNode:
@@ -160,7 +160,7 @@ func _choose_rollout_action(state: GameState, actions: Array[ActionData]) -> Act
 	var best_action: ActionData = actions[0]
 	var best_score: float = -INF
 	for action: ActionData in actions:
-		var score: float = _rollout_action_score(state, action) + _rng.randf_range(0.0, 1.25)
+		var score: float = _rollout_action_score(state, action) + _rng.randf_range(0.0, 0.65)
 		if score > best_score:
 			best_score = score
 			best_action = action
@@ -179,16 +179,16 @@ func _rollout_action_score(state: GameState, action: ActionData) -> float:
 	match action.action_type:
 		GameTypes.ActionType.MOVE:
 			if tank.tank_type == GameTypes.TankType.KTANK:
-				score += 20.0 - float(action.target_coord.distance_to(HexCoord.new())) * 6.0
+				score += 12.0 - float(action.target_coord.distance_to(HexCoord.new())) * 4.0
 				if action.target_coord.q == 0 and action.target_coord.r == 0:
-					score += 120.0
+					score += 70.0
 			else:
 				score += 8.0 - float(action.target_coord.distance_to(HexCoord.new()))
 			var cell: CellData = state.board.get_cell(action.target_coord)
 			if cell != null:
 				match cell.cell_type:
 					GameTypes.CellType.POWER_ATTACK, GameTypes.CellType.POWER_SHIELD, GameTypes.CellType.POWER_BONUS_MOVE:
-						score += 18.0
+						score += 8.0
 		GameTypes.ActionType.ATTACK:
 			score += _attack_rollout_score(state, tank, action)
 	return score
@@ -247,10 +247,10 @@ func _position_score(state: GameState, player_id: int) -> float:
 	var score: float = 0.0
 	for tank: TankData in state.get_player_tanks(player_id):
 		if tank.tank_type == GameTypes.TankType.KTANK:
-			score += float(tank.hp) * 22.0
-			score += maxf(0.0, 9.0 - float(tank.position.distance_to(HexCoord.new()))) * 5.0
+			score += float(tank.hp) * 18.0
+			score += maxf(0.0, 9.0 - float(tank.position.distance_to(HexCoord.new()))) * 3.5
 		else:
-			score += float(tank.hp) * 13.0
+			score += float(tank.hp) * 11.0
 
 		match tank.active_buff:
 			GameTypes.BuffType.ATTACK_MULTIPLIER:

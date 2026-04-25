@@ -64,8 +64,11 @@ const PLAYER_ACCENT := {
 	2: Color("ffe1d7"),
 }
 const WORLD_LIGHT_DIR := Vector2(-0.68, -1.0)
+const MOVE_PIXELS_PER_SECOND := 150.0
+const MOVE_MIN_SECONDS := 0.5
+const MOVE_MAX_SECONDS := 1.12
 
-var hex_size: float = 34.0
+var hex_size: float = 50.0
 var board_state: BoardState = BoardState.new()
 var game_state: GameState
 var hovered_key: String = ""
@@ -122,10 +125,6 @@ func _draw() -> void:
 		var points: PackedVector2Array = _hex_points(center)
 		var shadow_points: PackedVector2Array = _offset_points(points, Vector2(0, 11 + _tile_depth(cell)))
 		draw_colored_polygon(shadow_points, Color(0.03, 0.05, 0.08, 0.55))
-
-		var side_points: PackedVector2Array = _side_face_points(points, 8 + _tile_depth(cell))
-		if not side_points.is_empty():
-			draw_colored_polygon(side_points, fill.darkened(0.38))
 
 		var glow_color: Color = _tile_glow_color(cell)
 		if glow_color.a > 0.0:
@@ -306,115 +305,15 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 			if moved_tank != null:
 				var start_center: Vector2 = moved_tank.position.to_world_flat(hex_size)
 				var end_center: Vector2 = action.target_coord.to_world_flat(hex_size)
-				var travel_duration: float = clampf(start_center.distance_to(end_center) / 220.0, 0.32, 0.8)
-				var travel_dir: Vector2 = (end_center - start_center).normalized()
-				if travel_dir == Vector2.ZERO:
-					travel_dir = Vector2.UP
-				var settle_offset: Vector2 = travel_dir * 10.0
+				var travel_duration: float = _movement_travel_seconds(start_center, end_center)
 				_tank_motion_overrides[action.actor_id] = {
-					"start": start_center - travel_dir * 4.0,
+					"start": start_center,
 					"end": end_center,
-					"start_angle": moved_tank.facing_angle - 0.05,
+					"start_angle": moved_tank.facing_angle,
 					"end_angle": current_tank.facing_angle if current_tank != null else moved_tank.facing_angle,
 					"time_left": travel_duration,
 					"duration": travel_duration,
-					"settle_offset": settle_offset,
 				}
-				_ring_effects.append({
-					"center": start_center,
-					"color": Color("8ed9ff"),
-					"radius": 18.0,
-					"time_left": 0.18,
-					"duration": 0.18,
-					"filled": false,
-				})
-				_ring_effects.append({
-					"center": start_center,
-					"color": Color(0.62, 0.88, 1.0, 0.18),
-					"radius": 14.0,
-					"time_left": 0.12,
-					"duration": 0.12,
-					"filled": true,
-				})
-				_flash_effects.append({
-					"center": start_center,
-					"color": Color("9ec9ff"),
-					"radius": 14.0,
-					"time_left": 0.14,
-					"duration": 0.14,
-				})
-				var path_cells: Array[HexCoord] = _movement_preview_path(moved_tank, action.target_coord)
-				for index in range(path_cells.size()):
-					var path_center: Vector2 = path_cells[index].to_world_flat(hex_size)
-					_sprite_effects.append({
-						"texture": EFFECT_TRACE,
-						"center": path_center,
-						"color": Color(0.54, 0.87, 1.0, 0.22),
-						"scale_start": 0.2 + float(index) * 0.02,
-						"scale_end": 0.32 + float(index) * 0.02,
-						"rotation": moved_tank.facing_angle,
-						"time_left": travel_duration * 0.82 + float(index) * 0.02,
-						"duration": travel_duration * 0.82 + float(index) * 0.02,
-						"drift": travel_dir * 10.0,
-					})
-				_ring_effects.append({
-					"center": end_center,
-					"color": Color("7be0ff"),
-					"radius": 34.0,
-					"time_left": 0.72,
-					"duration": 0.72,
-					"delay": travel_duration * 0.78,
-					"filled": false,
-				})
-				_ring_effects.append({
-					"center": end_center,
-					"color": Color(0.66, 0.92, 1.0, 0.18),
-					"radius": 20.0,
-					"time_left": 0.42,
-					"duration": 0.42,
-					"delay": travel_duration * 0.8,
-					"filled": true,
-				})
-				_ring_effects.append({
-					"center": end_center,
-					"color": Color(0.78, 0.96, 1.0, 0.24),
-					"radius": 14.0,
-					"time_left": 0.22,
-					"duration": 0.22,
-					"delay": travel_duration * 0.82,
-					"filled": true,
-				})
-				_sprite_effects.append({
-					"texture": EFFECT_SMOKE,
-					"center": end_center,
-					"color": Color(0.72, 0.9, 1.0, 0.56),
-					"scale_start": 0.24,
-					"scale_end": 0.46,
-					"time_left": 0.58,
-					"duration": 0.58,
-					"delay": travel_duration * 0.78,
-					"drift": Vector2(0, -14),
-				})
-				_sprite_effects.append({
-					"texture": EFFECT_SPARK,
-					"center": end_center,
-					"color": Color(0.9, 0.98, 1.0, 0.62),
-					"scale_start": 0.22,
-					"scale_end": 0.38,
-					"time_left": 0.34,
-					"duration": 0.34,
-					"delay": travel_duration * 0.81,
-					"drift": Vector2(0, -6),
-				})
-				_flash_effects.append({
-					"center": end_center,
-					"color": Color(0.84, 0.97, 1.0, 0.34),
-					"radius": 28.0,
-					"time_left": 0.34,
-					"duration": 0.34,
-					"delay": travel_duration * 0.8,
-				})
-				_trigger_shake(0.3)
 		GameTypes.ActionType.ATTACK:
 			_play_attack_effect(previous_state, action)
 		GameTypes.ActionType.PASS:
@@ -429,8 +328,9 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 		_:
 			pass
 
-	for event_item: GameEvent in events:
-		_apply_event_feedback(previous_state, current_state, action, event_item)
+	if action.action_type != GameTypes.ActionType.MOVE:
+		for event_item: GameEvent in events:
+			_apply_event_feedback(previous_state, current_state, action, event_item)
 
 	queue_redraw()
 
@@ -443,8 +343,8 @@ func get_feedback_hold_seconds(action: ActionData, previous_state: GameState = n
 				if moved_tank != null:
 					var start_center: Vector2 = moved_tank.position.to_world_flat(hex_size)
 					var end_center: Vector2 = action.target_coord.to_world_flat(hex_size)
-					return clampf(start_center.distance_to(end_center) / 220.0, 0.38, 0.92)
-			return 0.45
+					return _movement_travel_seconds(start_center, end_center) + 0.04
+			return MOVE_MIN_SECONDS
 		GameTypes.ActionType.ATTACK:
 			if previous_state != null:
 				var attacker: TankData = previous_state.get_tank(action.actor_id)
@@ -474,6 +374,10 @@ func get_board_visual_size() -> Vector2:
 		max_y = maxf(max_y, center.y)
 
 	return Vector2((max_x - min_x) + hex_size * 1.7, (max_y - min_y) + hex_size * 2.3)
+
+
+func _movement_travel_seconds(start_center: Vector2, end_center: Vector2) -> float:
+	return clampf(start_center.distance_to(end_center) / MOVE_PIXELS_PER_SECOND, MOVE_MIN_SECONDS, MOVE_MAX_SECONDS)
 
 
 func _active_board() -> BoardState:
@@ -565,7 +469,11 @@ func _draw_backdrop_texture(
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
-func _draw_board_backdrop(active_board: BoardState) -> void:
+func _draw_board_backdrop(_active_board: BoardState) -> void:
+	return
+
+
+func _draw_board_backdrop_legacy(active_board: BoardState) -> void:
 	var used_rect: Rect2 = Rect2(Vector2(-420, -320), Vector2(840, 700))
 	if not active_board.cells.is_empty():
 		var min_x: float = INF
@@ -667,12 +575,13 @@ func _draw_tanks() -> void:
 			continue
 		var tank_cell: CellData = game_state.board.get_cell(tank.position)
 		var center: Vector2 = _tile_center(tank_cell) if tank_cell != null else tank.position.to_world_flat(hex_size)
-		if _tank_motion_overrides.has(tank.actor_id()):
+		var is_moving: bool = _tank_motion_overrides.has(tank.actor_id())
+		if is_moving:
 			center = _motion_override_center(tank.actor_id(), center)
 		var tank_rotation: float = _tank_draw_rotation(tank)
 		var player_color: Color = _player_primary_color(tank.owner_id)
 		var accent_color: Color = _player_accent_color(tank.owner_id)
-		var is_selected: bool = tank.actor_id() == selected_actor_id
+		var is_selected: bool = tank.actor_id() == selected_actor_id and not is_moving
 		var hit_flash_alpha: float = _tank_hit_flash_alpha(tank.actor_id())
 		var fade_alpha: float = _tank_fade_alpha(tank.actor_id())
 		var render_alpha: float = 1.0 - fade_alpha
@@ -682,11 +591,12 @@ func _draw_tanks() -> void:
 		var shadow_center: Vector2 = center + (-WORLD_LIGHT_DIR.normalized() * 13.5) + Vector2(0, 8.5)
 		draw_colored_polygon(_ellipse_points(shadow_center, shadow_size, 20), Color(0.03, 0.05, 0.08, (0.56 if not is_selected else 0.78) * render_alpha))
 		draw_colored_polygon(_ellipse_points(center + Vector2(2, 13), Vector2(17, 6.4), 18), Color(0.12, 0.18, 0.26, (0.18 if not is_selected else 0.28) * render_alpha))
-		draw_circle(center + Vector2(0, 7), 14.0, Color(ring_color.r, ring_color.g, ring_color.b, (0.08 if not is_selected else 0.18) * render_alpha))
-		draw_arc(center + Vector2(0, 7), 18.0, 0.0, TAU, 40, Color(ring_color.r, ring_color.g, ring_color.b, 0.54 * render_alpha), 2.2, true)
-		if tank.owner_id == game_state.current_player:
+		if not is_moving:
+			draw_circle(center + Vector2(0, 7), 14.0, Color(ring_color.r, ring_color.g, ring_color.b, (0.08 if not is_selected else 0.18) * render_alpha))
+			draw_arc(center + Vector2(0, 7), 18.0, 0.0, TAU, 40, Color(ring_color.r, ring_color.g, ring_color.b, 0.54 * render_alpha), 2.2, true)
+		if tank.owner_id == game_state.current_player and not is_moving:
 			draw_arc(center + Vector2(0, 7), 22.0, 0.0, TAU, 40, Color(ring_color.r, ring_color.g, ring_color.b, 0.78 * render_alpha), 2.5, true)
-		if health_ratio <= 0.45:
+		if health_ratio <= 0.45 and not is_moving:
 			draw_arc(center + Vector2(0, 7), 13.0, -PI * 0.75, PI * 0.15, 18, Color(1.0, 0.74, 0.32, 0.98 * render_alpha), 2.1, true)
 			draw_arc(center + Vector2(0, 7), 19.5, -PI * 0.75, PI * 0.15, 18, Color(1.0, 0.48, 0.36, 0.72 * render_alpha), 1.2, true)
 		if hit_flash_alpha > 0.0:
@@ -709,7 +619,7 @@ func _draw_tanks() -> void:
 			draw_string(font, center + Vector2(-10, -27), "%d" % tank.hp, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, Color("f5f7fb"))
 			draw_string(font, center + Vector2(-10, 29), "P%d" % tank.owner_id, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, accent_color)
 
-		if tank.active_buff != GameTypes.BuffType.NONE:
+		if tank.active_buff != GameTypes.BuffType.NONE and not is_moving:
 			var buff_color: Color = _buff_color(tank.active_buff)
 			draw_circle(center + Vector2(13, -13), 5.0, buff_color)
 			draw_circle(center + Vector2(13, -13), 2.0, Color("10141c"))
@@ -718,7 +628,7 @@ func _draw_tanks() -> void:
 		var bar_origin: Vector2 = center + Vector2(-bar_width * 0.5, 24)
 		draw_rect(Rect2(bar_origin, Vector2(bar_width, 5)), Color(0.05, 0.08, 0.12, 0.85))
 		draw_rect(Rect2(bar_origin + Vector2.ONE, Vector2((bar_width - 2.0) * health_ratio, 3)), _health_display_color(health_ratio))
-		if health_ratio <= 0.45:
+		if health_ratio <= 0.45 and not is_moving:
 			var smoke_alpha: float = clampf((0.52 - health_ratio) * 1.8, 0.0, 0.28) * render_alpha
 			_draw_backdrop_texture(
 				EFFECT_SMOKE,
@@ -927,6 +837,7 @@ func _tile_fill_color(cell: CellData) -> Color:
 		fill = fill.lerp(hover_mix, 0.18)
 	if cell.coord.key() == selected_key:
 		fill = fill.lerp(_selected_outline_color(), 0.22)
+	fill.a = 0.86 if cell.cell_type != GameTypes.CellType.CENTER else 0.92
 	return fill
 
 
@@ -1450,17 +1361,8 @@ func _motion_override_center(actor_id: String, fallback_center: Vector2) -> Vect
 	var progress: float = 1.0 - (time_left / duration)
 	var start_center: Vector2 = _effect_vec2(motion, "start", fallback_center)
 	var end_center: Vector2 = _effect_vec2(motion, "end", fallback_center)
-	var settle_offset: Vector2 = _effect_vec2(motion, "settle_offset", Vector2.ZERO)
-	if settle_offset == Vector2.ZERO:
-		var eased_progress: float = 1.0 - pow(1.0 - progress, 2.2)
-		return start_center.lerp(end_center, eased_progress)
-	if progress < 0.82:
-		var travel_progress: float = progress / 0.82
-		var eased_travel: float = 1.0 - pow(1.0 - travel_progress, 2.2)
-		return start_center.lerp(end_center + settle_offset, eased_travel)
-	var settle_progress: float = (progress - 0.82) / 0.18
-	var eased_settle: float = 1.0 - pow(1.0 - settle_progress, 2.6)
-	return (end_center + settle_offset).lerp(end_center, eased_settle)
+	var eased_progress: float = _smooth_motion_progress(progress)
+	return start_center.lerp(end_center, eased_progress)
 
 
 func _motion_override_angle(actor_id: String, fallback_angle: float) -> float:
@@ -1470,10 +1372,15 @@ func _motion_override_angle(actor_id: String, fallback_angle: float) -> float:
 	var duration: float = maxf(_effect_float(motion, "duration", 1.0), 0.001)
 	var time_left: float = clampf(_effect_float(motion, "time_left", 0.0), 0.0, duration)
 	var progress: float = 1.0 - (time_left / duration)
-	var eased_progress: float = 1.0 - pow(1.0 - progress, 2.2)
+	var eased_progress: float = _smooth_motion_progress(progress)
 	var start_angle: float = _effect_float(motion, "start_angle", fallback_angle)
 	var end_angle: float = _effect_float(motion, "end_angle", fallback_angle)
 	return lerp_angle(start_angle, end_angle, eased_progress)
+
+
+func _smooth_motion_progress(progress: float) -> float:
+	var clamped_progress: float = clampf(progress, 0.0, 1.0)
+	return 0.5 - cos(clamped_progress * PI) * 0.5
 
 
 func _tank_hit_flash_alpha(actor_id: String) -> float:

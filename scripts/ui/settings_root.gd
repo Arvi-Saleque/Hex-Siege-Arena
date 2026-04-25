@@ -1,6 +1,7 @@
 extends Control
 
 const MENU_SCENE := "res://scenes/menu/main_menu.tscn"
+const HOME_BG_PATH := "res://assets/ui/home_background.png"
 const FONT_REGULAR := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Regular.ttf")
 const FONT_MEDIUM := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Medium.ttf")
 const FONT_SEMIBOLD := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-SemiBold.ttf")
@@ -40,10 +41,19 @@ func _ready() -> void:
 
 
 func _build_layout() -> void:
-	var background := ColorRect.new()
-	background.color = COLOR_BG
+	var background := TextureRect.new()
+	background.texture = _load_home_background()
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
+
+	var shade := ColorRect.new()
+	shade.color = Color(0.02, 0.03, 0.05, 0.34)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
 
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -342,14 +352,14 @@ func _panel_style(accent_color: Color, fill_color: Color) -> StyleBoxFlat:
 	style.border_width_right = 1
 	style.border_width_bottom = 1
 	style.border_color = accent_color.lerp(COLOR_BORDER, 0.58)
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.24)
-	style.shadow_size = 10
+	style.shadow_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.18)
+	style.shadow_size = 14
 	return style
 
 
 func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(accent_color.r, accent_color.g, accent_color.b, fill_alpha)
+	style.bg_color = Color(accent_color.r, accent_color.g, accent_color.b, maxf(fill_alpha, 0.26))
 	style.corner_radius_top_left = 12
 	style.corner_radius_top_right = 12
 	style.corner_radius_bottom_left = 12
@@ -366,6 +376,10 @@ func _button_style(accent_color: Color, fill_alpha: float) -> StyleBoxFlat:
 	style.content_margin_right = 14.0
 	style.content_margin_bottom = 8.0
 	return style
+
+
+func _load_home_background() -> Texture2D:
+	return ResourceLoader.load(HOME_BG_PATH, "Texture2D") as Texture2D
 
 
 func _make_section_heading(text: String) -> Label:

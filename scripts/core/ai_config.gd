@@ -2,9 +2,9 @@ class_name AIConfig
 extends Resource
 
 var controller_type: int = GameTypes.ControllerType.HUMAN
-var time_budget_ms: int = 1000
-var search_depth: int = 2
-var rollout_limit: int = 250
+var time_budget_ms: int = 650
+var search_depth: int = 6
+var rollout_limit: int = 80
 var debug_enabled: bool = true
 
 
@@ -31,8 +31,8 @@ func to_snapshot() -> Dictionary:
 static func from_snapshot(snapshot: Dictionary) -> AIConfig:
 	var config := AIConfig.new()
 	config.controller_type = int(snapshot.get("controller_type", GameTypes.ControllerType.HUMAN))
-	config.time_budget_ms = int(snapshot.get("time_budget_ms", 1000))
-	config.search_depth = int(snapshot.get("search_depth", 2))
-	config.rollout_limit = int(snapshot.get("rollout_limit", 250))
+	config.time_budget_ms = int(snapshot.get("time_budget_ms", 650))
+	config.search_depth = int(snapshot.get("search_depth", 6))
+	config.rollout_limit = int(snapshot.get("rollout_limit", 80))
 	config.debug_enabled = bool(snapshot.get("debug_enabled", true))
 	return config

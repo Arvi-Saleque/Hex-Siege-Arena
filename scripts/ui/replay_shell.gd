@@ -1,6 +1,7 @@
 extends Control
 
 const MENU_SCENE := "res://scenes/menu/main_menu.tscn"
+const HOME_BG_PATH := "res://assets/ui/home_background.png"
 const FONT_REGULAR := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Regular.ttf")
 const FONT_MEDIUM := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Medium.ttf")
 const FONT_SEMIBOLD := preload("res://assets/fonts/space_grotesk/SpaceGrotesk-SemiBold.ttf")
@@ -41,6 +42,129 @@ func _ready() -> void:
 
 
 func _build_layout() -> void:
+	var background := TextureRect.new()
+	background.texture = _load_home_background()
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(background)
+
+	var shade := ColorRect.new()
+	shade.color = Color(0.02, 0.03, 0.05, 0.44)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+
+	var root_margin := MarginContainer.new()
+	root_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root_margin.add_theme_constant_override("margin_left", 22)
+	root_margin.add_theme_constant_override("margin_top", 18)
+	root_margin.add_theme_constant_override("margin_right", 22)
+	root_margin.add_theme_constant_override("margin_bottom", 18)
+	add_child(root_margin)
+
+	var center := CenterContainer.new()
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root_margin.add_child(center)
+
+	var shell := VBoxContainer.new()
+	shell.custom_minimum_size = Vector2(1080, 0)
+	shell.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	shell.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	shell.alignment = BoxContainer.ALIGNMENT_CENTER
+	shell.add_theme_constant_override("separation", 12)
+	center.add_child(shell)
+
+	var title := Label.new()
+	title.text = "REPLAY"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", FONT_BOLD)
+	title.add_theme_font_size_override("font_size", 42)
+	title.add_theme_color_override("font_color", COLOR_GOLD)
+	shell.add_child(title)
+
+	_summary_label = Label.new()
+	_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_summary_label.add_theme_font_override("font", FONT_MEDIUM)
+	_summary_label.add_theme_font_size_override("font_size", 15)
+	_summary_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
+	shell.add_child(_summary_label)
+
+	var controls := HBoxContainer.new()
+	controls.alignment = BoxContainer.ALIGNMENT_CENTER
+	controls.add_theme_constant_override("separation", 12)
+	shell.add_child(controls)
+
+	_play_button = _make_button("Play", _on_play_pressed, COLOR_GOLD)
+	controls.add_child(_play_button)
+	_step_button = _make_button("Step", _on_step_pressed, COLOR_P1)
+	controls.add_child(_step_button)
+	_restart_button = _make_button("Restart", _on_restart_pressed, COLOR_GREEN)
+	controls.add_child(_restart_button)
+	controls.add_child(_make_button("Menu", _on_back_pressed, COLOR_P2, true))
+
+	var board_panel := _make_panel_card(COLOR_P1, Color(0.04, 0.07, 0.12, 0.82))
+	board_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	board_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	shell.add_child(board_panel)
+	var board_margin := _wrap_panel_content(board_panel, 10, 10)
+
+	_board_holder = Control.new()
+	_board_holder.custom_minimum_size = Vector2(0, 520)
+	_board_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_board_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_board_holder.clip_contents = false
+	_board_holder.resized.connect(_on_board_holder_resized)
+	board_margin.add_child(_board_holder)
+
+	_board_view = BoardDebugView.new()
+	_board_view.hex_size = 46.0
+	_board_view.set_interaction_enabled(false)
+	_board_holder.add_child(_board_view)
+
+	var bottom_row := HBoxContainer.new()
+	bottom_row.custom_minimum_size = Vector2(0, 170)
+	bottom_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_row.add_theme_constant_override("separation", 12)
+	shell.add_child(bottom_row)
+
+	_turn_list = ItemList.new()
+	_turn_list.custom_minimum_size = Vector2(340, 0)
+	_turn_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_turn_list.item_selected.connect(_on_turn_selected)
+	bottom_row.add_child(_turn_list)
+
+	var detail_panel := _make_panel_card(COLOR_BORDER, Color(0.05, 0.08, 0.13, 0.80))
+	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	bottom_row.add_child(detail_panel)
+	var detail_margin := _wrap_panel_content(detail_panel, 14, 12)
+	_detail_label = Label.new()
+	_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_detail_label.add_theme_font_override("font", FONT_MEDIUM)
+	_detail_label.add_theme_font_size_override("font_size", 14)
+	detail_margin.add_child(_detail_label)
+
+	_analytics_label = Label.new()
+	_analytics_label.visible = false
+	add_child(_analytics_label)
+
+	_timer = Timer.new()
+	_timer.one_shot = true
+	_timer.timeout.connect(_on_timer_timeout)
+	add_child(_timer)
+
+	_transition_overlay = ColorRect.new()
+	_transition_overlay.color = Color(0.03, 0.05, 0.09, 1.0)
+	_transition_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_transition_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_transition_overlay)
+
+
+func _build_legacy_layout() -> void:
 	var background := ColorRect.new()
 	background.color = COLOR_BG
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -257,6 +381,10 @@ func _make_button(text: String, callback: Callable, accent_color: Color, use_bac
 	return button
 
 
+func _load_home_background() -> Texture2D:
+	return ResourceLoader.load(HOME_BG_PATH, "Texture2D") as Texture2D
+
+
 func _make_panel_card(accent_color: Color, fill_color: Color) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _panel_style(accent_color, fill_color))
@@ -369,17 +497,13 @@ func _select_index(index: int) -> void:
 		return
 
 	var turn_data: Dictionary = replay.turns[_current_index - 1]
-	var metrics: Dictionary = turn_data.get("metrics", {})
 	_apply_replay_state(turn_data.get("state_snapshot", {}))
-	_detail_label.text = "%s\n\nTurn %d | Player %d\nSource: %s\nSummary: %s\nScore: %.2f\nMetrics: %s\nState Hash: %s\n\nEvents:\n%s" % [
+	_detail_label.text = "%s\n\nTurn %d | Player %d\nSource: %s\n%s\n\n%s" % [
 		timeline_position,
 		int(turn_data.get("turn", 0)),
 		int(turn_data.get("player", 0)),
 		str(turn_data.get("source", "Unknown")),
 		str(turn_data.get("summary", "")),
-		float(turn_data.get("score", 0.0)),
-		JSON.stringify(metrics),
-		str(turn_data.get("state_hash", "")),
 		"\n".join(_string_array(turn_data.get("events", []))),
 	]
 
@@ -467,9 +591,9 @@ func _recenter_board_view() -> void:
 	var visual_size: Vector2 = _board_view.get_board_visual_size()
 	var width_scale: float = holder_size.x / maxf(visual_size.x, 1.0)
 	var height_scale: float = holder_size.y / maxf(visual_size.y, 1.0)
-	var scale_factor: float = clampf(minf(width_scale, height_scale), 0.58, 1.08)
+	var scale_factor: float = clampf(minf(width_scale, height_scale) * 1.14, 0.58, 1.42)
 	_board_view.scale = Vector2.ONE * scale_factor
-	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.52)
+	_board_view.position = Vector2(holder_size.x * 0.5, holder_size.y * 0.5)
 
 
 func _play_intro_transition() -> void:
