@@ -1085,7 +1085,7 @@ func _controller_label(controller_type: int) -> String:
 func _map_display_name(map_id: String) -> String:
 	match map_id:
 		"standard":
-			return "Siege Works"
+			return "Buried Front"
 		"open":
 			return "Open Arena"
 		"fortress":
@@ -1105,7 +1105,7 @@ func _map_preview_text(map_id: String) -> String:
 		"open":
 			return "Open lanes and faster flanks."
 		_:
-			return "Destructible gates, power crates, and contested center lanes."
+			return "Random 70-75 destructible objects bury the spawns and seal the center until routes are blasted open."
 
 
 func _play_intro_transition() -> void:

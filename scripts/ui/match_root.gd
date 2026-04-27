@@ -3,8 +3,9 @@ extends Control
 const MENU_SCENE := "res://scenes/menu/main_menu.tscn"
 const SETTINGS_SCENE := "res://scenes/settings/settings_root.tscn"
 const HELP_SCENE := "res://scenes/help/help_root.tscn"
-const AUTOPLAY_SPEED_LABELS := ["Slow", "Normal", "Fast"]
-const AUTOPLAY_SPEED_SECONDS := [0.9, 0.45, 0.15]
+const AUTOPLAY_SPEED_LABELS := ["Slow", "Normal", "Fast", "Turbo", "Instant"]
+const AUTOPLAY_SPEED_SECONDS := [0.9, 0.45, 0.16, 0.05, 0.01]
+const PLAYBACK_SPEED_SCALES := [0.75, 1.0, 1.8, 3.5, 7.0]
 const FONT_REGULAR  := preload("res://fonts/Inter/static/Inter_18pt-Regular.ttf")
 const FONT_MEDIUM   := preload("res://fonts/Inter/static/Inter_18pt-Medium.ttf")
 const FONT_SEMIBOLD := preload("res://fonts/Rajdhani/Rajdhani-SemiBold.ttf")
@@ -286,6 +287,7 @@ func _build_layout() -> void:
 
 	_board_view = BoardDebugView.new()
 	_board_view.set_game_state(_game_state)
+	_board_view.playback_speed_scale = _current_playback_speed_scale()
 	_board_view.hovered_cell_changed.connect(_on_hover_summary_changed)
 	_board_view.selected_cell_changed.connect(_on_selected_summary_changed)
 	_board_view.cell_clicked.connect(_on_board_cell_clicked)
@@ -476,6 +478,7 @@ func _build_layout() -> void:
 	_mini_board_view = BoardDebugView.new()
 	_mini_board_view.hex_size = 8.0
 	_mini_board_view.interaction_enabled = false
+	_mini_board_view.playback_speed_scale = _current_playback_speed_scale()
 	_mini_board_view.set_game_state(_game_state)
 	_mini_board_holder.add_child(_mini_board_view)
 
@@ -662,7 +665,7 @@ func _build_layout() -> void:
 	hint_label.add_theme_font_override("font", FONT_MEDIUM)
 	hint_label.add_theme_font_size_override("font_size", 14)
 	hint_label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	hint_label.text = "◆  Select a unit  ·  [M] Move   [A] Attack  ·  [ESC] Pause"
+	hint_label.text = "Select a unit  |  M Move  A Attack  Z Auto  X Speed  Esc Pause"
 	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hint_margin.add_child(hint_label)
 	modal_layer.add_child(_startup_hint_panel)
@@ -876,7 +879,7 @@ func _build_spectator_hud(parent: Control) -> void:
 	_phase_chip_panel.anchor_bottom = 1.0
 	_phase_chip_panel.offset_left = 14
 	_phase_chip_panel.offset_top = -70
-	_phase_chip_panel.offset_right = 286
+	_phase_chip_panel.offset_right = 420
 	_phase_chip_panel.offset_bottom = -14
 	parent.add_child(_phase_chip_panel)
 	_phase_chip_label = _phase_chip_panel.get_meta("label") as Label
@@ -1149,7 +1152,7 @@ func _refresh_view_legacy() -> void:
 	if _game_state.game_over:
 		_status_label.text = "Game Over: %s" % _winner_label()
 	elif _autoplay_enabled:
-		_status_label.text = "Autoplay running at %s speed." % AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
+		_status_label.text = "Autoplay running at %s." % _speed_label()
 	else:
 		if _presentation_locked:
 			_status_label.text = "Resolving action..."
@@ -1173,7 +1176,7 @@ func _refresh_view_legacy() -> void:
 	_refresh_event_log()
 	_update_button_state()
 	_autoplay_button.text = "Auto %s" % ("On" if _autoplay_enabled else "Off")
-	_speed_button.text = AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
+	_speed_button.text = _speed_button_label()
 
 
 func _refresh_view() -> void:
@@ -1228,7 +1231,8 @@ func _refresh_view() -> void:
 	_refresh_onboarding_overlay()
 	_update_button_state()
 	_autoplay_button.text = "Auto %s" % ("On" if _autoplay_enabled else "Off")
-	_speed_button.text = AUTOPLAY_SPEED_LABELS[_autoplay_speed_index]
+	_speed_button.text = _speed_button_label()
+	_apply_playback_speed()
 	_maybe_schedule_current_ai_turn()
 
 
@@ -1341,7 +1345,7 @@ func _refresh_spectator_hud() -> void:
 	_update_hud_health_bar(_blue_team_panel, "queen_bar", _find_tank(1, GameTypes.TankType.QTANK), COLOR_P1)
 
 	if _phase_chip_label != null:
-		_phase_chip_label.text = _phase_text().to_upper()
+		_phase_chip_label.text = "%s | %s" % [_phase_text().to_upper(), _speed_label()]
 	if _actor_chip_label != null:
 		_actor_chip_label.text = _turn_actor_chip_text()
 		var accent: Color = COLOR_P1 if _game_state.current_player == 1 else COLOR_P2
@@ -1691,10 +1695,7 @@ func _on_autoplay_pressed() -> void:
 
 
 func _on_speed_pressed() -> void:
-	_autoplay_speed_index = (_autoplay_speed_index + 1) % AUTOPLAY_SPEED_LABELS.size()
-	if _autoplay_enabled:
-		_schedule_autoplay()
-	_refresh_view()
+	_change_autoplay_speed(1)
 
 
 func _on_guide_pressed() -> void:
@@ -1722,7 +1723,7 @@ func _step_current_ai_turn() -> void:
 	if controller_type == GameTypes.ControllerType.HUMAN:
 		return
 
-	var config: AIConfig = _game_state.get_ai_config_for_player(_game_state.current_player).clone()
+	var config: AIConfig = _speed_adjusted_ai_config(_game_state.get_ai_config_for_player(_game_state.current_player))
 	var result: Dictionary = _choose_ai_action(controller_type, config)
 	var action: ActionData = result.get("action", ActionData.new(GameTypes.ActionType.PASS))
 	var explanation: ActionExplanation = result.get("explanation", ActionExplanation.new())
@@ -2178,7 +2179,8 @@ func _maybe_schedule_current_ai_turn() -> void:
 	if not _should_auto_play_current_turn():
 		return
 	_auto_ai_pending = true
-	get_tree().create_timer(0.22).timeout.connect(_on_auto_ai_turn_timeout)
+	var think_delay: float = 0.22 / _current_playback_speed_scale()
+	get_tree().create_timer(maxf(0.02, think_delay)).timeout.connect(_on_auto_ai_turn_timeout)
 
 
 func _on_auto_ai_turn_timeout() -> void:
@@ -2197,6 +2199,50 @@ func _should_auto_play_current_turn() -> bool:
 	return _current_player_controller_type() != GameTypes.ControllerType.HUMAN
 
 
+func _change_autoplay_speed(direction: int) -> void:
+	_autoplay_speed_index = wrapi(_autoplay_speed_index + direction, 0, AUTOPLAY_SPEED_LABELS.size())
+	_apply_playback_speed()
+	if _autoplay_enabled:
+		_schedule_autoplay()
+	_show_phase_banner(_speed_label())
+	_refresh_view()
+
+
+func _speed_label() -> String:
+	return "Speed %s x%.1f" % [AUTOPLAY_SPEED_LABELS[_autoplay_speed_index], _current_playback_speed_scale()]
+
+
+func _speed_button_label() -> String:
+	return "%s x%.1f" % [AUTOPLAY_SPEED_LABELS[_autoplay_speed_index], _current_playback_speed_scale()]
+
+
+func _current_playback_speed_scale() -> float:
+	return float(PLAYBACK_SPEED_SCALES[_autoplay_speed_index])
+
+
+func _apply_playback_speed() -> void:
+	var scale_value: float = _current_playback_speed_scale()
+	if _board_view != null:
+		_board_view.playback_speed_scale = scale_value
+	if _mini_board_view != null:
+		_mini_board_view.playback_speed_scale = scale_value
+
+
+func _speed_adjusted_ai_config(config: AIConfig) -> AIConfig:
+	var adjusted: AIConfig = config.clone()
+	var scale_value: float = _current_playback_speed_scale()
+	if scale_value <= 1.0:
+		return adjusted
+
+	adjusted.time_budget_ms = maxi(80, int(ceil(float(adjusted.time_budget_ms) / scale_value)))
+	adjusted.rollout_limit = maxi(8, int(ceil(float(adjusted.rollout_limit) / scale_value)))
+	if scale_value >= 3.5:
+		adjusted.search_depth = maxi(2, int(ceil(float(adjusted.search_depth) / minf(scale_value, 4.0))))
+	elif scale_value >= 1.8:
+		adjusted.search_depth = maxi(3, adjusted.search_depth - 1)
+	return adjusted
+
+
 func _both_players_are_ai() -> bool:
 	return AppState.current_match_config.player_one_ai.controller_type != GameTypes.ControllerType.HUMAN and AppState.current_match_config.player_two_ai.controller_type != GameTypes.ControllerType.HUMAN
 
@@ -2205,7 +2251,7 @@ func _ai_status_text() -> String:
 	var p1_type: String = _controller_label(AppState.current_match_config.player_one_ai.controller_type)
 	var p2_type: String = _controller_label(AppState.current_match_config.player_two_ai.controller_type)
 	var current_type: String = _controller_label(_game_state.get_ai_config_for_player(_game_state.current_player).controller_type)
-	return "Controllers: P1 %s | P2 %s\nCurrent Turn: %s\nAuto AI: Enabled for algorithm controllers" % [p1_type, p2_type, current_type]
+	return "Controllers: P1 %s | P2 %s\nCurrent Turn: %s\nAuto AI: Z toggles autoplay | X changes speed | %s\nHigher speeds shorten animation holds and AI thinking budgets." % [p1_type, p2_type, current_type, _speed_label()]
 
 
 func _explanation_text() -> String:
@@ -2287,7 +2333,7 @@ func _player_summary_text(player_id: int) -> String:
 
 func _preview_text() -> String:
 	if _autoplay_enabled:
-		return "Spectator mode is active. Watch board control swing in the roster strip and inspect choices from Replay and Summary."
+		return "Spectator mode is active at %s. Press X to cycle speed while the AIs play." % _speed_label()
 
 	if _selected_actor_id == "":
 		return "Select a tank to bring up tactical options. Qtanks dominate lines. Ktanks crack adjacent hexes and convert center pressure into instant wins."
@@ -2316,7 +2362,7 @@ func _preview_text() -> String:
 
 
 func _guide_text() -> String:
-	return "Quick Guide:\n- Center wins instantly for a Ktank, so mid-board tempo matters from turn one.\n- Qtank lasers stop at the first tank or blocking cell, making line control the core spacing puzzle.\n- Ktank attacks every adjacent hex, including allies, so heavy pressure can backfire.\n- Standard flow is one action per turn. Bonus Move is the main exception.\n- Minimax usually excels in sharp tactical fights. MCTS becomes more dangerous on larger, noisier maps."
+	return "Quick Guide:\n- Center wins instantly for a Ktank, so mid-board tempo matters from turn one.\n- Qtank lasers stop at the first tank or blocking cell, making line control the core spacing puzzle.\n- Ktank attacks every adjacent hex, including allies, so heavy pressure can backfire.\n- Z toggles AI-vs-AI autoplay. X cycles playback speed from Slow through Instant.\n- Standard flow is one action per turn. Bonus Move is the main exception.\n- Minimax usually excels in sharp tactical fights. MCTS becomes more dangerous on larger, noisier maps."
 
 
 func _current_focus_tank() -> TankData:
@@ -2446,6 +2492,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_Z:
 			if not _pause_visible and not _autoplay_button.disabled:
 				_on_autoplay_pressed()
+				accept_event()
+		KEY_X:
+			if not _pause_visible and not _game_state.game_over:
+				_change_autoplay_speed(1)
 				accept_event()
 		KEY_R:
 			if not _pause_visible and not _presentation_locked:

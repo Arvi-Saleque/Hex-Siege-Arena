@@ -69,6 +69,11 @@ const MOVE_MIN_SECONDS := 0.5
 const MOVE_MAX_SECONDS := 1.12
 
 var hex_size: float = 50.0
+var playback_speed_scale: float:
+	get:
+		return _playback_speed_scale
+	set(value):
+		_playback_speed_scale = clampf(value, 0.5, 8.0)
 var board_state: BoardState = BoardState.new()
 var game_state: GameState
 var hovered_key: String = ""
@@ -90,6 +95,7 @@ var _objective_tile_reactions: Dictionary = {}
 var _shake_timer: float = 0.0
 var _shake_strength: float = 0.0
 var _shake_offset: Vector2 = Vector2.ZERO
+var _playback_speed_scale: float = 1.0
 
 
 func _ready() -> void:
@@ -102,7 +108,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_pulse_time += delta * (0.35 if AppState.reduced_motion else 1.0)
-	_process_effects(delta)
+	_process_effects(delta * playback_speed_scale)
 	queue_redraw()
 
 
@@ -341,6 +347,7 @@ func play_action_feedback(previous_state: GameState, current_state: GameState, a
 
 
 func get_feedback_hold_seconds(action: ActionData, previous_state: GameState = null) -> float:
+	var hold_seconds: float = 0.22
 	match action.action_type:
 		GameTypes.ActionType.MOVE:
 			if previous_state != null:
@@ -348,18 +355,25 @@ func get_feedback_hold_seconds(action: ActionData, previous_state: GameState = n
 				if moved_tank != null:
 					var start_center: Vector2 = moved_tank.position.to_world_flat(hex_size)
 					var end_center: Vector2 = action.target_coord.to_world_flat(hex_size)
-					return _movement_travel_seconds(start_center, end_center) + 0.04
-			return MOVE_MIN_SECONDS
+					hold_seconds = _movement_travel_seconds(start_center, end_center) + 0.04
+				else:
+					hold_seconds = MOVE_MIN_SECONDS
+			else:
+				hold_seconds = MOVE_MIN_SECONDS
 		GameTypes.ActionType.ATTACK:
 			if previous_state != null:
 				var attacker: TankData = previous_state.get_tank(action.actor_id)
 				if attacker != null and attacker.tank_type == GameTypes.TankType.KTANK:
-					return 0.96
-			return 0.84
+					hold_seconds = 0.96
+				else:
+					hold_seconds = 0.84
+			else:
+				hold_seconds = 0.84
 		GameTypes.ActionType.PASS:
-			return 0.2
+			hold_seconds = 0.2
 		_:
-			return 0.22
+			hold_seconds = 0.22
+	return maxf(0.04, hold_seconds / playback_speed_scale)
 
 
 func get_board_visual_size() -> Vector2:
