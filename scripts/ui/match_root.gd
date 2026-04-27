@@ -631,7 +631,7 @@ func _build_layout() -> void:
 	result_layout.add_child(_make_overlay_button("Review Battlefield", _hide_result_overlay, COLOR_P1))
 	result_layout.add_child(_make_overlay_button("Main Menu", _on_back_pressed, COLOR_BORDER.lightened(0.15), true))
 
-	_onboarding_overlay = _make_modal_overlay(modal_layer, "Match Briefing", COLOR_P1, "Select a unit to reveal actions. Blue tiles show movement, red tiles show attacks, and the center hex is the fastest path to pressure or victory.")
+	_onboarding_overlay = _make_modal_overlay(modal_layer, "Match Briefing", COLOR_P1, "Destroy blocking objects to open lanes, then pressure the center or the enemy King. Blue tiles show movement and red tiles show fire lines.")
 	var onboarding_layout := _onboarding_overlay.get_meta("content_layout") as VBoxContainer
 	onboarding_layout.add_child(_make_overlay_button("Got It", _dismiss_onboarding.bind(false), COLOR_GREEN))
 	onboarding_layout.add_child(_make_overlay_button("Don't Show Again", _dismiss_onboarding.bind(true), COLOR_GOLD))
@@ -772,10 +772,10 @@ func _wrap_panel_content(panel: PanelContainer, horizontal_margin: int, vertical
 func _panel_style(accent_color: Color, fill_color: Color = COLOR_SURFACE) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill_color
-	style.corner_radius_top_left = 10
-	style.corner_radius_top_right = 10
-	style.corner_radius_bottom_left = 10
-	style.corner_radius_bottom_right = 10
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
 	style.border_width_left = 1
 	style.border_width_top = 1
 	style.border_width_right = 1
@@ -791,13 +791,26 @@ func _panel_style(accent_color: Color, fill_color: Color = COLOR_SURFACE) -> Sty
 	return style
 
 
+func _bar_style(fill_color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill_color
+	style.corner_radius_top_left = 3
+	style.corner_radius_top_right = 3
+	style.corner_radius_bottom_left = 3
+	style.corner_radius_bottom_right = 3
+	style.content_margin_left = 0.0
+	style.content_margin_top = 0.0
+	style.content_margin_right = 0.0
+	style.content_margin_bottom = 0.0
+	return style
+
+
 func _make_section_title(title_text: String) -> Label:
 	var label := Label.new()
 	label.text = title_text.to_upper()
 	label.add_theme_font_override("font", FONT_SEMIBOLD)
 	label.add_theme_font_size_override("font_size", 11)
 	label.add_theme_color_override("font_color", COLOR_TEXT_MUTED)
-	return label
 	return label
 
 
@@ -837,8 +850,8 @@ func _build_spectator_hud(parent: Control) -> void:
 	_red_team_panel.anchor_bottom = 0.0
 	_red_team_panel.offset_left = 14
 	_red_team_panel.offset_top = 14
-	_red_team_panel.offset_right = 342
-	_red_team_panel.offset_bottom = 134
+	_red_team_panel.offset_right = 356
+	_red_team_panel.offset_bottom = 154
 	parent.add_child(_red_team_panel)
 	_red_king_label = _red_team_panel.get_meta("king_label") as Label
 	_red_queen_label = _red_team_panel.get_meta("queen_label") as Label
@@ -848,10 +861,10 @@ func _build_spectator_hud(parent: Control) -> void:
 	_blue_team_panel.anchor_top = 0.0
 	_blue_team_panel.anchor_right = 1.0
 	_blue_team_panel.anchor_bottom = 0.0
-	_blue_team_panel.offset_left = -342
+	_blue_team_panel.offset_left = -356
 	_blue_team_panel.offset_top = 14
 	_blue_team_panel.offset_right = -14
-	_blue_team_panel.offset_bottom = 134
+	_blue_team_panel.offset_bottom = 154
 	parent.add_child(_blue_team_panel)
 	_blue_king_label = _blue_team_panel.get_meta("king_label") as Label
 	_blue_queen_label = _blue_team_panel.get_meta("queen_label") as Label
@@ -886,23 +899,29 @@ func _make_team_hud(_player_id: int, title_text: String, accent: Color) -> Panel
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var margin := _wrap_panel_content(panel, 14, 10)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 5)
+	col.add_theme_constant_override("separation", 4)
 	margin.add_child(col)
 
 	var title := Label.new()
 	title.text = title_text
 	title.add_theme_font_override("font", FONT_BOLD)
-	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_font_size_override("font_size", 19)
 	title.add_theme_color_override("font_color", accent.lerp(Color.WHITE, 0.32))
 	col.add_child(title)
 
 	var king_label := _make_hud_line_label()
 	col.add_child(king_label)
+	var king_bar := _make_hud_health_bar(accent)
+	col.add_child(king_bar)
 	var queen_label := _make_hud_line_label()
 	col.add_child(queen_label)
+	var queen_bar := _make_hud_health_bar(accent)
+	col.add_child(queen_bar)
 
 	panel.set_meta("king_label", king_label)
 	panel.set_meta("queen_label", queen_label)
+	panel.set_meta("king_bar", king_bar)
+	panel.set_meta("queen_bar", queen_bar)
 	return panel
 
 
@@ -923,10 +942,25 @@ func _make_corner_chip(accent: Color) -> PanelContainer:
 func _make_hud_line_label() -> Label:
 	var label := Label.new()
 	label.add_theme_font_override("font", FONT_MEDIUM)
-	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_font_size_override("font_size", 12)
 	label.add_theme_color_override("font_color", COLOR_TEXT)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return label
+
+
+func _make_hud_health_bar(accent: Color) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.min_value = 0.0
+	bar.max_value = 1.0
+	bar.value = 1.0
+	bar.step = 0.01
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(0, 7)
+	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_theme_stylebox_override("background", _bar_style(Color(0.02, 0.03, 0.05, 0.78)))
+	bar.add_theme_stylebox_override("fill", _bar_style(accent.lerp(Color("75df86"), 0.18)))
+	return bar
 
 
 func _make_body_label() -> Label:
@@ -1301,6 +1335,10 @@ func _refresh_spectator_hud() -> void:
 	_red_queen_label.text = _team_unit_line(2, GameTypes.TankType.QTANK)
 	_blue_king_label.text = _team_unit_line(1, GameTypes.TankType.KTANK)
 	_blue_queen_label.text = _team_unit_line(1, GameTypes.TankType.QTANK)
+	_update_hud_health_bar(_red_team_panel, "king_bar", _find_tank(2, GameTypes.TankType.KTANK), COLOR_P2)
+	_update_hud_health_bar(_red_team_panel, "queen_bar", _find_tank(2, GameTypes.TankType.QTANK), COLOR_P2)
+	_update_hud_health_bar(_blue_team_panel, "king_bar", _find_tank(1, GameTypes.TankType.KTANK), COLOR_P1)
+	_update_hud_health_bar(_blue_team_panel, "queen_bar", _find_tank(1, GameTypes.TankType.QTANK), COLOR_P1)
 
 	if _phase_chip_label != null:
 		_phase_chip_label.text = _phase_text().to_upper()
@@ -1312,6 +1350,33 @@ func _refresh_spectator_hud() -> void:
 			_actor_chip_panel.add_theme_stylebox_override("panel", _panel_style(accent, Color(0.04, 0.07, 0.12, 0.92)))
 
 
+func _update_hud_health_bar(panel: PanelContainer, meta_key: String, tank: TankData, accent: Color) -> void:
+	if panel == null or not panel.has_meta(meta_key):
+		return
+	var bar: ProgressBar = panel.get_meta(meta_key) as ProgressBar
+	if bar == null:
+		return
+	if tank == null:
+		bar.max_value = 1.0
+		bar.value = 0.0
+		bar.modulate = Color(1.0, 1.0, 1.0, 0.38)
+		bar.add_theme_stylebox_override("fill", _bar_style(Color(0.25, 0.3, 0.38, 0.42)))
+		return
+	var ratio: float = clampf(float(tank.hp) / maxf(float(tank.max_hp), 1.0), 0.0, 1.0)
+	bar.max_value = maxf(float(tank.max_hp), 1.0)
+	bar.value = maxf(float(tank.hp), 0.0)
+	bar.modulate = Color.WHITE
+	bar.add_theme_stylebox_override("fill", _bar_style(_hud_health_color(ratio, accent)))
+
+
+func _hud_health_color(ratio: float, accent: Color) -> Color:
+	if ratio <= 0.3:
+		return Color("ff6673")
+	if ratio <= 0.6:
+		return Color("f0c94a")
+	return accent.lerp(Color("75df86"), 0.28)
+
+
 func _team_unit_line(player_id: int, tank_type: int) -> String:
 	var role: String = "KING" if tank_type == GameTypes.TankType.KTANK else "QUEEN"
 	var tank: TankData = _find_tank(player_id, tank_type)
@@ -1320,7 +1385,7 @@ func _team_unit_line(player_id: int, tank_type: int) -> String:
 	var buff_note := ""
 	if tank.active_buff != GameTypes.BuffType.NONE:
 		buff_note = "  BUFF %s" % _buff_label(tank.active_buff).to_upper()
-	return "%s  HP %d/%d  ABILITY %s%s" % [
+	return "%s  %d/%d  %s%s" % [
 		role,
 		tank.hp,
 		tank.max_hp,
@@ -1853,7 +1918,7 @@ func _refresh_result_overlay() -> void:
 	_result_title_label.add_theme_color_override("font_color", accent_color.lerp(Color.WHITE, 0.18))
 	_result_title_label.add_theme_color_override("font_outline_color", Color(accent_color.r, accent_color.g, accent_color.b, 0.72))
 	_result_title_label.add_theme_constant_override("outline_size", 2)
-	_result_summary_label.text = "[center][color=#f0c94a][font_size=22][b]ARENA CELEBRATION[/b][/font_size][/color][/center]\n\n[color=#9db0cc]Winner[/color]\n[b]%s[/b]\n\n[color=#9db0cc]Turns Recorded[/color]\n[b]%d[/b]\n\n[color=#9db0cc]Map[/color]\n[b]%s[/b]\n\n%s" % [
+	_result_summary_label.text = "[center][color=#f0c94a][font_size=22][b]BATTLE REPORT[/b][/font_size][/color][/center]\n\n[color=#9db0cc]Winner[/color]\n[b]%s[/b]\n\n[color=#9db0cc]Turns Recorded[/color]\n[b]%d[/b]\n\n[color=#9db0cc]Map[/color]\n[b]%s[/b]\n\n%s" % [
 		winner_name,
 		AppState.current_replay.turns.size(),
 		_game_state.board.map_display_name,

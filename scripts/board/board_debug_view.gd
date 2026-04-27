@@ -22,35 +22,35 @@ const TANK_SPRITES := {
 		"track": preload("res://assets/art/tanks2d/p1_qtrack.png"),
 		"hull": preload("res://assets/art/tanks2d/p1_qhull.png"),
 		"gun": preload("res://assets/art/tanks2d/p1_qgun.png"),
-		"scale": 0.34,
+		"scale": 0.36,
 	},
 	"1_1": {
 		"track": preload("res://assets/art/tanks2d/p1_ktrack.png"),
 		"hull": preload("res://assets/art/tanks2d/p1_khull.png"),
 		"gun": preload("res://assets/art/tanks2d/p1_kgun.png"),
-		"scale": 0.36,
+		"scale": 0.39,
 	},
 	"2_0": {
 		"track": preload("res://assets/art/tanks2d/p2_qtrack.png"),
 		"hull": preload("res://assets/art/tanks2d/p2_qhull.png"),
 		"gun": preload("res://assets/art/tanks2d/p2_qgun.png"),
-		"scale": 0.34,
+		"scale": 0.36,
 	},
 	"2_1": {
 		"track": preload("res://assets/art/tanks2d/p2_ktrack.png"),
 		"hull": preload("res://assets/art/tanks2d/p2_khull.png"),
 		"gun": preload("res://assets/art/tanks2d/p2_kgun.png"),
-		"scale": 0.36,
+		"scale": 0.39,
 	},
 }
 
 const COLOR_BY_TYPE := {
-	GameTypes.CellType.EMPTY: Color("232a37"),
-	GameTypes.CellType.CENTER: Color("e7be37"),
-	GameTypes.CellType.WALL: Color("5b6475"),
-	GameTypes.CellType.BLOCK: Color("7a5933"),
-	GameTypes.CellType.ARMOR_BLOCK: Color("a8b0bd"),
-	GameTypes.CellType.POWER_BLOCK: Color("9757c9"),
+	GameTypes.CellType.EMPTY: Color("2a323e"),
+	GameTypes.CellType.CENTER: Color("d6a92f"),
+	GameTypes.CellType.WALL: Color("4a5360"),
+	GameTypes.CellType.BLOCK: Color("8a6138"),
+	GameTypes.CellType.ARMOR_BLOCK: Color("8f9ba8"),
+	GameTypes.CellType.POWER_BLOCK: Color("8250bb"),
 	GameTypes.CellType.POWER_ATTACK: Color("e64f67"),
 	GameTypes.CellType.POWER_SHIELD: Color("5fa8ff"),
 	GameTypes.CellType.POWER_BONUS_MOVE: Color("57d477"),
@@ -123,8 +123,13 @@ func _draw() -> void:
 		var fill: Color = _tile_fill_color(cell)
 
 		var points: PackedVector2Array = _hex_points(center)
-		var shadow_points: PackedVector2Array = _offset_points(points, Vector2(0, 11 + _tile_depth(cell)))
+		var depth: float = _tile_depth(cell)
+		var shadow_points: PackedVector2Array = _offset_points(points, Vector2(0, 11 + depth))
 		draw_colored_polygon(shadow_points, Color(0.03, 0.05, 0.08, 0.55))
+		var side_face: PackedVector2Array = _side_face_points(points, depth)
+		if not side_face.is_empty():
+			draw_colored_polygon(side_face, _tile_side_color(cell, fill))
+			draw_polyline(_closed_polyline(side_face), Color(0.02, 0.03, 0.05, 0.36), 1.1, true)
 
 		var glow_color: Color = _tile_glow_color(cell)
 		if glow_color.a > 0.0:
@@ -405,14 +410,33 @@ func _tile_center(cell: CellData) -> Vector2:
 
 func _tile_depth(cell: CellData) -> float:
 	if cell.cell_type == GameTypes.CellType.CENTER:
-		return 8.0
+		return 10.0
 	if cell.cell_type == GameTypes.CellType.WALL or cell.cell_type == GameTypes.CellType.ARMOR_BLOCK:
-		return 6.0
+		return 8.0
 	if cell.cell_type == GameTypes.CellType.BLOCK or cell.cell_type == GameTypes.CellType.POWER_BLOCK:
-		return 5.0
+		return 7.0
 	if cell.coord.key() == hovered_key or cell.coord.key() == selected_key:
 		return 5.0
-	return 2.0
+	return 3.0
+
+
+func _tile_side_color(cell: CellData, fill: Color) -> Color:
+	var side_color: Color = fill.darkened(0.33)
+	match cell.cell_type:
+		GameTypes.CellType.CENTER:
+			side_color = Color("856315")
+		GameTypes.CellType.WALL:
+			side_color = Color("28303a")
+		GameTypes.CellType.BLOCK:
+			side_color = Color("4e3825")
+		GameTypes.CellType.ARMOR_BLOCK:
+			side_color = Color("4b5664")
+		GameTypes.CellType.POWER_BLOCK:
+			side_color = Color("3c2459")
+		_:
+			pass
+	side_color.a = 0.96
+	return side_color
 
 
 func _tile_glow_color(cell: CellData) -> Color:
@@ -470,7 +494,9 @@ func _draw_backdrop_texture(
 
 
 func _draw_board_backdrop(_active_board: BoardState) -> void:
-	return
+	if hex_size < 18.0:
+		return
+	_draw_board_backdrop_legacy(_active_board)
 
 
 func _draw_board_backdrop_legacy(active_board: BoardState) -> void:
@@ -587,6 +613,8 @@ func _draw_tanks() -> void:
 		var render_alpha: float = 1.0 - fade_alpha
 		var health_ratio: float = float(tank.hp) / maxf(float(tank.max_hp), 1.0)
 		var ring_color: Color = player_color.lerp(Color("ff6d72"), clampf((0.52 - health_ratio) * 1.95, 0.0, 0.82))
+		if is_moving:
+			_draw_tank_motion_trail(tank.actor_id(), center, render_alpha)
 		var shadow_size: Vector2 = Vector2(22, 8.5) if not is_selected else Vector2(25, 9.5)
 		var shadow_center: Vector2 = center + (-WORLD_LIGHT_DIR.normalized() * 13.5) + Vector2(0, 8.5)
 		draw_colored_polygon(_ellipse_points(shadow_center, shadow_size, 20), Color(0.03, 0.05, 0.08, (0.56 if not is_selected else 0.78) * render_alpha))
@@ -640,6 +668,29 @@ func _draw_tanks() -> void:
 			if health_ratio <= 0.25:
 				draw_circle(center + _rotated_offset(Vector2(8, -6), tank_rotation), 2.6, Color(1.0, 0.76, 0.45, 0.88 * render_alpha))
 				draw_circle(center + _rotated_offset(Vector2(-7, -4), tank_rotation), 1.9, Color(1.0, 0.56, 0.42, 0.76 * render_alpha))
+
+
+func _draw_tank_motion_trail(actor_id: String, center: Vector2, alpha: float) -> void:
+	var motion: Dictionary = _tank_motion_overrides.get(actor_id, {})
+	if motion.is_empty():
+		return
+	var start_center: Vector2 = _effect_vec2(motion, "start", center)
+	var end_center: Vector2 = _effect_vec2(motion, "end", center)
+	var travel_vector: Vector2 = end_center - start_center
+	if travel_vector.length() < 1.0:
+		return
+	var forward: Vector2 = travel_vector.normalized()
+	var lateral: Vector2 = Vector2(-forward.y, forward.x)
+	var duration: float = maxf(_effect_float(motion, "duration", 1.0), 0.001)
+	var time_left: float = clampf(_effect_float(motion, "time_left", 0.0), 0.0, duration)
+	var progress: float = 1.0 - (time_left / duration)
+	var trail_alpha: float = (0.2 + 0.36 * sin(progress * PI)) * alpha
+	var trail_end: Vector2 = center - forward * 18.0
+	var trail_start: Vector2 = start_center.lerp(trail_end, clampf(progress * 0.55, 0.0, 1.0))
+	for side in [-1.0, 1.0]:
+		var offset: Vector2 = lateral * side * 8.0
+		draw_line(trail_start + offset, trail_end + offset, Color(0.6, 0.7, 0.78, trail_alpha * 0.32), 3.1)
+		draw_line(trail_start + offset + forward * 5.0, trail_end + offset, Color(0.05, 0.07, 0.1, trail_alpha * 0.42), 1.4)
 
 
 func _draw_tank_fadeouts(font: Font) -> void:
@@ -748,10 +799,18 @@ func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2A
 	var inset: PackedVector2Array = _scaled_points(points, center, 0.72)
 	match cell.cell_type:
 		GameTypes.CellType.EMPTY:
-			draw_polyline(PackedVector2Array([inset[5], inset[0], inset[1]]), fill.lightened(0.18), 1.1, true)
+			var panel_line: Color = Color(0.74, 0.84, 0.96, 0.12)
+			var groove_line: Color = Color(0.02, 0.03, 0.05, 0.34)
+			draw_polyline(PackedVector2Array([inset[5], inset[0], inset[1]]), panel_line, 1.15, true)
+			draw_line(center + Vector2(-15, -5), center + Vector2(15, -5), groove_line, 1.2)
+			draw_line(center + Vector2(-10, 10), center + Vector2(10, 10), Color(0.76, 0.86, 0.96, 0.08), 1.0)
+			for rivet_index in [0, 2, 4]:
+				draw_circle(points[rivet_index].lerp(center, 0.36), 1.55, Color(0.76, 0.86, 0.96, 0.16))
 		GameTypes.CellType.CENTER:
-			draw_circle(center, hex_size * 0.28, Color("fff4ba"))
-			draw_arc(center, hex_size * 0.44, 0.0, TAU, 36, Color("8c6317"), 2.2, true)
+			draw_circle(center, hex_size * 0.36, Color(1.0, 0.91, 0.42, 0.2))
+			draw_circle(center, hex_size * 0.24, Color("fff4ba"))
+			draw_arc(center, hex_size * 0.46, 0.0, TAU, 42, Color("8c6317"), 2.6, true)
+			draw_arc(center, hex_size * 0.31, 0.0, TAU, 36, Color(1.0, 0.96, 0.68, 0.72), 1.5, true)
 			draw_polyline(PackedVector2Array([
 				center + Vector2(-8, 0),
 				center + Vector2(0, -8),
@@ -760,23 +819,35 @@ func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2A
 				center + Vector2(-8, 0),
 			]), Color("8c6317"), 2.0, true)
 		GameTypes.CellType.WALL:
-			for offset_x in [-10.0, 0.0, 10.0]:
-				draw_line(center + Vector2(offset_x, -12), center + Vector2(offset_x, 12), fill.lightened(0.18), 2.0)
-			draw_line(center + Vector2(-16, -6), center + Vector2(16, -6), fill.darkened(0.22), 1.4)
+			var wall_inset: PackedVector2Array = _scaled_points(points, center, 0.66)
+			draw_colored_polygon(wall_inset, fill.darkened(0.1))
+			for offset_x in [-12.0, 0.0, 12.0]:
+				draw_line(center + Vector2(offset_x, -13), center + Vector2(offset_x, 13), Color(0.82, 0.89, 0.98, 0.18), 2.0)
+			draw_line(center + Vector2(-17, -7), center + Vector2(17, -7), fill.darkened(0.24), 1.6)
+			draw_line(center + Vector2(-15, 8), center + Vector2(15, 8), Color(0.02, 0.03, 0.05, 0.28), 2.0)
 		GameTypes.CellType.BLOCK:
+			var crate: PackedVector2Array = _scaled_points(points, center, 0.64)
+			draw_colored_polygon(crate, fill.lightened(0.05))
+			draw_polyline(_closed_polyline(crate), Color("3c2a1d"), 1.7, true)
+			draw_line(center + Vector2(-14, -7), center + Vector2(14, 7), Color("d6b07b"), 1.5)
+			draw_line(center + Vector2(-14, 7), center + Vector2(14, -7), Color("5c3d24"), 1.4)
 			draw_polyline(PackedVector2Array([
 				center + Vector2(-10, -6),
 				center + Vector2(-2, 0),
 				center + Vector2(-6, 10),
 				center + Vector2(3, 4),
 				center + Vector2(10, 12),
-			]), Color("d6b07b"), 1.8, true)
+			]), Color("f2c98d"), 1.4, true)
+			_draw_block_hp_pips(center, cell, Color("ffd48f"))
 		GameTypes.CellType.ARMOR_BLOCK:
-			draw_colored_polygon(inset, fill.lightened(0.08))
+			draw_colored_polygon(inset, fill.lightened(0.06))
 			draw_polyline(_closed_polyline(inset), Color("5a6470"), 1.6, true)
+			draw_line(center + Vector2(-17, -1), center + Vector2(17, -1), Color(0.93, 0.97, 1.0, 0.22), 2.0)
+			draw_line(center + Vector2(-13, 10), center + Vector2(13, 10), Color(0.03, 0.04, 0.06, 0.28), 1.7)
 			var armor_points: PackedVector2Array = PackedVector2Array([inset[0], inset[2], inset[4]])
 			for point: Vector2 in armor_points:
 				draw_circle(point.lerp(center, 0.22), 2.3, Color("6d7684"))
+			_draw_block_hp_pips(center, cell, Color("dbe7f5"))
 		GameTypes.CellType.POWER_BLOCK:
 			var crystal: PackedVector2Array = PackedVector2Array([
 				center + Vector2(0, -14),
@@ -785,9 +856,13 @@ func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2A
 				center + Vector2(-5, 13),
 				center + Vector2(-10, -1),
 			])
+			draw_circle(center, hex_size * 0.32, Color(0.78, 0.5, 1.0, 0.12 + 0.04 * sin(_pulse_time * 2.4)))
 			draw_colored_polygon(crystal, Color("e7c6ff"))
-			draw_polyline(_closed_polyline(crystal), Color("5d2d83"), 1.6, true)
+			draw_polyline(_closed_polyline(crystal), Color("5d2d83"), 1.8, true)
+			draw_line(center + Vector2(-4, -7), center + Vector2(4, 8), Color(1.0, 1.0, 1.0, 0.38), 1.3)
+			_draw_block_hp_pips(center, cell, Color("f4d6ff"))
 		GameTypes.CellType.POWER_ATTACK:
+			draw_circle(center, hex_size * 0.25, Color(1.0, 0.74, 0.5, 0.16))
 			draw_polyline(PackedVector2Array([
 				center + Vector2(-9, 11),
 				center + Vector2(-2, -10),
@@ -806,6 +881,7 @@ func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2A
 			draw_colored_polygon(shield, Color(1.0, 1.0, 1.0, 0.3))
 			draw_polyline(_closed_polyline(shield), Color("d6efff"), 1.8, true)
 		GameTypes.CellType.POWER_BONUS_MOVE:
+			draw_circle(center, hex_size * 0.25, Color(0.56, 1.0, 0.7, 0.14))
 			draw_polyline(PackedVector2Array([
 				center + Vector2(-10, 4),
 				center + Vector2(0, -10),
@@ -820,8 +896,22 @@ func _draw_tile_material(cell: CellData, center: Vector2, points: PackedVector2A
 			pass
 
 
+func _draw_block_hp_pips(center: Vector2, cell: CellData, pip_color: Color) -> void:
+	var hp_value: int = maxi(cell.hp, 0)
+	var max_hp: int = maxi(CellData.get_default_hp_for_type(cell.cell_type), 1)
+	var pip_start: float = -float(max_hp - 1) * 3.0
+	for index in range(max_hp):
+		var active_alpha: float = 0.92 if index < hp_value else 0.18
+		draw_circle(center + Vector2(pip_start + float(index) * 6.0, 15), 1.8, Color(pip_color.r, pip_color.g, pip_color.b, active_alpha))
+
+
 func _tile_fill_color(cell: CellData) -> Color:
 	var fill: Color = COLOR_BY_TYPE.get(cell.cell_type, Color.DIM_GRAY)
+	var variation: float = _coord_variation(cell.coord)
+	if variation > 0.5:
+		fill = fill.lightened((variation - 0.5) * 0.1)
+	else:
+		fill = fill.darkened((0.5 - variation) * 0.09)
 	var center_bias: float = clampf(1.0 - float(cell.coord.distance_to(HexCoord.new())) / maxf(float(_active_board().rings), 1.0), 0.0, 1.0)
 	var world_center: Vector2 = cell.coord.to_world_flat(hex_size)
 	var light_bias: float = clampf(((world_center.normalized().dot(-WORLD_LIGHT_DIR.normalized())) + 1.0) * 0.5, 0.0, 1.0)
@@ -839,6 +929,11 @@ func _tile_fill_color(cell: CellData) -> Color:
 		fill = fill.lerp(_selected_outline_color(), 0.22)
 	fill.a = 0.86 if cell.cell_type != GameTypes.CellType.CENTER else 0.92
 	return fill
+
+
+func _coord_variation(coord: HexCoord) -> float:
+	var hash_value: int = absi(coord.q * 928371 + coord.r * 364479 + coord.q * coord.r * 95761 + 19349663)
+	return float(hash_value % 1000) / 1000.0
 
 
 func _draw_objective_tile_effects(cell: CellData, center: Vector2, points: PackedVector2Array) -> void:
@@ -1373,8 +1468,9 @@ func _motion_override_angle(actor_id: String, fallback_angle: float) -> float:
 	var time_left: float = clampf(_effect_float(motion, "time_left", 0.0), 0.0, duration)
 	var progress: float = 1.0 - (time_left / duration)
 	var eased_progress: float = _smooth_motion_progress(progress)
-	var start_angle: float = _effect_float(motion, "start_angle", fallback_angle)
-	var end_angle: float = _effect_float(motion, "end_angle", fallback_angle)
+	var fallback_facing: float = fallback_angle - PI * 0.5
+	var start_angle: float = _tank_visual_rotation_from_facing(_effect_float(motion, "start_angle", fallback_facing))
+	var end_angle: float = _tank_visual_rotation_from_facing(_effect_float(motion, "end_angle", fallback_facing))
 	return lerp_angle(start_angle, end_angle, eased_progress)
 
 
@@ -1413,10 +1509,14 @@ func _objective_reaction_strength(coord_key: String) -> float:
 
 
 func _tank_draw_rotation(tank: TankData) -> float:
-	var base_angle: float = tank.facing_angle + PI * 0.5
+	var base_angle: float = _tank_visual_rotation_from_facing(tank.facing_angle)
 	if _tank_motion_overrides.has(tank.actor_id()):
 		return _motion_override_angle(tank.actor_id(), base_angle)
 	return base_angle
+
+
+func _tank_visual_rotation_from_facing(facing_angle: float) -> float:
+	return facing_angle + PI * 0.5
 
 
 func _apply_event_feedback(previous_state: GameState, current_state: GameState, action: ActionData, event_item: GameEvent) -> void:
@@ -1703,7 +1803,7 @@ func _play_attack_effect(previous_state: GameState, action: ActionData) -> void:
 			"color": Color(0.72, 0.98, 1.0, 0.82),
 			"scale_start": 0.3,
 			"scale_end": 0.5,
-			"rotation": attacker.facing_angle,
+			"rotation": _tank_visual_rotation_from_facing(attacker.facing_angle),
 			"time_left": 0.2,
 			"duration": 0.2,
 			"delay": 0.08,
@@ -1714,7 +1814,7 @@ func _play_attack_effect(previous_state: GameState, action: ActionData) -> void:
 			"color": Color(0.62, 0.95, 1.0, 0.48),
 			"scale_start": 0.18,
 			"scale_end": 0.3,
-			"rotation": attacker.facing_angle,
+			"rotation": _tank_visual_rotation_from_facing(attacker.facing_angle),
 			"time_left": 0.18,
 			"duration": 0.18,
 			"delay": 0.08,
@@ -1757,7 +1857,7 @@ func _play_attack_effect(previous_state: GameState, action: ActionData) -> void:
 			"color": Color(1.0, 0.78, 0.48, 0.82),
 			"scale_start": 0.3,
 			"scale_end": 0.46,
-			"rotation": attacker.facing_angle,
+			"rotation": _tank_visual_rotation_from_facing(attacker.facing_angle),
 			"time_left": 0.22,
 			"duration": 0.22,
 			"delay": 0.08,

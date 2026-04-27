@@ -117,7 +117,7 @@ func _build_layout() -> void:
 
 	_map_select = OptionButton.new()
 	for map_id: String in ["standard", "open", "fortress", "labyrinth"]:
-		_map_select.add_item(map_id.capitalize())
+		_map_select.add_item(_map_display_name(map_id))
 		_map_select.set_item_metadata(_map_select.item_count - 1, map_id)
 	_map_select.item_selected.connect(_on_setup_changed)
 	_style_option_button(_map_select)
@@ -294,7 +294,7 @@ func _build_legacy_layout() -> void:
 
 	_map_select = OptionButton.new()
 	for map_id: String in ["standard", "open", "fortress", "labyrinth"]:
-		_map_select.add_item(map_id.capitalize())
+		_map_select.add_item(_map_display_name(map_id))
 		_map_select.set_item_metadata(_map_select.item_count - 1, map_id)
 	_map_select.item_selected.connect(_on_setup_changed)
 	_style_option_button(_map_select)
@@ -1042,7 +1042,7 @@ func _refresh_summary() -> void:
 			_controller_label(config.player_two_ai.controller_type),
 		]
 	if _snap_map_val != null:
-		_snap_map_val.text = config.map_id.capitalize()
+		_snap_map_val.text = _map_display_name(config.map_id)
 	if _snap_replay_val != null:
 		_snap_replay_val.text = replay_ready
 	if _snap_scale_val != null:
@@ -1055,7 +1055,7 @@ func _refresh_summary() -> void:
 
 	# Arena preview
 	if _arena_preview_title_label != null:
-		_arena_preview_title_label.text = config.map_id.capitalize() + " Arena"
+		_arena_preview_title_label.text = _map_display_name(config.map_id)
 	if _arena_preview_label != null:
 		_arena_preview_label.text = _map_preview_text(config.map_id)
 
@@ -1082,6 +1082,20 @@ func _controller_label(controller_type: int) -> String:
 			return "Unknown"
 
 
+func _map_display_name(map_id: String) -> String:
+	match map_id:
+		"standard":
+			return "Siege Works"
+		"open":
+			return "Open Arena"
+		"fortress":
+			return "Fortress Arena"
+		"labyrinth":
+			return "Labyrinth Arena"
+		_:
+			return map_id.capitalize()
+
+
 func _map_preview_text(map_id: String) -> String:
 	match map_id:
 		"labyrinth":
@@ -1091,7 +1105,7 @@ func _map_preview_text(map_id: String) -> String:
 		"open":
 			return "Open lanes and faster flanks."
 		_:
-			return "Balanced terrain around the center."
+			return "Destructible gates, power crates, and contested center lanes."
 
 
 func _play_intro_transition() -> void:

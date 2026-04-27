@@ -103,7 +103,7 @@ func _build_layout() -> void:
 	hero_right_layout.add_child(_make_section_heading("Recommended First Match"))
 
 	var first_match_text := Label.new()
-	first_match_text.text = "Standard Arena\nP1 Minimax vs P2 MCTS\nAI starts automatically\nReplay review after finish"
+	first_match_text.text = "Siege Works\nP1 Minimax vs P2 MCTS\nAI starts automatically\nReplay review after finish"
 	first_match_text.add_theme_font_override("font", FONT_MEDIUM)
 	first_match_text.add_theme_font_size_override("font_size", 15)
 	first_match_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

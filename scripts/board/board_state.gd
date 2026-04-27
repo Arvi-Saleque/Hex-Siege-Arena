@@ -6,7 +6,7 @@ const DEFAULT_RINGS := 5
 var rings: int = DEFAULT_RINGS
 var cells: Dictionary = {}
 var map_id: String = "standard"
-var map_display_name: String = "Standard Arena"
+var map_display_name: String = "Siege Works"
 var map_description: String = ""
 var power_block_reveals: Dictionary = {}
 
@@ -127,7 +127,7 @@ static func from_snapshot(snapshot: Dictionary) -> BoardState:
 	var restored: BoardState = BoardState.new(int(snapshot.get("rings", DEFAULT_RINGS)))
 	restored.cells.clear()
 	restored.map_id = str(snapshot.get("map_id", "standard"))
-	restored.map_display_name = str(snapshot.get("map_display_name", "Standard Arena"))
+	restored.map_display_name = str(snapshot.get("map_display_name", "Siege Works"))
 	restored.map_description = str(snapshot.get("map_description", ""))
 	restored.power_block_reveals = (snapshot.get("power_block_reveals", {}) as Dictionary).duplicate(true)
 	for cell_snapshot: Variant in snapshot.get("cells", []):
